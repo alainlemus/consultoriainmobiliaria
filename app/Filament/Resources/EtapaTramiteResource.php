@@ -24,19 +24,26 @@ class EtapaTramiteResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
+            Forms\Components\Section::make('Etapa del Pipeline')
+                ->description('Las etapas definen el flujo de trabajo de cada tipo de trámite. Se muestran en orden en el expediente y en la gráfica del funnel del Dashboard.')
+                ->columns(2)
+                ->schema([
             Forms\Components\Select::make('tipo_tramite_id')
                 ->label('Tipo de Trámite')
                 ->options(TipoTramite::pluck('nombre', 'id'))
                 ->required()
-                ->searchable(),
+                ->searchable()
+                ->hint('A qué tipo de trámite pertenece esta etapa'),
             Forms\Components\TextInput::make('nombre')
                 ->label('Nombre de la Etapa')
                 ->required()
-                ->maxLength(255),
+                ->maxLength(255)
+                ->hint('Ej: Precalificación, Integración de expediente, Firma de escrituras'),
             Forms\Components\Textarea::make('descripcion')
                 ->label('Descripción')
                 ->rows(2)
-                ->columnSpanFull(),
+                ->columnSpanFull()
+                ->hint('Describe qué actividades se realizan en esta etapa'),
             Forms\Components\Select::make('color')
                 ->label('Color del badge')
                 ->options([
@@ -49,14 +56,17 @@ class EtapaTramiteResource extends Resource
                     'purple'  => 'Morado',
                 ])
                 ->default('gray')
-                ->required(),
+                ->required()
+                ->hint('Color visual del badge en la tabla de expedientes'),
             Forms\Components\TextInput::make('orden')
                 ->label('Orden')
                 ->numeric()
-                ->default(0),
+                ->default(0)
+                ->hint('Número de secuencia — 1 es la primera etapa'),
             Forms\Components\Toggle::make('es_final')
                 ->label('Es etapa de cierre')
-                ->helperText('Marcar si esta etapa equivale a "cerrado/completado"'),
+                ->helperText('Activa si esta etapa representa la conclusión del trámite'),
+            ])->columnSpanFull(),
         ]);
     }
 

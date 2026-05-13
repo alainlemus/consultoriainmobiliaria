@@ -642,9 +642,37 @@ class ExpedienteSeeder extends Seeder
                 'fecha_apertura'              => now()->subDays(rand(10, 120))->toDateString(),
                 'fecha_cierre'                => $data['fecha_cierre'] ?? null,
             ]);
+
+            // Generar comisión automáticamente para expedientes cerrados
+            if (($data['estado'] ?? '') === 'cerrado' && ($data['honorarios_monto'] ?? 0) > 0) {
+                $existe = \App\Models\Comision::where('expediente_id', $expediente->id)->exists();
+                if (! $existe) {
+                    $porcentaje = $data['honorarios_porcentaje'] ?? 0;
+                    $montoBase  = $data['honorarios_monto'];
+                    if ($porcentaje > 0 && ($data['monto_total_estimado'] ?? 0) > 0) {
+                        $montoBase     = $data['monto_total_estimado'];
+                        $montoComision = round($montoBase * ($porcentaje / 100), 2);
+                    } else {
+                        $porcentaje    = 100;
+                        $montoComision = $montoBase;
+                    }
+                    \App\Models\Comision::firstOrCreate(
+                        ['expediente_id' => $expediente->id],
+                        [
+                            'asesor_id'           => $expediente->asesor_id,
+                            'monto_base'          => $montoBase,
+                            'porcentaje_comision' => $porcentaje,
+                            'monto_comision'      => $montoComision,
+                            'estado'              => 'pendiente',
+                            'fecha_generacion'    => $data['fecha_cierre'] ?? now()->toDateString(),
+                        ]
+                    );
+                }
+            }
         }
 
         $total = Expediente::count();
-        $this->command->info("✓ {$total} expedientes de prueba creados y asignados a los asesores.");
+        $comTotal = \App\Models\Comision::count();
+        $this->command->info("✓ {$total} expedientes y {$comTotal} comisiones de prueba creados.");
     }
 }

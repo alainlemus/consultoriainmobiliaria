@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             PostSeeder::class,
             PropiedadSeeder::class,
             CrmConfigSeeder::class,
+            TestimonioSeeder::class,
         ]);
     }
 }

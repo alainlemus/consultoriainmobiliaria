@@ -50,6 +50,8 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 Widgets\AccountWidget::class,
                 \App\Filament\Widgets\CrmStatsOverview::class,
+                \App\Filament\Widgets\ExpedientesAnualesChart::class,
+                \App\Filament\Widgets\KpisMensualesWidget::class,
                 \App\Filament\Widgets\FunnelEtapasWidget::class,
                 \App\Filament\Widgets\ExpedientesSinMovimientoWidget::class,
                 \App\Filament\Widgets\RankingAsesoresWidget::class,

@@ -11,6 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class ComisionResource extends Resource
@@ -22,6 +23,30 @@ class ComisionResource extends Resource
     protected static ?string $pluralModelLabel = 'Comisiones';
     protected static ?string $navigationGroup = 'CRM';
     protected static ?int $navigationSort = 5;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['expediente.folio', 'asesor.name'];
+    }
+
+    public static function getGlobalSearchResultTitle(Model $record): string
+    {
+        return 'Comisión — ' . ($record->expediente?->folio ?? 'EXP-???');
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Asesor' => $record->asesor?->name ?? '—',
+            'Monto'  => '$' . number_format($record->monto_comision, 2) . ' MXN',
+            'Estado' => ucfirst($record->estado),
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(Model $record): string
+    {
+        return static::getUrl('edit', ['record' => $record]);
+    }
 
     public static function canCreate(): bool
     {
@@ -58,6 +83,7 @@ class ComisionResource extends Resource
     {
         return $form->schema([
             Forms\Components\Section::make('Información de la Comisión')
+                ->description('Las comisiones se generan automáticamente al cerrar un expediente. Los campos deshabilitados son de solo lectura. Solo el administrador puede cambiar el estado y aprobar el pago.')
                 ->columns(2)
                 ->schema([
                     Forms\Components\Select::make('expediente_id')
@@ -65,32 +91,37 @@ class ComisionResource extends Resource
                         ->label('Expediente')
                         ->searchable()
                         ->required()
-                        ->disabled(),
+                        ->disabled()
+                        ->hint('Expediente que originó esta comisión'),
 
                     Forms\Components\Select::make('asesor_id')
                         ->relationship('asesor', 'name')
                         ->label('Asesor')
                         ->searchable()
                         ->required()
-                        ->disabled(),
+                        ->disabled()
+                        ->hint('Asesor que gestionó el expediente'),
 
                     Forms\Components\TextInput::make('monto_base')
                         ->label('Monto Base')
                         ->prefix('$')
                         ->numeric()
-                        ->disabled(),
+                        ->disabled()
+                        ->hint('Honorarios cobrados al cliente (base de cálculo)'),
 
                     Forms\Components\TextInput::make('porcentaje_comision')
                         ->label('Porcentaje (%)')
                         ->suffix('%')
                         ->numeric()
-                        ->disabled(),
+                        ->disabled()
+                        ->hint('Porcentaje aplicado sobre el monto base'),
 
                     Forms\Components\TextInput::make('monto_comision')
                         ->label('Monto Comisión')
                         ->prefix('$')
                         ->numeric()
-                        ->disabled(),
+                        ->disabled()
+                        ->hint('Monto final a pagar al asesor'),
 
                     Forms\Components\Select::make('estado')
                         ->label('Estado')
@@ -101,6 +132,7 @@ class ComisionResource extends Resource
                         ])
                         ->required()
                         ->live()
+                        ->hint('Pendiente → Aprobada → Pagada')
                         ->afterStateUpdated(function ($state, Forms\Set $set) {
                             if ($state === 'aprobada') {
                                 $set('fecha_aprobacion', now()->toDateString());
@@ -113,24 +145,30 @@ class ComisionResource extends Resource
 
                     Forms\Components\DatePicker::make('fecha_generacion')
                         ->label('Fecha Generación')
-                        ->disabled(),
+                        ->disabled()
+                        ->hint('Fecha en que se cerró el expediente'),
 
                     Forms\Components\DatePicker::make('fecha_aprobacion')
-                        ->label('Fecha Aprobación'),
+                        ->label('Fecha Aprobación')
+                        ->hint('Se rellena al aprobar la comisión'),
 
                     Forms\Components\DatePicker::make('fecha_pago')
-                        ->label('Fecha Pago'),
+                        ->label('Fecha Pago')
+                        ->hint('Fecha real en que se realizó el pago al asesor'),
 
                     Forms\Components\Select::make('aprobado_por')
                         ->label('Aprobado Por')
                         ->options(User::all()->pluck('name', 'id'))
-                        ->searchable(),
+                        ->searchable()
+                        ->hint('Administrador que autorizó el pago'),
                 ]),
 
             Forms\Components\Section::make('Notas')
+                ->description('Observaciones sobre el pago: método de pago, referencia de transferencia, etc.')
                 ->schema([
                     Forms\Components\Textarea::make('notas')
                         ->label('Notas')
+                        ->placeholder('Ej: Transferencia SPEI ref. 123456 realizada el 13/05/2026')
                         ->rows(3),
                 ]),
         ]);
@@ -153,18 +191,21 @@ class ComisionResource extends Resource
                 Tables\Columns\TextColumn::make('monto_base')
                     ->label('Monto Base')
                     ->money('MXN')
-                    ->sortable(),
+                    ->sortable()
+                    ->tooltip('Honorarios cobrados al cliente — base de cálculo de la comisión'),
 
                 Tables\Columns\TextColumn::make('porcentaje_comision')
                     ->label('%')
                     ->suffix('%')
-                    ->sortable(),
+                    ->sortable()
+                    ->tooltip('Porcentaje del monto base que corresponde al asesor'),
 
                 Tables\Columns\TextColumn::make('monto_comision')
                     ->label('Comisión')
                     ->money('MXN')
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->tooltip('Monto final a pagar al asesor'),
 
                 Tables\Columns\BadgeColumn::make('estado')
                     ->label('Estado')
@@ -178,18 +219,21 @@ class ComisionResource extends Resource
                         'aprobada'  => 'Aprobada',
                         'pagada'    => 'Pagada',
                         default     => $state,
-                    }),
+                    })
+                    ->tooltip('Flujo: Pendiente → Aprobada → Pagada'),
 
                 Tables\Columns\TextColumn::make('fecha_generacion')
                     ->label('Generada')
                     ->date('d/m/Y')
-                    ->sortable(),
+                    ->sortable()
+                    ->tooltip('Fecha en que se cerró el expediente'),
 
                 Tables\Columns\TextColumn::make('fecha_pago')
                     ->label('Pagada')
                     ->date('d/m/Y')
                     ->sortable()
-                    ->placeholder('—'),
+                    ->placeholder('—')
+                    ->tooltip('Fecha real en que se realizó el pago al asesor'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('estado')

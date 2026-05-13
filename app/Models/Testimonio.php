@@ -16,6 +16,6 @@ class Testimonio extends Model
 
     public function scopeActivos($query)
     {
-        return $query->where('activo', true)->orderBy('orden');
+        return $query->where('activo', true)->latest();
     }
 }

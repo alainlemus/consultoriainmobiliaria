@@ -24,11 +24,16 @@ class DocumentoRequeridoResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
+            Forms\Components\Section::make('Documento Requerido')
+                ->description('Define qué documentos debe entregar el cliente o el vendedor para cada tipo de trámite. Estos documentos se muestran como checklist en el expediente.')
+                ->columns(2)
+                ->schema([
             Forms\Components\Select::make('tipo_tramite_id')
                 ->label('Tipo de Trámite')
                 ->options(TipoTramite::pluck('nombre', 'id'))
                 ->required()
-                ->searchable(),
+                ->searchable()
+                ->hint('A qué tipo de trámite aplica este documento'),
             Forms\Components\Select::make('seccion')
                 ->label('Sección')
                 ->options([
@@ -36,23 +41,29 @@ class DocumentoRequeridoResource extends Resource
                     'vendedor'   => 'Vendedor / Propietario',
                     'vivienda'   => 'Vivienda / Propiedad',
                 ])
-                ->required(),
+                ->required()
+                ->hint('A quién corresponde entregar este documento'),
             Forms\Components\TextInput::make('nombre')
                 ->label('Nombre del Documento')
                 ->required()
                 ->maxLength(255)
-                ->columnSpanFull(),
+                ->columnSpanFull()
+                ->hint('Ej: Identificación oficial vigente (INE/pasaporte)'),
             Forms\Components\Textarea::make('descripcion')
                 ->label('Descripción / Instrucciones')
                 ->rows(2)
-                ->columnSpanFull(),
+                ->columnSpanFull()
+                ->hint('Indica formato, vigencia o especificaciones del documento'),
             Forms\Components\TextInput::make('orden')
                 ->label('Orden')
                 ->numeric()
-                ->default(0),
+                ->default(0)
+                ->hint('Posición en el checklist del expediente'),
             Forms\Components\Toggle::make('obligatorio')
                 ->label('Obligatorio')
-                ->default(true),
+                ->default(true)
+                ->hint('Los opcionales se muestran pero no bloquean el avance'),
+            ])->columnSpanFull(),
         ]);
     }
 

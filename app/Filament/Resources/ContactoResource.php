@@ -11,6 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class ContactoResource extends Resource
@@ -22,6 +23,31 @@ class ContactoResource extends Resource
     protected static ?int $navigationSort = 1;
     protected static ?string $modelLabel = 'Prospecto';
     protected static ?string $pluralModelLabel = 'Prospectos del Sitio Web';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['nombre', 'email', 'telefono', 'curp', 'mensaje'];
+    }
+
+    public static function getGlobalSearchResultTitle(Model $record): string
+    {
+        return $record->nombre ?: 'Prospecto sin nombre';
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Email'    => $record->email ?? '—',
+            'Teléfono' => $record->telefono ?? '—',
+            'Servicio' => ucfirst($record->servicio ?? '—'),
+            'Estado'   => ucfirst(str_replace('_', ' ', $record->estado_prospecto ?? '—')),
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(Model $record): string
+    {
+        return static::getUrl('edit', ['record' => $record]);
+    }
 
     public static function getEloquentQuery(): Builder
     {
@@ -55,11 +81,15 @@ class ContactoResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Datos de contacto')->schema([
+            Forms\Components\Section::make('Datos de contacto')
+                ->description('Información básica del prospecto. Los prospectos del sitio web llegan aquí automáticamente. También puedes agregar prospectos de forma manual.')
+                ->schema([
                 Forms\Components\TextInput::make('nombre')
-                    ->label('Nombre')->required(),
+                    ->label('Nombre')->required()
+                    ->hint('Nombre completo tal como lo proporcionó'),
                 Forms\Components\TextInput::make('telefono')
-                    ->label('Teléfono')->required(),
+                    ->label('Teléfono')->required()
+                    ->hint('10 dígitos — principal medio de contacto'),
                 Forms\Components\TextInput::make('email')
                     ->label('Correo')->email(),
                 Forms\Components\Select::make('servicio')
@@ -71,12 +101,16 @@ class ContactoResource extends Resource
                         'escrituras' => 'Escrituración',
                         'asesoria'   => 'Asesoría personalizada',
                         'otro'       => 'Otro',
-                    ]),
+                    ])
+                    ->hint('Servicio que solicitó o le interesa'),
                 Forms\Components\Textarea::make('mensaje')
-                    ->label('Mensaje')->rows(3)->columnSpanFull(),
+                    ->label('Mensaje')->rows(3)->columnSpanFull()
+                    ->hint('Mensaje original que envió desde el sitio web'),
             ])->columns(2),
 
-            Forms\Components\Section::make('Gestión del Prospecto')->schema([
+            Forms\Components\Section::make('Gestión del Prospecto')
+                ->description('Controla el avance del prospecto en el funnel de ventas. Cuando el prospecto esté listo, crea un expediente desde la sección de Expedientes y vincúlalo aquí.')
+                ->schema([
                 Forms\Components\Select::make('estado_prospecto')
                     ->label('Estado del prospecto')
                     ->options([
@@ -87,7 +121,8 @@ class ContactoResource extends Resource
                         'convertido'        => 'Convertido a expediente',
                         'descartado'        => 'Descartado',
                     ])
-                    ->default('nuevo'),
+                    ->default('nuevo')
+                    ->hint('Actualiza conforme avance el proceso de atención'),
                 // Mantener campo 'estado' para compatibilidad con notificaciones previas
                 Forms\Components\Select::make('estado')
                     ->label('Estado (interno)')
@@ -107,35 +142,42 @@ class ContactoResource extends Resource
                         'whatsapp'  => 'WhatsApp',
                         'otro'      => 'Otro',
                     ])
-                    ->default('sitio_web'),
+                    ->default('sitio_web')
+                    ->hint('¿Cómo llegó este prospecto?'),
                 Forms\Components\Select::make('asesor_id')
                     ->label('Asesor asignado')
                     ->options(User::where('activo', true)->pluck('name', 'id'))
                     ->searchable()
-                    ->nullable(),
+                    ->nullable()
+                    ->hint('Asesor que dará seguimiento a este prospecto'),
                 Forms\Components\DatePicker::make('fecha_primer_contacto')
-                    ->label('Fecha primer contacto'),
+                    ->label('Fecha primer contacto')
+                    ->hint('Cuándo se estableció contacto por primera vez'),
                 Forms\Components\Textarea::make('notas')
-                    ->label('Notas internas')->rows(3)->columnSpanFull(),
+                    ->label('Notas internas')->rows(3)->columnSpanFull()
+                    ->hint('Observaciones internas — no visibles para el prospecto'),
             ])->columns(2),
 
             Forms\Components\Section::make('Precalificación')
-                ->description('Datos obtenidos del simulador FOVISSSTE / portal INFONAVIT')
+                ->description('Datos obtenidos del simulador FOVISSSTE / portal INFONAVIT. Completa esta sección antes de presentar una propuesta al prospecto.')
                 ->schema([
                     Forms\Components\TextInput::make('curp')
                         ->label('CURP')
                         ->maxLength(18)
                         ->live(onBlur: true)
-                        ->extraAttributes(['style' => 'text-transform:uppercase']),
+                        ->extraAttributes(['style' => 'text-transform:uppercase'])
+                        ->hint('Necesaria para consultar crédito en simulador'),
                     Forms\Components\DatePicker::make('fecha_nacimiento')
                         ->label('Fecha de nacimiento'),
                     Forms\Components\TextInput::make('antiguedad_laboral')
                         ->label('Antigüedad laboral (años)')
-                        ->numeric(),
+                        ->numeric()
+                        ->hint('Años completos cotizados al IMSS o ISSSTE'),
                     Forms\Components\TextInput::make('salario_mensual')
                         ->label('Salario mensual')
                         ->numeric()
-                        ->prefix('$'),
+                        ->prefix('$')
+                        ->hint('Salario integrado mensual bruto'),
                     Forms\Components\Select::make('tipo_credito_interes')
                         ->label('Tipo de crédito')
                         ->options([
@@ -147,11 +189,13 @@ class ContactoResource extends Resource
                     Forms\Components\TextInput::make('monto_credito_estimado')
                         ->label('Monto de crédito estimado')
                         ->numeric()
-                        ->prefix('$'),
+                        ->prefix('$')
+                        ->hint('Resultado del simulador oficial'),
                     Forms\Components\TextInput::make('subcuenta_vivienda')
                         ->label('Subcuenta de vivienda')
                         ->numeric()
-                        ->prefix('$'),
+                        ->prefix('$')
+                        ->hint('Saldo acumulado — obtenido del portal INFONAVIT/FOVISSSTE'),
 
                     // ── Botón acceso rápido al simulador ──────────────────
                     Forms\Components\Placeholder::make('acceso_simulador')

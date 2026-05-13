@@ -24,7 +24,9 @@ class TipoTramiteResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Información General')->schema([
+            Forms\Components\Section::make('Información General')
+                ->description('Define los tipos de trámite que ofrece la consultoría. Cada tipo tiene su propio flujo de etapas y documentos requeridos.')
+                ->schema([
                 Forms\Components\TextInput::make('nombre')
                     ->label('Nombre')
                     ->required()
@@ -32,33 +34,41 @@ class TipoTramiteResource extends Resource
                     ->live(onBlur: true)
                     ->afterStateUpdated(fn ($state, Forms\Set $set) =>
                         $set('slug', Str::slug($state))
-                    ),
+                    )
+                    ->hint('Ej: FOVISSSTE, INFONAVIT, Avalúo, Escrituras'),
                 Forms\Components\TextInput::make('slug')
                     ->label('Slug')
                     ->required()
                     ->unique(ignoreRecord: true)
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->hint('Se genera automáticamente — no modificar'),
                 Forms\Components\Textarea::make('descripcion')
                     ->label('Descripción')
                     ->rows(3)
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->hint('Descripción interna para el equipo'),
             ])->columns(2),
 
-            Forms\Components\Section::make('Configuración')->schema([
+            Forms\Components\Section::make('Configuración')
+                ->description('El porcentaje de honorarios es el valor por defecto que se aplica al crear un expediente de este tipo. Puede ajustarse por expediente.')
+                ->schema([
                 Forms\Components\TextInput::make('porcentaje_honorarios')
                     ->label('% Honorarios (por defecto)')
                     ->numeric()
                     ->suffix('%')
                     ->default(0)
                     ->minValue(0)
-                    ->maxValue(100),
+                    ->maxValue(100)
+                    ->hint('Se usa como valor inicial en nuevos expedientes'),
                 Forms\Components\TextInput::make('orden')
                     ->label('Orden')
                     ->numeric()
-                    ->default(0),
+                    ->default(0)
+                    ->hint('Número de aparición en listas y selectores'),
                 Forms\Components\Toggle::make('activo')
                     ->label('Activo')
-                    ->default(true),
+                    ->default(true)
+                    ->hint('Los inactivos no aparecen al crear expedientes'),
             ])->columns(3),
         ]);
     }

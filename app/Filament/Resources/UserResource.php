@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -24,6 +25,30 @@ class UserResource extends Resource
     protected static ?string $pluralModelLabel = 'Usuarios';
     protected static ?int $navigationSort = 1;
 
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'email'];
+    }
+
+    public static function getGlobalSearchResultTitle(Model $record): string
+    {
+        return $record->name;
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Email' => $record->email,
+            'Rol'   => $record->roles->pluck('name')->join(', ') ?: '—',
+            'Estado'=> $record->activo ? 'Activo' : 'Inactivo',
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(Model $record): string
+    {
+        return static::getUrl('edit', ['record' => $record]);
+    }
+
     // Mismo grupo que Shield (lee la traducción publicada)
     public static function getNavigationGroup(): ?string
     {
@@ -33,21 +58,27 @@ class UserResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Información personal')->schema([
+            Forms\Components\Section::make('Información personal')
+                ->description('Datos de acceso del usuario al sistema de administración.')
+                ->schema([
                 Forms\Components\TextInput::make('name')
                     ->label('Nombre completo')
                     ->required()
-                    ->maxLength(100),
+                    ->maxLength(100)
+                    ->hint('Nombre real del asesor o administrador'),
 
                 Forms\Components\TextInput::make('email')
                     ->label('Correo electrónico')
                     ->email()
                     ->required()
                     ->unique(ignoreRecord: true)
-                    ->maxLength(150),
+                    ->maxLength(150)
+                    ->hint('Se usa para iniciar sesión — debe ser único'),
             ])->columns(2),
 
-            Forms\Components\Section::make('Contraseña')->schema([
+            Forms\Components\Section::make('Contraseña')
+                ->description('Mínimo 8 caracteres. En modo edición, deja en blanco para no cambiar la contraseña actual.')
+                ->schema([
                 Forms\Components\TextInput::make('password')
                     ->label('Contraseña')
                     ->password()
@@ -69,7 +100,9 @@ class UserResource extends Resource
                     ->dehydrated(false),
             ])->columns(2),
 
-            Forms\Components\Section::make('Rol en el sistema')->schema([
+            Forms\Components\Section::make('Rol en el sistema')
+                ->description('Define qué puede ver y hacer este usuario. "super_admin" tiene acceso total. "asesor" solo ve sus propios expedientes, prospectos y comisiones.')
+                ->schema([
                 Forms\Components\Select::make('roles')
                     ->label('Rol')
                     ->relationship('roles', 'name')
@@ -77,7 +110,7 @@ class UserResource extends Resource
                     ->preload()
                     ->searchable()
                     ->multiple()
-                    ->helperText('Selecciona uno o más roles para este usuario.'),
+                    ->helperText('super_admin: acceso total | asesor: acceso restringido a sus registros'),
 
                 Forms\Components\Toggle::make('activo')
                     ->label('Usuario activo')
@@ -106,7 +139,8 @@ class UserResource extends Resource
                     ->label('Roles')
                     ->badge()
                     ->color('primary')
-                    ->separator(', '),
+                    ->separator(', ')
+                    ->tooltip('Rol que determina los permisos del usuario en el sistema'),
 
                 Tables\Columns\IconColumn::make('activo')
                     ->label('Activo')
@@ -114,7 +148,8 @@ class UserResource extends Resource
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-x-circle')
                     ->trueColor('success')
-                    ->falseColor('danger'),
+                    ->falseColor('danger')
+                    ->tooltip('Usuarios inactivos no pueden iniciar sesión'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creado')
