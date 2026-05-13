@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+[x-cloak] { display: none !important; }
+@theme {
+    --color-gold-50: #fdf9ee;
+    --color-gold-100: #f7edc8;
+    --color-gold-200: #edd98a;
+    --color-gold-300: #e2c14d;
+    --color-gold-400: #d4af37;
+    --color-gold-500: #c9a84c;
+    --color-gold-600: #b8932a;
+    --color-gold-700: #96760f;
+    --color-gold-800: #7a5f0e;
+    --color-gold-900: #644e10;
+
+    --color-crimson-500: #9b2335;
+    --color-crimson-600: #8b1a1a;
+    --color-crimson-700: #7b1416;
+
+    --color-dark-900: #0d0d0d;
+    --color-dark-800: #1a1a1a;
+    --color-dark-700: #2a2a2a;
+    --color-dark-600: #3a3a3a;
+    --color-dark-400: #666666;
+
+    --color-cream-50: #faf8f3;
+    --color-cream-100: #f5f0e8;
+    --color-cream-200: #ede8db;
+    --color-cream-300: #e0d8c8;
+
+    --font-serif: "Playfair Display", "Georgia", serif;
+    --font-sans: "Inter", "Helvetica Neue", sans-serif;
+    --font-script: "Dancing Script", cursive;
+}
+
+@layer base {
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-sans); background-color: var(--color-cream-50); color: var(--color-dark-800); }
+    h1, h2, h3, h4 { font-family: var(--font-serif); }
+}
+
+@layer components {
+    .btn-gold {
+        @apply inline-flex items-center gap-2 bg-gold-500 hover:bg-gold-600 text-dark-900 font-semibold px-6 py-3 rounded-sm transition-all duration-300 uppercase tracking-widest text-sm cursor-pointer;
+    }
+    .btn-dark {
+        @apply inline-flex items-center gap-2 bg-dark-800 hover:bg-dark-700 text-gold-400 border border-gold-500 font-semibold px-6 py-3 rounded-sm transition-all duration-300 uppercase tracking-widest text-sm cursor-pointer;
+    }
+    .section-title {
+        @apply font-serif text-3xl md:text-4xl font-bold text-dark-800;
+    }
+    .section-subtitle {
+        @apply text-gold-500 uppercase tracking-widest text-sm font-semibold;
+    }
+    .gold-divider {
+        @apply w-16 h-0.5 bg-gold-400 mx-auto my-4;
+    }
+    .card-service {
+        @apply bg-white border border-cream-300 rounded-sm p-6 hover:shadow-lg hover:border-gold-400 transition-all duration-300 text-center;
+    }
+    .icon-gold {
+        @apply w-14 h-14 bg-gold-400 rounded-full flex items-center justify-center mx-auto mb-4 text-dark-900;
+    }
+    .whatsapp-float {
+        @apply fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300;
+        position: fixed;
+    }
+    .whatsapp-float::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 9999px;
+        background-color: rgb(34 197 94 / 0.6);
+        animation: wa-pulse 2s ease-out infinite;
+        z-index: -1;
+    }
+    @keyframes wa-pulse {
+        0%   { transform: scale(1);   opacity: 0.7; }
+        70%  { transform: scale(1.6); opacity: 0;   }
+        100% { transform: scale(1.6); opacity: 0;   }
+    }
+    .input-field {
+        @apply w-full bg-dark-700 border border-dark-600 focus:border-gold-400 text-white placeholder-dark-400 rounded-sm px-4 py-3 text-sm outline-none transition-colors;
+    }
+
+    /* Contenido generado por RichEditor de Filament */
+    .richtext { @apply text-dark-600 leading-relaxed text-sm; }
+    .richtext h1 { @apply text-2xl font-bold text-dark-900 mt-8 mb-4; }
+    .richtext h2 { @apply text-xl font-bold text-dark-900 mt-8 mb-3; }
+    .richtext h3 { @apply text-lg font-semibold text-dark-800 mt-6 mb-2; }
+    .richtext h4 { @apply text-base font-semibold text-dark-800 mt-4 mb-2; }
+    .richtext p  { @apply mb-4; }
+    .richtext ul { @apply list-disc pl-6 mb-4 space-y-1; }
+    .richtext ol { @apply list-decimal pl-6 mb-4 space-y-1; }
+    .richtext li { @apply text-dark-600; }
+    .richtext strong { @apply font-semibold text-dark-800; }
+    .richtext em { @apply italic; }
+    .richtext a  { @apply text-gold-600 hover:text-gold-700 underline; }
+    .richtext blockquote { @apply border-l-4 border-gold-400 pl-4 italic text-dark-400 my-4; }
+    .richtext hr { @apply border-cream-300 my-6; }
+    .richtext img { @apply max-w-full rounded-sm my-4; }
+    .richtext pre { @apply bg-dark-800 text-cream-100 rounded-sm p-4 overflow-x-auto text-xs my-4; }
+    .richtext code { @apply bg-cream-200 text-crimson-700 px-1 rounded text-xs; }
+}
