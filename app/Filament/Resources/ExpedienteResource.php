@@ -100,6 +100,12 @@ class ExpedienteResource extends Resource
                     Forms\Components\Tabs\Tab::make('Trámite')
                         ->icon('heroicon-o-document-text')
                         ->schema([
+                            // ── Stepper de progreso ───────────────────────
+                            Forms\Components\View::make('filament.components.expediente-stepper')
+                                ->viewData(fn (Forms\Get $get, $record) => ['record' => $record])
+                                ->columnSpanFull()
+                                ->visible(fn ($record) => $record !== null),
+
                             Forms\Components\TextInput::make('folio')
                                 ->label('Folio')
                                 ->disabled()
@@ -417,6 +423,7 @@ class ExpedienteResource extends Resource
                                         ->hint('Calculado automáticamente'),
                                 ])->columns(2),
                             Forms\Components\Section::make('Honorarios')
+                                ->visible(fn () => Auth::user()?->hasRole('super_admin'))
                                 ->schema([
                                     Forms\Components\TextInput::make('honorarios_porcentaje')
                                         ->label('% Honorarios')
@@ -477,10 +484,36 @@ class ExpedienteResource extends Resource
                     ->badge()
                     ->color('primary'),
                 Tables\Columns\TextColumn::make('etapa.nombre')
-                    ->label('Etapa')
-                    ->badge()
-                    ->color(fn ($record) => $record?->etapa?->color ?? 'gray')
-                    ->tooltip('Etapa actual dentro del flujo del tipo de trámite'),
+                    ->label('Progreso')
+                    ->getStateUsing(function ($record) {
+                        if (! $record->etapa || ! $record->tipo_tramite_id) return '—';
+
+                        $etapas = \App\Models\EtapaTramite::where('tipo_tramite_id', $record->tipo_tramite_id)
+                            ->orderBy('orden')->get();
+                        $total   = $etapas->count();
+                        $current = $record->etapa->orden;
+
+                        $dots = '';
+                        foreach ($etapas as $etapa) {
+                            if ($etapa->orden < $current) {
+                                // completada
+                                $dots .= '<span title="' . e($etapa->nombre) . '" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#16a34a;margin:0 2px;vertical-align:middle;"></span>';
+                            } elseif ($etapa->orden === $current) {
+                                // actual
+                                $dots .= '<span title="' . e($etapa->nombre) . '" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#2563eb;margin:0 2px;vertical-align:middle;outline:2px solid #93c5fd;outline-offset:1px;"></span>';
+                            } else {
+                                // pendiente
+                                $dots .= '<span title="' . e($etapa->nombre) . '" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#d1d5db;margin:0 2px;vertical-align:middle;"></span>';
+                            }
+                        }
+
+                        return '<div style="display:flex;align-items:center;gap:4px;">'
+                            . $dots
+                            . '<span style="font-size:0.7rem;color:#6b7280;margin-left:4px;">' . $current . '/' . $total . '</span>'
+                            . '</div>';
+                    })
+                    ->html()
+                    ->tooltip(fn ($record) => $record?->etapa?->nombre ?? ''),
                 Tables\Columns\BadgeColumn::make('estado')
                     ->label('Estado')
                     ->colors([
@@ -514,11 +547,13 @@ class ExpedienteResource extends Resource
                     ->label('Honorarios')
                     ->money('MXN')
                     ->toggleable()
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin'))
                     ->tooltip('Honorarios pactados con el cliente'),
                 Tables\Columns\IconColumn::make('honorarios_pagados')
                     ->label('Cobrado')
                     ->boolean()
                     ->alignCenter()
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin'))
                     ->tooltip('Indica si los honorarios ya fueron cobrados al cliente'),
                 Tables\Columns\TextColumn::make('fecha_apertura')
                     ->label('Apertura')
@@ -542,7 +577,8 @@ class ExpedienteResource extends Resource
                     ->label('Asesor')
                     ->options(User::pluck('name', 'id')),
                 Tables\Filters\TernaryFilter::make('honorarios_pagados')
-                    ->label('Honorarios cobrados'),
+                    ->label('Honorarios cobrados')
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

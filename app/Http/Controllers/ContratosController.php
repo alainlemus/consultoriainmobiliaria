@@ -39,7 +39,9 @@ class ContratosController extends Controller
 
         $filename = "contrato-servicios-{$exp->folio}.pdf";
 
-        return $pdf->download($filename);
+        return request()->boolean('preview')
+            ? $pdf->stream($filename)
+            : $pdf->download($filename);
     }
 
     public function convenioHonorarios(int $expediente): Response
@@ -53,6 +55,8 @@ class ContratosController extends Controller
 
         $filename = "convenio-honorarios-{$exp->folio}.pdf";
 
-        return $pdf->download($filename);
+        return request()->boolean('preview')
+            ? $pdf->stream($filename)
+            : $pdf->download($filename);
     }
 }

@@ -115,6 +115,29 @@ class GastosRelationManager extends RelationManager
                     }),
             ])
             ->actions([
+                Tables\Actions\Action::make('ver_comprobante')
+                    ->label('Ver')
+                    ->icon('heroicon-o-eye')
+                    ->color('gray')
+                    ->visible(fn ($record) => (bool) $record->comprobante_ruta)
+                    ->modalHeading(fn ($record) => 'Comprobante — ' . $record->concepto)
+                    ->modalWidth('3xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Cerrar')
+                    ->modalContent(function ($record) {
+                        $url  = asset('storage/' . $record->comprobante_ruta);
+                        $nombre = strtolower($record->comprobante_nombre ?? $record->comprobante_ruta);
+                        $esPdf  = str_ends_with($nombre, '.pdf');
+
+                        if ($esPdf) {
+                            $html = '<iframe src="' . e($url) . '" style="width:100%;height:70vh;border:none;border-radius:6px;" title="Comprobante PDF"></iframe>';
+                        } else {
+                            $html = '<img src="' . e($url) . '" alt="Comprobante" style="max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:6px;object-fit:contain;">';
+                        }
+
+                        return new \Illuminate\Support\HtmlString($html);
+                    }),
+
                 Tables\Actions\EditAction::make()
                     ->after(function () {
                         $expediente = $this->getOwnerRecord();

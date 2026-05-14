@@ -55,20 +55,28 @@ class ComisionesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function ($query) {
+                // El asesor solo ve su propia comisión
+                if (Auth::user()?->hasRole('asesor')) {
+                    $query->where('asesor_id', Auth::id());
+                }
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('asesor.name')
-                    ->label('Asesor'),
+                    ->label('Asesor')
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
 
                 Tables\Columns\TextColumn::make('monto_base')
                     ->label('Monto Base')
-                    ->money('MXN'),
+                    ->money('MXN')
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
 
                 Tables\Columns\TextColumn::make('porcentaje_comision')
                     ->label('%')
                     ->suffix('%'),
 
                 Tables\Columns\TextColumn::make('monto_comision')
-                    ->label('Comisión')
+                    ->label('Mi comisión')
                     ->money('MXN')
                     ->weight('bold'),
 

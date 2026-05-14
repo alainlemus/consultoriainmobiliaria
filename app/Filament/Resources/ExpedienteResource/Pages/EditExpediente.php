@@ -31,14 +31,22 @@ class EditExpediente extends EditRecord
         $estado = $this->record->estado ?? '';
         $cfg    = static::$estadoConfig[$estado] ?? ['label' => ucfirst($estado), 'bg' => '#6b7280', 'text' => '#ffffff'];
 
-        $badge = sprintf(
+        $badgeEstado = sprintf(
             '<span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;background:%s;color:%s;vertical-align:middle;margin-left:10px;">%s</span>',
             $cfg['bg'],
             $cfg['text'],
             e($cfg['label'])
         );
 
-        return new HtmlString($folio . $badge);
+        $tipoTramite = $this->record->tipoTramite?->nombre;
+        $badgeTipo = $tipoTramite
+            ? sprintf(
+                '<span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;background:#0e7490;color:#ecfeff;vertical-align:middle;margin-left:6px;">%s</span>',
+                e($tipoTramite)
+            )
+            : '';
+
+        return new HtmlString($folio . $badgeEstado . $badgeTipo);
     }
 
     protected function getHeaderActions(): array
@@ -102,20 +110,68 @@ class EditExpediente extends EditRecord
             // ── Contratos PDF ────────────────────────────────────────────────
             Action::make('contrato_servicios')
                 ->label('Contrato de Servicios')
-                ->icon('heroicon-o-document-arrow-down')
+                ->icon('heroicon-o-document-text')
                 ->color('gray')
-                ->url(fn () => route('contratos.prestacion_servicios', $this->record->id))
-                ->openUrlInNewTab(),
+                ->modalHeading('Vista previa — Contrato de Servicios')
+                ->modalWidth('5xl')
+                ->modalSubmitActionLabel('Descargar PDF')
+                ->modalContent(fn () => new HtmlString(
+                    '<iframe src="' . route('contratos.prestacion_servicios', $this->record->id) . '?preview=1"
+                        style="width:100%;height:75vh;border:none;border-radius:4px;"
+                        title="Contrato de Servicios">
+                    </iframe>'
+                ))
+                ->action(fn () => redirect()->away(
+                    route('contratos.prestacion_servicios', $this->record->id)
+                )),
 
             Action::make('convenio_honorarios')
                 ->label('Convenio de Honorarios')
                 ->icon('heroicon-o-lock-closed')
                 ->color('warning')
                 ->visible(fn () => auth()->user()?->hasRole('super_admin'))
-                ->url(fn () => route('contratos.convenio_honorarios', $this->record->id))
-                ->openUrlInNewTab(),
+                ->modalHeading('Vista previa — Convenio de Honorarios')
+                ->modalWidth('5xl')
+                ->modalSubmitActionLabel('Descargar PDF')
+                ->modalContent(fn () => new HtmlString(
+                    '<iframe src="' . route('contratos.convenio_honorarios', $this->record->id) . '?preview=1"
+                        style="width:100%;height:75vh;border:none;border-radius:4px;"
+                        title="Convenio de Honorarios">
+                    </iframe>'
+                ))
+                ->action(fn () => redirect()->away(
+                    route('contratos.convenio_honorarios', $this->record->id)
+                )),
 
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->requiresConfirmation()
+                ->modalHeading('Eliminar expediente')
+                ->modalDescription(fn () => new HtmlString(
+                    'Para confirmar, escribe el folio <strong>' . e($this->record->folio) . '</strong> en el campo de abajo.'
+                ))
+                ->modalSubmitActionLabel('Sí, eliminar definitivamente')
+                ->form([
+                    \Filament\Forms\Components\TextInput::make('folio_confirmacion')
+                        ->label('Folio del expediente')
+                        ->placeholder($this->record->folio ?? '')
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    if (($data['folio_confirmacion'] ?? '') !== ($this->record->folio ?? '')) {
+                        \Filament\Notifications\Notification::make()
+                            ->title('Folio incorrecto')
+                            ->body('El folio ingresado no coincide. No se eliminó el expediente.')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+                    $this->record->delete();
+                    \Filament\Notifications\Notification::make()
+                        ->title('Expediente eliminado')
+                        ->success()
+                        ->send();
+                    $this->redirect(ExpedienteResource::getUrl('index'));
+                }),
         ];
     }
 }

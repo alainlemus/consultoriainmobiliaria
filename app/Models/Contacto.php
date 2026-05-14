@@ -14,12 +14,13 @@ class Contacto extends Model
         'asesor_id', 'origen', 'curp', 'fecha_nacimiento', 'antiguedad_laboral',
         'salario_mensual', 'tipo_credito_interes', 'monto_credito_estimado',
         'subcuenta_vivienda', 'notas_precalificacion', 'estado_prospecto',
-        'fecha_primer_contacto',
+        'fecha_primer_contacto', 'modalidad_cierre', 'notas_cierre', 'fecha_envio_dueno',
     ];
 
     protected $casts = [
         'fecha_nacimiento'       => 'date',
         'fecha_primer_contacto'  => 'date',
+        'fecha_envio_dueno'      => 'datetime',
         'salario_mensual'        => 'decimal:2',
         'monto_credito_estimado' => 'decimal:2',
         'subcuenta_vivienda'     => 'decimal:2',

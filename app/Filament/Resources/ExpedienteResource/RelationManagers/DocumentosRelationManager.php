@@ -142,14 +142,29 @@ class DocumentosRelationManager extends RelationManager
                     ->action(fn ($record) => $record->update(['estado' => 'pendiente']))
                     ->requiresConfirmation(false),
 
-                // Ver / descargar archivo
+                // Ver comprobante en modal
                 Tables\Actions\Action::make('ver_archivo')
-                    ->label('Ver archivo')
-                    ->icon('heroicon-o-arrow-down-tray')
+                    ->label('Ver')
+                    ->icon('heroicon-o-eye')
                     ->color('primary')
                     ->visible(fn ($record) => (bool) $record->ruta_archivo)
-                    ->url(fn ($record) => Storage::disk('public')->url($record->ruta_archivo))
-                    ->openUrlInNewTab(),
+                    ->modalHeading(fn ($record) => 'Documento — ' . $record->nombre)
+                    ->modalWidth('3xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Cerrar')
+                    ->modalContent(function ($record) {
+                        $url    = Storage::disk('public')->url($record->ruta_archivo);
+                        $nombre = strtolower($record->ruta_archivo ?? '');
+                        $esPdf  = str_ends_with($nombre, '.pdf');
+
+                        if ($esPdf) {
+                            $html = '<iframe src="' . e($url) . '" style="width:100%;height:70vh;border:none;border-radius:6px;" title="Documento PDF"></iframe>';
+                        } else {
+                            $html = '<img src="' . e($url) . '" alt="Documento" style="max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:6px;object-fit:contain;">';
+                        }
+
+                        return new \Illuminate\Support\HtmlString($html);
+                    }),
 
                 // Editar notas y subir/reemplazar archivo
                 Tables\Actions\EditAction::make()

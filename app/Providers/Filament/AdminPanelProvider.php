@@ -9,12 +9,15 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use App\Models\Configuracion;
@@ -49,6 +52,7 @@ class AdminPanelProvider extends PanelProvider
             // El Dashboard decide cuáles mostrar vía getWidgets()
             ->widgets([
                 Widgets\AccountWidget::class,
+                \App\Filament\Widgets\ProspectosPendientesCierreWidget::class,
                 \App\Filament\Widgets\CrmStatsOverview::class,
                 \App\Filament\Widgets\ExpedientesAnualesChart::class,
                 \App\Filament\Widgets\KpisMensualesWidget::class,
@@ -83,6 +87,29 @@ class AdminPanelProvider extends PanelProvider
         if ($favicon) {
             $panel->favicon(asset('storage/' . $favicon));
         }
+
+        $panel->renderHook(
+            PanelsRenderHook::TOPBAR_END,
+            fn (): string => Blade::render('
+                @php
+                    $user = filament()->auth()->user();
+                    $rol  = $user?->roles->first()?->name;
+                    $label = match($rol) {
+                        "super_admin" => "Administrador",
+                        "asesor"      => "Asesor",
+                        default       => ucfirst($rol ?? ""),
+                    };
+                    $classes = $rol === "super_admin"
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+                        : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+                @endphp
+                @if($label)
+                    <span class="hidden sm:inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $classes }}">
+                        {{ $label }}
+                    </span>
+                @endif
+            ')
+        );
 
         return $panel;
     }

@@ -7,6 +7,7 @@ use App\Filament\Widgets\ExpedientesAnualesChart;
 use App\Filament\Widgets\ExpedientesSinMovimientoWidget;
 use App\Filament\Widgets\FunnelEtapasWidget;
 use App\Filament\Widgets\KpisMensualesWidget;
+use App\Filament\Widgets\ProspectosPendientesCierreWidget;
 use App\Filament\Widgets\RankingAsesoresWidget;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -29,6 +30,7 @@ class Dashboard extends BaseDashboard
     {
         return [
             AccountWidget::class,
+            ProspectosPendientesCierreWidget::class,
             CrmStatsOverview::class,
             ExpedientesAnualesChart::class,
             KpisMensualesWidget::class,
