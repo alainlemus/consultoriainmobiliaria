@@ -169,7 +169,8 @@ class DocumentosRelationManager extends RelationManager
                     ->action(function () {
                         $expediente = $this->getOwnerRecord();
                         $requeridos = DocumentoRequerido::where('tipo_tramite_id', $expediente->tipo_tramite_id)
-                            ->where('activo', true)
+                            ->orderBy('seccion')
+                            ->orderBy('orden')
                             ->get();
 
                         foreach ($requeridos as $req) {

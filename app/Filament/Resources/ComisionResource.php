@@ -16,6 +16,12 @@ use Illuminate\Support\Facades\Auth;
 
 class ComisionResource extends Resource
 {
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
+
     protected static ?string $model = Comision::class;
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
     protected static ?string $navigationLabel = 'Comisiones';
@@ -150,10 +156,23 @@ class ComisionResource extends Resource
 
                     Forms\Components\DatePicker::make('fecha_aprobacion')
                         ->label('Fecha Aprobación')
+                        ->requiredIf('estado', 'aprobada')
+                        ->requiredIf('estado', 'pagada')
+                        ->beforeOrEqual('today')
+                        ->validationMessages([
+                            'required_if' => 'La fecha de aprobación es obligatoria cuando la comisión está aprobada o pagada.',
+                            'before_or_equal' => 'La fecha de aprobación no puede ser futura.',
+                        ])
                         ->hint('Se rellena al aprobar la comisión'),
 
                     Forms\Components\DatePicker::make('fecha_pago')
                         ->label('Fecha Pago')
+                        ->requiredIf('estado', 'pagada')
+                        ->beforeOrEqual('today')
+                        ->validationMessages([
+                            'required_if' => 'La fecha de pago es obligatoria cuando el estado es "Pagada".',
+                            'before_or_equal' => 'La fecha de pago no puede ser futura.',
+                        ])
                         ->hint('Fecha real en que se realizó el pago al asesor'),
 
                     Forms\Components\Select::make('aprobado_por')

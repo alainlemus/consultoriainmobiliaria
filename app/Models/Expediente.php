@@ -16,7 +16,7 @@ class Expediente extends Model
         'tipo_tramite_id', 'etapa_tramite_id', 'asesor_id', 'contacto_id', 'revisor_id',
         'estado',
         // Acreditado
-        'acreditado_nombre', 'acreditado_curp', 'acreditado_rfc', 'acreditado_fecha_nacimiento',
+        'acreditado_nombre', 'acreditado_curp', 'acreditado_rfc', 'obligado_solidario_nombre', 'acreditado_fecha_nacimiento',
         'acreditado_telefono', 'acreditado_email', 'acreditado_domicilio', 'acreditado_colonia',
         'acreditado_municipio', 'acreditado_estado', 'acreditado_cp', 'acreditado_estado_civil',
         'acreditado_antiguedad_laboral', 'acreditado_numero_credito',

@@ -12,6 +12,12 @@ use Filament\Tables\Table;
 
 class CoberturaResource extends Resource
 {
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
+
     protected static ?string $model = Cobertura::class;
     protected static ?string $navigationIcon  = 'heroicon-o-map-pin';
     protected static ?string $navigationLabel = 'Cobertura';

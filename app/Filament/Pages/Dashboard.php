@@ -15,6 +15,11 @@ use Filament\Widgets\AccountWidget;
 
 class Dashboard extends BaseDashboard
 {
+    public static function canAccess(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
     protected static ?string $navigationIcon  = 'heroicon-o-chart-bar';
     protected static ?string $navigationLabel = 'KPIs';
     protected static ?string $title           = 'KPIs';

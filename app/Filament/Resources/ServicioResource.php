@@ -12,6 +12,12 @@ use Filament\Tables\Table;
 
 class ServicioResource extends Resource
 {
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
+
     protected static ?string $model = Servicio::class;
     protected static ?string $navigationIcon  = 'heroicon-o-briefcase';
     protected static ?string $navigationLabel = 'Servicios';

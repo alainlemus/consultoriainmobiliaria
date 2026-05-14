@@ -13,6 +13,12 @@ use Filament\Tables\Table;
 
 class EtapaTramiteResource extends Resource
 {
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
+
     protected static ?string $model = EtapaTramite::class;
     protected static ?string $navigationIcon = 'heroicon-o-queue-list';
     protected static ?string $navigationLabel = 'Etapas del Pipeline';
@@ -62,6 +68,8 @@ class EtapaTramiteResource extends Resource
                 ->label('Orden')
                 ->numeric()
                 ->default(0)
+                ->minValue(0)
+                ->validationMessages(['min' => 'El orden no puede ser negativo.'])
                 ->hint('Número de secuencia — 1 es la primera etapa'),
             Forms\Components\Toggle::make('es_final')
                 ->label('Es etapa de cierre')

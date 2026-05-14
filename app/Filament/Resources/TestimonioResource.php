@@ -12,6 +12,12 @@ use Filament\Tables\Table;
 
 class TestimonioResource extends Resource
 {
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
+
     protected static ?string $model = Testimonio::class;
     protected static ?string $navigationIcon = 'heroicon-o-star';
     protected static ?string $navigationLabel = 'Testimonios';

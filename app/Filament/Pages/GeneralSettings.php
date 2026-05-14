@@ -12,6 +12,11 @@ use Illuminate\Support\Facades\Cache;
 
 class GeneralSettings extends Page
 {
+    public static function canAccess(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
     protected static ?string $navigationIcon  = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'General';
     protected static ?string $navigationGroup = 'Configuración del sitio';

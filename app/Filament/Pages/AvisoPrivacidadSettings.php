@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Cache;
 
 class AvisoPrivacidadSettings extends Page
 {
+    public static function canAccess(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
     protected static ?string $navigationIcon  = 'heroicon-o-shield-check';
     protected static ?string $navigationLabel = 'Aviso de Privacidad';
     protected static ?string $navigationGroup = 'Configuración del sitio';

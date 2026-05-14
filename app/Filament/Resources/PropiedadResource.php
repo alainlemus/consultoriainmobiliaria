@@ -13,6 +13,11 @@ use Illuminate\Support\Str;
 
 class PropiedadResource extends Resource
 {
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
     protected static ?string $model = Propiedad::class;
     protected static ?string $navigationIcon  = 'heroicon-o-home-modern';
     protected static ?string $navigationLabel = 'Propiedades';

@@ -74,13 +74,6 @@ class EditExpediente extends EditRecord
                 }),
 
             // ── Contratos PDF ────────────────────────────────────────────────
-            Action::make('carta_mandato')
-                ->label('Carta Mandato')
-                ->icon('heroicon-o-document-arrow-down')
-                ->color('gray')
-                ->url(fn () => route('contratos.carta_mandato', $this->record->id))
-                ->openUrlInNewTab(),
-
             Action::make('contrato_servicios')
                 ->label('Contrato de Servicios')
                 ->icon('heroicon-o-document-arrow-down')
@@ -90,8 +83,9 @@ class EditExpediente extends EditRecord
 
             Action::make('convenio_honorarios')
                 ->label('Convenio de Honorarios')
-                ->icon('heroicon-o-document-arrow-down')
-                ->color('violet')
+                ->icon('heroicon-o-lock-closed')
+                ->color('warning')
+                ->visible(fn () => auth()->user()?->hasRole('super_admin'))
                 ->url(fn () => route('contratos.convenio_honorarios', $this->record->id))
                 ->openUrlInNewTab(),
 

@@ -8,35 +8,25 @@ use Illuminate\Http\Response;
 
 class ContratosController extends Controller
 {
-    private function getExpediente(int $id): Expediente
+    private function getExpediente(int $id, bool $soloAdmin = false): Expediente
     {
-        abort_unless(
-            auth()->user()?->hasAnyRole(['super_admin', 'asesor']),
-            403
-        );
+        $user = auth()->user();
+
+        if ($soloAdmin) {
+            abort_unless($user?->hasRole('super_admin'), 403);
+        } else {
+            abort_unless($user?->hasAnyRole(['super_admin', 'asesor']), 403);
+        }
 
         $expediente = Expediente::with(['asesor', 'tipoTramite', 'contacto'])
             ->findOrFail($id);
 
         // Asesores solo pueden ver sus propios expedientes
-        if (auth()->user()->hasRole('asesor') && $expediente->asesor_id !== auth()->id()) {
+        if ($user->hasRole('asesor') && $expediente->asesor_id !== $user->id) {
             abort(403);
         }
 
         return $expediente;
-    }
-
-    public function cartaMandato(int $expediente): Response
-    {
-        $exp = $this->getExpediente($expediente);
-
-        $pdf = Pdf::loadView('contratos.carta_mandato', ['expediente' => $exp])
-            ->setPaper('letter', 'portrait')
-            ->setOption('defaultFont', 'DejaVu Sans');
-
-        $filename = "carta-mandato-{$exp->folio}.pdf";
-
-        return $pdf->download($filename);
     }
 
     public function prestacionServicios(int $expediente): Response
@@ -54,7 +44,8 @@ class ContratosController extends Controller
 
     public function convenioHonorarios(int $expediente): Response
     {
-        $exp = $this->getExpediente($expediente);
+        // Restringido exclusivamente a super_admin
+        $exp = $this->getExpediente($expediente, soloAdmin: true);
 
         $pdf = Pdf::loadView('contratos.convenio_honorarios', ['expediente' => $exp])
             ->setPaper('letter', 'portrait')

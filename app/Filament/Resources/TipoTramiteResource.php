@@ -13,6 +13,12 @@ use Illuminate\Support\Str;
 
 class TipoTramiteResource extends Resource
 {
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
+
     protected static ?string $model = TipoTramite::class;
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Tipos de Trámite';
@@ -31,6 +37,8 @@ class TipoTramiteResource extends Resource
                     ->label('Nombre')
                     ->required()
                     ->maxLength(255)
+                    ->unique(ignoreRecord: true)
+                    ->validationMessages(['unique' => 'Ya existe un tipo de trámite con ese nombre.'])
                     ->live(onBlur: true)
                     ->afterStateUpdated(fn ($state, Forms\Set $set) =>
                         $set('slug', Str::slug($state))

@@ -12,6 +12,12 @@ use Filament\Tables\Table;
 
 class ProcesoResource extends Resource
 {
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
+
     protected static ?string $model = Proceso::class;
     protected static ?string $navigationIcon  = 'heroicon-o-arrow-path';
     protected static ?string $navigationLabel = 'Proceso';

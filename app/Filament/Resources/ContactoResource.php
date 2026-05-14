@@ -16,6 +16,12 @@ use Illuminate\Support\Facades\Auth;
 
 class ContactoResource extends Resource
 {
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
+
     protected static ?string $model = Contacto::class;
     protected static ?string $navigationIcon = 'heroicon-o-envelope';
     protected static ?string $navigationLabel = 'Prospectos del Sitio Web';
@@ -85,13 +91,23 @@ class ContactoResource extends Resource
                 ->description('Información básica del prospecto. Los prospectos del sitio web llegan aquí automáticamente. También puedes agregar prospectos de forma manual.')
                 ->schema([
                 Forms\Components\TextInput::make('nombre')
-                    ->label('Nombre')->required()
+                    ->label('Nombre')
+                    ->required()
+                    ->maxLength(255)
                     ->hint('Nombre completo tal como lo proporcionó'),
                 Forms\Components\TextInput::make('telefono')
-                    ->label('Teléfono')->required()
+                    ->label('Teléfono')
+                    ->required()
+                    ->tel()
+                    ->regex('/^\d{10}$/')
+                    ->maxLength(10)
+                    ->validationMessages(['regex' => 'El teléfono debe tener exactamente 10 dígitos numéricos.'])
                     ->hint('10 dígitos — principal medio de contacto'),
                 Forms\Components\TextInput::make('email')
-                    ->label('Correo')->email(),
+                    ->label('Correo')
+                    ->email()
+                    ->maxLength(150)
+                    ->validationMessages(['email' => 'Ingresa un correo electrónico válido.']),
                 Forms\Components\Select::make('servicio')
                     ->label('Servicio de interés')
                     ->options([
@@ -152,6 +168,8 @@ class ContactoResource extends Resource
                     ->hint('Asesor que dará seguimiento a este prospecto'),
                 Forms\Components\DatePicker::make('fecha_primer_contacto')
                     ->label('Fecha primer contacto')
+                    ->beforeOrEqual('today')
+                    ->validationMessages(['before_or_equal' => 'La fecha de primer contacto no puede ser futura.'])
                     ->hint('Cuándo se estableció contacto por primera vez'),
                 Forms\Components\Textarea::make('notas')
                     ->label('Notas internas')->rows(3)->columnSpanFull()
@@ -164,19 +182,32 @@ class ContactoResource extends Resource
                     Forms\Components\TextInput::make('curp')
                         ->label('CURP')
                         ->maxLength(18)
+                        ->minLength(18)
+                        ->regex('/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i')
+                        ->validationMessages(['regex' => 'La CURP no tiene el formato correcto (18 caracteres, ej: GOML800101HDFRZS09).'])
                         ->live(onBlur: true)
                         ->extraAttributes(['style' => 'text-transform:uppercase'])
                         ->hint('Necesaria para consultar crédito en simulador'),
                     Forms\Components\DatePicker::make('fecha_nacimiento')
-                        ->label('Fecha de nacimiento'),
+                        ->label('Fecha de nacimiento')
+                        ->before('today')
+                        ->validationMessages(['before' => 'La fecha de nacimiento debe ser anterior a hoy.']),
                     Forms\Components\TextInput::make('antiguedad_laboral')
                         ->label('Antigüedad laboral (años)')
                         ->numeric()
+                        ->minValue(0)
+                        ->maxValue(50)
+                        ->validationMessages([
+                            'min' => 'La antigüedad no puede ser negativa.',
+                            'max' => 'La antigüedad no puede superar 50 años.',
+                        ])
                         ->hint('Años completos cotizados al IMSS o ISSSTE'),
                     Forms\Components\TextInput::make('salario_mensual')
                         ->label('Salario mensual')
                         ->numeric()
                         ->prefix('$')
+                        ->minValue(0)
+                        ->validationMessages(['min' => 'El salario no puede ser negativo.'])
                         ->hint('Salario integrado mensual bruto'),
                     Forms\Components\Select::make('tipo_credito_interes')
                         ->label('Tipo de crédito')
@@ -190,11 +221,15 @@ class ContactoResource extends Resource
                         ->label('Monto de crédito estimado')
                         ->numeric()
                         ->prefix('$')
+                        ->minValue(0)
+                        ->validationMessages(['min' => 'El monto estimado no puede ser negativo.'])
                         ->hint('Resultado del simulador oficial'),
                     Forms\Components\TextInput::make('subcuenta_vivienda')
                         ->label('Subcuenta de vivienda')
                         ->numeric()
                         ->prefix('$')
+                        ->minValue(0)
+                        ->validationMessages(['min' => 'La subcuenta no puede ser negativa.'])
                         ->hint('Saldo acumulado — obtenido del portal INFONAVIT/FOVISSSTE'),
 
                     // ── Botón acceso rápido al simulador ──────────────────

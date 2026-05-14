@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'ConsulTips — Blog Inmobiliario')
+@section('title', 'Blog — Blog Inmobiliario')
 
 @section('content')
 <section class="bg-dark-900 min-h-screen" style="padding-top: 100px; padding-bottom: 80px;">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <div class="text-center mb-14">
-            <p class="section-subtitle text-gold-400 mb-3">ConsulTips</p>
+            <p class="section-subtitle text-gold-400 mb-3">Blog</p>
             <h1 class="section-title text-white mb-4">Blog <span class="text-gold-400">Inmobiliario</span></h1>
             <div class="gold-divider"></div>
             <p class="text-cream-300 max-w-xl mx-auto mt-4 text-sm">
@@ -89,7 +89,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l6 6v10a2 2 0 01-2 2z"/>
                 </svg>
                 <p class="text-lg font-serif text-white mb-2">Próximamente</p>
-                <p class="text-sm mb-6">Publicaremos nuestros primeros artículos de ConsulTips muy pronto.</p>
+                <p class="text-sm mb-6">Publicaremos nuestros primeros artículos de Blog muy pronto.</p>
                 <a href="{{ route('home') }}" class="btn-dark">← Volver al inicio</a>
             </div>
         @endif

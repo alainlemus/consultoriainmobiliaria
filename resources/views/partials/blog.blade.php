@@ -1,9 +1,9 @@
-{{-- ConsulTips / Blog preview --}}
+{{-- Blog / Blog preview --}}
 <section id="consultips" class="py-20 bg-cream-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <div class="text-center mb-14">
-            <p class="section-subtitle text-gold-400 mb-3">ConsulTips</p>
+            <p class="section-subtitle text-gold-400 mb-3">Blog</p>
             <h2 class="section-title mb-4">Consejos y Noticias <span class="text-gold-400">Inmobiliarias</span></h2>
             <div class="gold-divider"></div>
             <p class="text-dark-400 max-w-xl mx-auto mt-4 text-sm">

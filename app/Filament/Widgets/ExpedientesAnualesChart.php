@@ -5,191 +5,146 @@ namespace App\Filament\Widgets;
 use App\Models\Comision;
 use App\Models\Expediente;
 use App\Models\GastoFinanciado;
-use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Carbon;
+use Filament\Widgets\Widget;
 
-class ExpedientesAnualesChart extends ChartWidget
+class ExpedientesAnualesChart extends Widget
 {
-    protected static ?string $heading = 'Flujo Anual — Expedientes, Ingresos y Egresos';
+    public static function canView(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
     protected static ?int $sort = 2;
     protected int | string | array $columnSpan = 'full';
+    protected static bool $isLazy = false;
 
-    public ?string $filter = null;
+    protected static string $view = 'filament.widgets.expedientes-anuales-chart';
 
-    public function mount(): void
+    protected function getViewData(): array
     {
-        $this->filter = (string) now()->year;
-        parent::mount();
-    }
-
-    protected function getFilters(): ?array
-    {
-        $years = [];
-        for ($y = now()->year; $y >= now()->year - 3; $y--) {
-            $years[(string) $y] = (string) $y;
-        }
-        return $years;
-    }
-
-    protected function getData(): array
-    {
-        // Siempre usar el primer key del filtro (año actual) si no hay selección
-        $filters = $this->getFilters();
-        $year    = (int) ($this->filter && isset($filters[$this->filter])
-            ? $this->filter
-            : array_key_first($filters));
+        $year = now()->year;
 
         $meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
-        $expedientesPorMes   = array_fill(0, 12, 0);
-        $cerradosPorMes      = array_fill(0, 12, 0);
-        $ingresosPorMes      = array_fill(0, 12, 0.0);
-        $egresoAsesoresMes   = array_fill(0, 12, 0.0);
-        $egresoGastosMes     = array_fill(0, 12, 0.0);
-        $flujoNetoPorMes     = array_fill(0, 12, 0.0);
+        $expedientesPorMes = array_fill(0, 12, 0);
+        $cerradosPorMes    = array_fill(0, 12, 0);
+        $ingresosPorMes    = array_fill(0, 12, 0);
+        $comisionesMes     = array_fill(0, 12, 0);
+        $gastosMes         = array_fill(0, 12, 0);
+        $flujoNetoMes      = array_fill(0, 12, 0);
 
-        // Expedientes abiertos por mes
         Expediente::whereYear('fecha_apertura', $year)
             ->selectRaw('MONTH(fecha_apertura) as mes, COUNT(*) as total')
-            ->groupBy('mes')
-            ->get()
-            ->each(fn ($r) => $expedientesPorMes[$r->mes - 1] = (int) $r->total);
+            ->groupBy('mes')->get()
+            ->each(function ($r) use (&$expedientesPorMes) {
+                $expedientesPorMes[$r->mes - 1] = (int) $r->total;
+            });
 
-        // Expedientes cerrados por mes
         Expediente::where('estado', 'cerrado')
+            ->whereNotNull('fecha_cierre')
             ->whereYear('fecha_cierre', $year)
             ->selectRaw('MONTH(fecha_cierre) as mes, COUNT(*) as total')
-            ->groupBy('mes')
-            ->get()
-            ->each(fn ($r) => $cerradosPorMes[$r->mes - 1] = (int) $r->total);
+            ->groupBy('mes')->get()
+            ->each(function ($r) use (&$cerradosPorMes) {
+                $cerradosPorMes[$r->mes - 1] = (int) $r->total;
+            });
 
-        // Ingresos cobrados por mes (honorarios_pagados = true)
         Expediente::where('estado', 'cerrado')
             ->where('honorarios_pagados', true)
+            ->whereNotNull('fecha_cierre')
             ->whereYear('fecha_cierre', $year)
-            ->selectRaw('MONTH(fecha_cierre) as mes, SUM(honorarios_monto) as total')
-            ->groupBy('mes')
-            ->get()
-            ->each(fn ($r) => $ingresosPorMes[$r->mes - 1] = (float) $r->total);
+            ->selectRaw('MONTH(fecha_cierre) as mes, ROUND(SUM(honorarios_monto)/1000, 1) as total')
+            ->groupBy('mes')->get()
+            ->each(function ($r) use (&$ingresosPorMes) {
+                $ingresosPorMes[$r->mes - 1] = (float) $r->total;
+            });
 
-        // Egresos: comisiones pagadas a asesores por mes
         Comision::where('estado', 'pagada')
-            ->whereYear('fecha_pago', $year)
-            ->selectRaw('MONTH(fecha_pago) as mes, SUM(monto_comision) as total')
-            ->groupBy('mes')
-            ->get()
-            ->each(fn ($r) => $egresoAsesoresMes[$r->mes - 1] = (float) $r->total);
-
-        // Egresos: gastos financiados pagados por mes
-        GastoFinanciado::whereYear('fecha_pago', $year)
             ->whereNotNull('fecha_pago')
-            ->selectRaw('MONTH(fecha_pago) as mes, SUM(monto) as total')
-            ->groupBy('mes')
-            ->get()
-            ->each(fn ($r) => $egresoGastosMes[$r->mes - 1] = (float) $r->total);
+            ->whereYear('fecha_pago', $year)
+            ->selectRaw('MONTH(fecha_pago) as mes, ROUND(SUM(monto_comision)/1000, 1) as total')
+            ->groupBy('mes')->get()
+            ->each(function ($r) use (&$comisionesMes) {
+                $comisionesMes[$r->mes - 1] = (float) $r->total;
+            });
 
-        // Flujo neto: ingresos - (comisiones + gastos) por mes
+        GastoFinanciado::whereNotNull('fecha_pago')
+            ->whereYear('fecha_pago', $year)
+            ->selectRaw('MONTH(fecha_pago) as mes, ROUND(SUM(monto)/1000, 1) as total')
+            ->groupBy('mes')->get()
+            ->each(function ($r) use (&$gastosMes) {
+                $gastosMes[$r->mes - 1] = (float) $r->total;
+            });
+
         for ($i = 0; $i < 12; $i++) {
-            $flujoNetoPorMes[$i] = round($ingresosPorMes[$i] - $egresoAsesoresMes[$i] - $egresoGastosMes[$i], 2);
+            $flujoNetoMes[$i] = round($ingresosPorMes[$i] - $comisionesMes[$i] - $gastosMes[$i], 1);
         }
 
-        return [
-            'datasets' => [
-                [
-                    'label'           => 'Expedientes Abiertos',
-                    'data'            => $expedientesPorMes,
-                    'borderColor'     => '#6366f1',
-                    'backgroundColor' => 'rgba(99,102,241,0.1)',
-                    'fill'            => true,
-                    'tension'         => 0.4,
-                    'yAxisID'         => 'y',
-                ],
-                [
-                    'label'           => 'Expedientes Cerrados',
-                    'data'            => $cerradosPorMes,
-                    'borderColor'     => '#22c55e',
-                    'backgroundColor' => 'rgba(34,197,94,0.1)',
-                    'fill'            => true,
-                    'tension'         => 0.4,
-                    'yAxisID'         => 'y',
-                ],
-                [
-                    'label'           => 'Ingresos Cobrados (MXN)',
-                    'data'            => $ingresosPorMes,
-                    'borderColor'     => '#10b981',
-                    'backgroundColor' => 'rgba(16,185,129,0.08)',
-                    'fill'            => false,
-                    'tension'         => 0.4,
-                    'yAxisID'         => 'y1',
-                ],
-                [
-                    'label'           => 'Egresos Asesores (MXN)',
-                    'data'            => $egresoAsesoresMes,
-                    'borderColor'     => '#ef4444',
-                    'backgroundColor' => 'rgba(239,68,68,0.08)',
-                    'fill'            => false,
-                    'tension'         => 0.4,
-                    'yAxisID'         => 'y1',
-                ],
-                [
-                    'label'           => 'Gastos Financiados (MXN)',
-                    'data'            => $egresoGastosMes,
-                    'borderColor'     => '#f97316',
-                    'backgroundColor' => 'rgba(249,115,22,0.08)',
-                    'fill'            => false,
-                    'tension'         => 0.4,
-                    'yAxisID'         => 'y1',
-                ],
-                [
-                    'label'           => 'Flujo Neto (MXN)',
-                    'data'            => $flujoNetoPorMes,
-                    'borderColor'     => '#8b5cf6',
-                    'backgroundColor' => 'rgba(139,92,246,0.08)',
-                    'fill'            => false,
-                    'tension'         => 0.4,
-                    'borderDash'      => [6, 3],
-                    'yAxisID'         => 'y1',
-                ],
+        $datasets = [
+            [
+                'label'           => 'Exp. Abiertos',
+                'data'            => array_values($expedientesPorMes),
+                'borderColor'     => '#6366f1',
+                'backgroundColor' => 'rgba(99,102,241,0.15)',
+                'fill'            => true,
+                'tension'         => 0.4,
+                'yAxisID'         => 'y',
             ],
-            'labels' => $meses,
-        ];
-    }
-
-    protected function getOptions(): array
-    {
-        return [
-            'responsive' => true,
-            'interaction' => [
-                'mode'      => 'index',
-                'intersect' => false,
+            [
+                'label'           => 'Exp. Cerrados',
+                'data'            => array_values($cerradosPorMes),
+                'borderColor'     => '#22c55e',
+                'backgroundColor' => 'rgba(34,197,94,0.15)',
+                'fill'            => true,
+                'tension'         => 0.4,
+                'yAxisID'         => 'y',
             ],
-            'scales' => [
-                'y' => [
-                    'type'     => 'linear',
-                    'display'  => true,
-                    'position' => 'left',
-                    'title'    => ['display' => true, 'text' => 'Expedientes'],
-                    'ticks'    => ['stepSize' => 1],
-                ],
-                'y1' => [
-                    'type'     => 'linear',
-                    'display'  => true,
-                    'position' => 'right',
-                    'title'    => ['display' => true, 'text' => 'Monto (MXN)'],
-                    'grid'     => ['drawOnChartArea' => false],
-                ],
+            [
+                'label'           => 'Ingresos (miles $)',
+                'data'            => array_values($ingresosPorMes),
+                'borderColor'     => '#10b981',
+                'backgroundColor' => 'rgba(16,185,129,0.1)',
+                'fill'            => false,
+                'tension'         => 0.4,
+                'borderWidth'     => 2,
+                'yAxisID'         => 'y1',
             ],
-            'plugins' => [
-                'legend' => ['position' => 'top'],
-                'tooltip' => [
-                    'callbacks' => [],
-                ],
+            [
+                'label'           => 'Comisiones (miles $)',
+                'data'            => array_values($comisionesMes),
+                'borderColor'     => '#ef4444',
+                'backgroundColor' => 'rgba(239,68,68,0.1)',
+                'fill'            => false,
+                'tension'         => 0.4,
+                'borderWidth'     => 2,
+                'yAxisID'         => 'y1',
+            ],
+            [
+                'label'           => 'Gastos (miles $)',
+                'data'            => array_values($gastosMes),
+                'borderColor'     => '#f97316',
+                'backgroundColor' => 'rgba(249,115,22,0.1)',
+                'fill'            => false,
+                'tension'         => 0.4,
+                'borderWidth'     => 2,
+                'yAxisID'         => 'y1',
+            ],
+            [
+                'label'           => 'Flujo Neto (miles $)',
+                'data'            => array_values($flujoNetoMes),
+                'borderColor'     => '#8b5cf6',
+                'backgroundColor' => 'rgba(139,92,246,0.1)',
+                'fill'            => false,
+                'tension'         => 0.4,
+                'borderWidth'     => 2,
+                'yAxisID'         => 'y1',
             ],
         ];
-    }
 
-    protected function getType(): string
-    {
-        return 'line';
+        return [
+            'year'     => $year,
+            'labels'   => $meses,
+            'datasets' => $datasets,
+        ];
     }
 }

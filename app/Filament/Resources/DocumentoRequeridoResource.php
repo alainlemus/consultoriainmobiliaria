@@ -13,6 +13,12 @@ use Filament\Tables\Table;
 
 class DocumentoRequeridoResource extends Resource
 {
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
+
     protected static ?string $model = DocumentoRequerido::class;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
     protected static ?string $navigationLabel = 'Documentos Requeridos';
@@ -58,6 +64,8 @@ class DocumentoRequeridoResource extends Resource
                 ->label('Orden')
                 ->numeric()
                 ->default(0)
+                ->minValue(0)
+                ->validationMessages(['min' => 'El orden no puede ser negativo.'])
                 ->hint('Posición en el checklist del expediente'),
             Forms\Components\Toggle::make('obligatorio')
                 ->label('Obligatorio')

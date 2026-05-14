@@ -18,6 +18,12 @@ use Spatie\Permission\Models\Role;
 
 class UserResource extends Resource
 {
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
+
     protected static ?string $model = User::class;
     protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationLabel = 'Usuarios';
@@ -110,6 +116,8 @@ class UserResource extends Resource
                     ->preload()
                     ->searchable()
                     ->multiple()
+                    ->required()
+                    ->validationMessages(['required' => 'Debes asignar al menos un rol al usuario.'])
                     ->helperText('super_admin: acceso total | asesor: acceso restringido a sus registros'),
 
                 Forms\Components\Toggle::make('activo')

@@ -33,9 +33,8 @@ Route::middleware(['web', 'auth'])->prefix('admin/reportes/kpis')->name('kpis.re
     Route::get('/pdf',   [KpisReporteController::class, 'pdf'])->name('pdf');
 });
 
-// Contratos PDF por expediente (super_admin y asesor responsable)
+// Contratos PDF por expediente
 Route::middleware(['web', 'auth'])->prefix('admin/contratos')->name('contratos.')->group(function () {
-    Route::get('/{expediente}/carta-mandato',       [ContratosController::class, 'cartaMandato'])->name('carta_mandato');
     Route::get('/{expediente}/prestacion-servicios',[ContratosController::class, 'prestacionServicios'])->name('prestacion_servicios');
     Route::get('/{expediente}/convenio-honorarios', [ContratosController::class, 'convenioHonorarios'])->name('convenio_honorarios');
 });

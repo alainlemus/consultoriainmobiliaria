@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Cache;
 
 class SeoSettings extends Page
 {
+    public static function canAccess(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
     protected static ?string $navigationIcon  = 'heroicon-o-magnifying-glass';
     protected static ?string $navigationLabel = 'SEO';
     protected static ?string $navigationGroup = 'Configuración del sitio';
