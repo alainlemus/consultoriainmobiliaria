@@ -5,6 +5,11 @@
     <div class="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-44">
         <div class="max-w-3xl">
             <p class="section-subtitle text-gold-400 mb-4">Bienes Raíces — Consultoría Especializada</p>
+            {{-- Badge rojo ladrillo — resalta INFONAVIT/FOVISSSTE como servicio principal --}}
+            <div class="inline-flex items-center gap-2 bg-crimson-600 text-white text-xs uppercase tracking-widest px-3 py-1 mb-5 font-semibold">
+                <span class="w-1.5 h-1.5 rounded-full bg-gold-400 inline-block"></span>
+                Especialistas en Crédito Hipotecario
+            </div>
             <h1 class="font-serif text-5xl sm:text-6xl lg:text-7xl font-bold text-white leading-tight mb-6">
                 Tu <span class="text-gold-400">Patrimonio,</span><br>
                 Nuestra <span class="text-gold-400">Prioridad</span>

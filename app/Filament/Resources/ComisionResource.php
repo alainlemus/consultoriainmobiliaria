@@ -177,9 +177,28 @@ class ComisionResource extends Resource
 
                     Forms\Components\Select::make('aprobado_por')
                         ->label('Aprobado Por')
-                        ->options(User::all()->pluck('name', 'id'))
+                        ->options(User::role('super_admin')->pluck('name', 'id'))
                         ->searchable()
                         ->hint('Administrador que autorizó el pago'),
+                ]),
+
+            Forms\Components\Section::make('Cuenta bancaria del asesor')
+                ->description('Datos de la cuenta a la que se realizará la transferencia. Se obtienen del perfil del asesor.')
+                ->columns(2)
+                ->schema([
+                    Forms\Components\Placeholder::make('asesor_banco')
+                        ->label('Banco')
+                        ->content(fn ($record) => $record?->asesor?->banco ?? '— Sin registrar —'),
+
+                    Forms\Components\Placeholder::make('asesor_clabe')
+                        ->label('CLABE interbancaria')
+                        ->content(fn ($record) => $record?->asesor?->clabe
+                            ? new \Illuminate\Support\HtmlString(
+                                '<span style="font-family:monospace;font-size:15px;font-weight:600;letter-spacing:1px;">'
+                                . $record->asesor->clabe . '</span>'
+                              )
+                            : '— Sin registrar —'
+                        ),
                 ]),
 
             Forms\Components\Section::make('Notas')
@@ -206,6 +225,19 @@ class ComisionResource extends Resource
                     ->label('Asesor')
                     ->searchable()
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('asesor.banco')
+                    ->label('Banco')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('asesor.clabe')
+                    ->label('CLABE')
+                    ->placeholder('—')
+                    ->fontFamily('mono')
+                    ->copyable()
+                    ->copyMessage('CLABE copiada')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('monto_base')
                     ->label('Monto Base')

@@ -36,9 +36,11 @@
     <link rel="icon" href="{{ asset('favicon.ico') }}">
     @endif
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+    {{-- Helvetica Neue is a system font; no external import needed.
+         Acumin Variable Concept is available via Adobe Fonts (optional).
+         Fallback stack: Helvetica Neue → Arial → sans-serif. --}}
+    {{-- View Transition API --}}
+    <meta name="view-transition" content="same-origin">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
@@ -46,7 +48,7 @@
 
     @include('partials.navbar')
 
-    <main>@yield('content')</main>
+    <main style="view-transition-name: main-content;">@yield('content')</main>
 
     @include('partials.footer')
 
@@ -59,6 +61,31 @@
     </a>
 
     @stack('scripts')
+
+    {{-- View Transition API — intercept same-origin navigation --}}
+    <script>
+        if ('startViewTransition' in document) {
+            document.addEventListener('click', (e) => {
+                const a = e.target.closest('a[href]');
+                if (!a) return;
+
+                const url = new URL(a.href, location.href);
+
+                // Solo misma origin, no anclas (#), no target="_blank", no admin
+                if (
+                    url.origin !== location.origin ||
+                    url.pathname === location.pathname && url.hash ||
+                    a.target === '_blank' ||
+                    url.pathname.startsWith('/admin')
+                ) return;
+
+                e.preventDefault();
+                document.startViewTransition(() => {
+                    location.href = a.href;
+                });
+            });
+        }
+    </script>
 
     {{-- Banner de cookies --}}
     @include('partials.cookies-banner')

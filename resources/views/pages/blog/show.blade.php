@@ -29,7 +29,7 @@
 
         <div class="flex items-center gap-3">
             <div class="w-8 h-0.5 bg-gold-400"></div>
-            <p class="text-cream-400 text-xs uppercase tracking-wider">
+            <p class="text-cream-300 text-xs uppercase tracking-wider">
                 {{ $post->published_at?->isoFormat('D [de] MMMM [de] YYYY') ?? $post->created_at->isoFormat('D [de] MMMM [de] YYYY') }}
             </p>
         </div>
@@ -76,7 +76,7 @@
                             <p class="text-sm font-bold text-cream-200 group-hover:text-gold-400 transition-colors line-clamp-2 mt-1">
                                 {{ $rel->titulo }}
                             </p>
-                            <p class="text-xs text-cream-400 mt-2">
+                            <p class="text-xs text-cream-300 mt-2">
                                 {{ $rel->published_at?->format('d M Y') }}
                             </p>
                         </a>

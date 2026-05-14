@@ -2,38 +2,44 @@
 
 [x-cloak] { display: none !important; }
 @theme {
-    --color-gold-50: #fdf9ee;
-    --color-gold-100: #f7edc8;
-    --color-gold-200: #edd98a;
-    --color-gold-300: #e2c14d;
-    --color-gold-400: #d4af37;
-    --color-gold-500: #c9a84c;
-    --color-gold-600: #b8932a;
-    --color-gold-700: #96760f;
-    --color-gold-800: #7a5f0e;
-    --color-gold-900: #644e10;
+    /* Brand blacks / grays — from manual */
+    --color-dark-900: #222121;   /* PANTONE Neutral Black C */
+    --color-dark-800: #353030;   /* PANTONE 4287 C (dark) */
+    --color-dark-700: #4b4441;   /* PANTONE 4287 C (mid) */
+    --color-dark-600: #5a5555;
+    --color-dark-400: #888080;
 
-    --color-crimson-500: #9b2335;
-    --color-crimson-600: #8b1a1a;
-    --color-crimson-700: #7b1416;
+    /* Brand gold — PANTONE 2007 C */
+    --color-gold-50:  #fdf8ec;
+    --color-gold-100: #f7e9c0;
+    --color-gold-200: #eed48a;
+    --color-gold-300: #debb5a;
+    --color-gold-400: #cd9d36;   /* PANTONE 2007 C — primary gold */
+    --color-gold-500: #b98a28;
+    --color-gold-600: #9f7320;
+    --color-gold-700: #7e5a18;
+    --color-gold-800: #5e4210;
+    --color-gold-900: #3e2c0a;
 
-    --color-dark-900: #0d0d0d;
-    --color-dark-800: #1a1a1a;
-    --color-dark-700: #2a2a2a;
-    --color-dark-600: #3a3a3a;
-    --color-dark-400: #666666;
+    /* Brand reds — PANTONE 2350 C & 1815 C */
+    --color-crimson-500: #9c1006;   /* PANTONE 2350 C */
+    --color-crimson-600: #810f00;   /* PANTONE 1815 C */
+    --color-crimson-700: #650c00;
 
-    --color-cream-50: #faf8f3;
+    /* Neutral backgrounds */
+    --color-cream-50:  #faf8f3;
     --color-cream-100: #f5f0e8;
     --color-cream-200: #ede8db;
     --color-cream-300: #e0d8c8;
 
-    --font-serif: "Playfair Display", "Georgia", serif;
-    --font-sans: "Inter", "Helvetica Neue", sans-serif;
-    --font-script: "Dancing Script", cursive;
+    /* Typography — per manual */
+    --font-sans:   "Helvetica Neue", "Arial", sans-serif;   /* primary — Helvetica Neue */
+    --font-serif:  "Acumin Variable Concept", "Helvetica Neue", sans-serif; /* secondary */
+    --font-script: "Acumin Variable Concept", sans-serif;
 }
 
 @layer base {
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body { font-family: var(--font-sans); background-color: var(--color-cream-50); color: var(--color-dark-800); }
     h1, h2, h3, h4 { font-family: var(--font-serif); }
@@ -45,6 +51,9 @@
     }
     .btn-dark {
         @apply inline-flex items-center gap-2 bg-dark-800 hover:bg-dark-700 text-gold-400 border border-gold-500 font-semibold px-6 py-3 rounded-sm transition-all duration-300 uppercase tracking-widest text-sm cursor-pointer;
+    }
+    .btn-crimson {
+        @apply inline-flex items-center gap-2 bg-crimson-600 hover:bg-crimson-500 text-white font-semibold px-6 py-3 rounded-sm transition-all duration-300 uppercase tracking-widest text-sm cursor-pointer;
     }
     .section-title {
         @apply font-serif text-3xl md:text-4xl font-bold text-dark-800;
@@ -101,4 +110,55 @@
     .richtext img { @apply max-w-full rounded-sm my-4; }
     .richtext pre { @apply bg-dark-800 text-cream-100 rounded-sm p-4 overflow-x-auto text-xs my-4; }
     .richtext code { @apply bg-cream-200 text-crimson-700 px-1 rounded text-xs; }
+}
+
+/* =====================================================
+   View Transition API — animaciones de navegación
+   ===================================================== */
+
+/* Página saliente: se desliza hacia arriba y desvanece */
+@keyframes vt-slide-out {
+    from { opacity: 1;   transform: translateY(0);     }
+    to   { opacity: 0;   transform: translateY(-18px);  }
+}
+
+/* Página entrante: sube desde abajo y aparece */
+@keyframes vt-slide-in {
+    from { opacity: 0;   transform: translateY(20px);  }
+    to   { opacity: 1;   transform: translateY(0);     }
+}
+
+/* Navbar: fade simple, sin desplazamiento */
+@keyframes vt-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes vt-fade-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+/* Aplica las animaciones a cada zona nombrada */
+::view-transition-old(main-content) {
+    animation: vt-slide-out 280ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(main-content) {
+    animation: vt-slide-in  320ms cubic-bezier(0, 0, 0.2, 1) both;
+}
+
+::view-transition-old(navbar),
+::view-transition-old(footer) {
+    animation: vt-fade-out 200ms ease both;
+}
+::view-transition-new(navbar),
+::view-transition-new(footer) {
+    animation: vt-fade-in  250ms ease both;
+}
+
+/* Respeta preferencia de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none !important;
+    }
 }

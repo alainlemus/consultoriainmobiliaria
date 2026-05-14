@@ -17,7 +17,10 @@
      }"
      x-init="window.addEventListener('scroll', () => { scrolled = window.scrollY > 50 }); initObserver()"
      :class="scrolled ? 'bg-dark-900/95 backdrop-blur-md shadow-lg' : 'bg-transparent'"
-     class="fixed top-0 left-0 right-0 z-40 transition-all duration-500">
+     class="fixed top-0 left-0 right-0 z-40 transition-all duration-500" style="view-transition-name: navbar;">
+
+    {{-- Barra rojo ladrillo superior — evoca construcción, igual que en el logo del manual --}}
+    <div class="h-1 w-full bg-crimson-500"></div>
 
     @php
         $isHome        = request()->routeIs('home');

@@ -106,6 +106,24 @@ class UserResource extends Resource
                     ->dehydrated(false),
             ])->columns(2),
 
+            Forms\Components\Section::make('Datos bancarios para comisiones')
+                ->description('CLABE y banco al que se transferirán las comisiones del asesor. Solo visible para el administrador.')
+                ->schema([
+                    Forms\Components\TextInput::make('banco')
+                        ->label('Banco')
+                        ->maxLength(100)
+                        ->placeholder('Ej: BBVA, Banamex, Banorte…'),
+
+                    Forms\Components\TextInput::make('clabe')
+                        ->label('CLABE interbancaria')
+                        ->maxLength(18)
+                        ->minLength(18)
+                        ->regex('/^\d{18}$/')
+                        ->validationMessages(['regex' => 'La CLABE debe tener exactamente 18 dígitos numéricos.'])
+                        ->placeholder('18 dígitos')
+                        ->hint('18 dígitos — requerida para transferencia'),
+                ])->columns(2),
+
             Forms\Components\Section::make('Rol en el sistema')
                 ->description('Define qué puede ver y hacer este usuario. "super_admin" tiene acceso total. "asesor" solo ve sus propios expedientes, prospectos y comisiones.')
                 ->schema([
@@ -149,6 +167,18 @@ class UserResource extends Resource
                     ->color('primary')
                     ->separator(', ')
                     ->tooltip('Rol que determina los permisos del usuario en el sistema'),
+
+                Tables\Columns\TextColumn::make('banco')
+                    ->label('Banco')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('clabe')
+                    ->label('CLABE')
+                    ->placeholder('—')
+                    ->copyable()
+                    ->copyMessage('CLABE copiada')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\IconColumn::make('activo')
                     ->label('Activo')

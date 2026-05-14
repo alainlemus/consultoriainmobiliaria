@@ -1,5 +1,7 @@
-<footer class="bg-dark-900 text-cream-200">
+<footer class="bg-dark-900 text-cream-200" style="view-transition-name: footer;">
+    {{-- Franja triple: dorado / rojo ladrillo / dorado — refleja la paleta del manual --}}
     <div class="h-0.5 bg-gradient-to-r from-transparent via-gold-500 to-transparent"></div>
+    <div class="h-1 bg-crimson-600"></div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
             <div class="lg:col-span-2">
