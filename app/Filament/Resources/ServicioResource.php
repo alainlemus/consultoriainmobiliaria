@@ -96,7 +96,13 @@ class ServicioResource extends Resource
 
                 Tables\Columns\TextColumn::make('items')
                     ->label('Ítems')
-                    ->formatStateUsing(fn ($state) => is_array($state) ? count($state) . ' ítem(s)' : '-'),
+                    ->getStateUsing(function ($record) {
+                        $items = $record->items;
+                        if (is_array($items) && count($items) > 0) {
+                            return count($items) . ' ítem(s)';
+                        }
+                        return '-';
+                    }),
 
                 Tables\Columns\IconColumn::make('activo')
                     ->label('Activo')

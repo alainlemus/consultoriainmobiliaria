@@ -7,6 +7,7 @@
             <div class="gold-divider"></div>
         </div>
 
+        {{-- Tarjetas de testimonios --}}
         @if(isset($testimonios) && $testimonios->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             @foreach($testimonios as $t)
@@ -43,5 +44,130 @@
             @endforeach
         </div>
         @endif
+
+        {{-- Slider de fotos de clientes --}}
+        @if(isset($fotosClientes) && $fotosClientes->count() > 0)
+        <div class="mt-20">
+            <div class="text-center mb-10">
+                <p class="section-subtitle text-gold-400 mb-2">Familias con crédito aprobado</p>
+                <h3 class="font-serif text-2xl font-bold text-white">Nuestros <span class="text-gold-400">clientes felices</span></h3>
+                <div class="gold-divider"></div>
+            </div>
+
+            {{-- Slider con Alpine.js --}}
+            <div
+                x-data="{
+                    current: 0,
+                    total: {{ $fotosClientes->count() }},
+                    visibles: window.innerWidth >= 1024 ? 4 : (window.innerWidth >= 640 ? 2 : 1),
+                    autoplay: null,
+                    init() {
+                        this.updateVisibles();
+                        window.addEventListener('resize', () => this.updateVisibles());
+                        this.startAutoplay();
+                    },
+                    updateVisibles() {
+                        this.visibles = window.innerWidth >= 1024 ? 4 : (window.innerWidth >= 640 ? 2 : 1);
+                        if (this.current > this.maxIndex()) this.current = this.maxIndex();
+                    },
+                    maxIndex() {
+                        return Math.max(0, this.total - this.visibles);
+                    },
+                    prev() {
+                        this.current = this.current > 0 ? this.current - 1 : this.maxIndex();
+                        this.resetAutoplay();
+                    },
+                    next() {
+                        this.current = this.current < this.maxIndex() ? this.current + 1 : 0;
+                        this.resetAutoplay();
+                    },
+                    goTo(i) { this.current = i; this.resetAutoplay(); },
+                    startAutoplay() {
+                        this.autoplay = setInterval(() => this.next(), 3500);
+                    },
+                    resetAutoplay() {
+                        clearInterval(this.autoplay);
+                        this.startAutoplay();
+                    },
+                    offset() {
+                        return `translateX(calc(-${this.current} * (100% / ${this.visibles})))`;
+                    }
+                }"
+                class="relative"
+                @mouseenter="clearInterval(autoplay)"
+                @mouseleave="startAutoplay()"
+            >
+                {{-- Track --}}
+                <div class="overflow-hidden rounded-sm">
+                    <div
+                        class="flex transition-transform duration-500 ease-in-out"
+                        :style="`transform: ${offset()}`"
+                    >
+                        @foreach($fotosClientes as $foto)
+                        <div
+                            class="foto-cliente-slide flex-shrink-0 px-2"
+                            :style="`width: calc(100% / ${visibles})`"
+                        >
+                            <div class="relative group overflow-hidden rounded-sm aspect-square bg-dark-700">
+                                <img
+                                    src="{{ Storage::url($foto->foto) }}"
+                                    alt="{{ $foto->nombre ?? 'Cliente' }}"
+                                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                    loading="lazy"
+                                >
+                                {{-- Overlay con info --}}
+                                <div class="absolute inset-0 bg-gradient-to-t from-dark-900/90 via-dark-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                    @if($foto->nombre)
+                                    <p class="text-white font-semibold text-sm leading-tight">{{ $foto->nombre }}</p>
+                                    @endif
+                                    @if($foto->tipo_credito)
+                                    <span class="inline-block mt-1 text-xs bg-gold-400 text-dark-900 font-bold px-2 py-0.5 self-start">{{ $foto->tipo_credito }}</span>
+                                    @endif
+                                    @if($foto->ciudad)
+                                    <p class="text-cream-300 text-xs mt-1">{{ $foto->ciudad }}</p>
+                                    @endif
+                                </div>
+                                {{-- Badge siempre visible --}}
+                                @if($foto->tipo_credito)
+                                <div class="absolute top-2 left-2 bg-crimson-600 text-white text-xs font-bold px-2 py-0.5 opacity-90">
+                                    {{ $foto->tipo_credito }}
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Botones prev/next --}}
+                <button
+                    @click="prev()"
+                    class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 w-10 h-10 bg-dark-900 border border-gold-500/40 hover:border-gold-400 hover:bg-gold-400 text-gold-400 hover:text-dark-900 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg z-10"
+                    aria-label="Anterior"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <button
+                    @click="next()"
+                    class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 w-10 h-10 bg-dark-900 border border-gold-500/40 hover:border-gold-400 hover:bg-gold-400 text-gold-400 hover:text-dark-900 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg z-10"
+                    aria-label="Siguiente"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
+
+                {{-- Dots --}}
+                <div class="flex justify-center gap-2 mt-6" x-show="total > visibles">
+                    <template x-for="i in (maxIndex() + 1)" :key="i">
+                        <button
+                            @click="goTo(i - 1)"
+                            :class="current === i - 1 ? 'bg-gold-400 w-6' : 'bg-dark-600 hover:bg-gold-500/50 w-2'"
+                            class="h-2 rounded-full transition-all duration-300"
+                        ></button>
+                    </template>
+                </div>
+            </div>
+        </div>
+        @endif
+
     </div>
 </section>

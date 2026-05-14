@@ -9,11 +9,37 @@ use Filament\Actions;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Enums\ActionSize;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\HtmlString;
 
 class EditExpediente extends EditRecord
 {
     protected static string $resource = ExpedienteResource::class;
+
+    protected static array $estadoConfig = [
+        'en_proceso' => ['label' => 'En proceso',  'bg' => '#1d4ed8', 'text' => '#eff6ff'],
+        'aprobado'   => ['label' => 'Aprobado',    'bg' => '#15803d', 'text' => '#f0fdf4'],
+        'firmado'    => ['label' => 'Firmado',      'bg' => '#7e22ce', 'text' => '#faf5ff'],
+        'pausado'    => ['label' => 'Pausado',      'bg' => '#b45309', 'text' => '#fffbeb'],
+        'cerrado'    => ['label' => 'Cerrado',      'bg' => '#374151', 'text' => '#f9fafb'],
+    ];
+
+    public function getHeading(): string | HtmlString
+    {
+        $folio  = $this->record->folio ?? 'Expediente';
+        $estado = $this->record->estado ?? '';
+        $cfg    = static::$estadoConfig[$estado] ?? ['label' => ucfirst($estado), 'bg' => '#6b7280', 'text' => '#ffffff'];
+
+        $badge = sprintf(
+            '<span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;background:%s;color:%s;vertical-align:middle;margin-left:10px;">%s</span>',
+            $cfg['bg'],
+            $cfg['text'],
+            e($cfg['label'])
+        );
+
+        return new HtmlString($folio . $badge);
+    }
 
     protected function getHeaderActions(): array
     {
