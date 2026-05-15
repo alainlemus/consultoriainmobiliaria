@@ -34,53 +34,66 @@ class ConfiguracionSeeder extends Seeder
             'seo_autor'         => 'Consultoría Inmobiliaria',
             'seo_robots'        => 'index, follow',
 
-            // Aviso de privacidad
-            'aviso_privacidad'  => '<h2>Aviso de Privacidad</h2>
-<p><strong>Consultoría Inmobiliaria</strong>, con domicilio en Hidalgo, México, es responsable del tratamiento de los datos personales que nos proporcione.</p>
+            // ── Firmas ──────────────────────────────────────────────────────────
+            'firma_prestador'    => 'LIC. JOSE ANTONIO SOLIS SANTUARIO',
+            'firma_juridico'      => 'LIC. LUZ ANGÉLICA PÉREZ MEJÍA',
 
-<h3>¿Qué datos personales recopilamos?</h3>
-<p>Para llevar a cabo las finalidades descritas en el presente aviso de privacidad, utilizamos los siguientes datos personales:</p>
-<ul>
-  <li>Nombre completo</li>
-  <li>Correo electrónico</li>
-  <li>Número de teléfono o WhatsApp</li>
-  <li>Información relacionada con su interés en adquirir o gestionar un bien inmueble</li>
-</ul>
+            // ── Contrato de Prestación de Servicios ──────────────────────────
+            'contrato_intro' => 'EN LA CIUDAD DE {ciudad} A LOS {fecha} DÍAS DEL MES DE MAYO DEL AÑO 2026, CELEBRAN EL PRESENTE CONTRATO DE PRESTACIÓN DE SERVICIOS PROFESIONALES Y FINANCIAMIENTO DE GASTOS POR UNA PARTE EL LIC. JOSE ANTONIO SOLIS SANTUARIO, EN ADELANTE "EL PRESTADOR", CON DOMICILIO EN {domicilio}. Y POR LA OTRA EL C. {acreditado}, EN ADELANTE "EL INTERESADO", QUIEN CUENTA CON DOMICILIO EN {dom_acreditado}, QUIENES SE RECONOCEN CON CAPACIDADES LEGALES PARA OBLIGARSE, SUJETÁNDOSE A LAS SIGUIENTES:',
 
-<h3>¿Para qué usamos sus datos personales?</h3>
-<p>Los datos personales que recabamos serán utilizados para las siguientes finalidades:</p>
-<ul>
-  <li>Brindarle asesoría sobre créditos INFONAVIT y FOVISSSTE</li>
-  <li>Gestionar trámites de avalúo, escrituración y compraventa de bienes inmuebles</li>
-  <li>Darle seguimiento a su solicitud de servicio</li>
-  <li>Enviarle información relevante sobre nuestros servicios inmobiliarios</li>
-  <li>Contactarle para agendar citas o aclarar dudas sobre su proceso</li>
-</ul>
+            'contrato_declaraciones_prestador' => '1.- QUE ES UNA EMPRESA CON PLENA CAPACIDAD LEGAL Y EXPERIENCIA EN LA TRAMITACIÓN DE {tipo_tramite}.
+2.- QUE SE ESPECIALIZA EN REALIZAR ÚNICAMENTE EL TRÁMITE JUNTO AL "INTERESADO" SIEMPRE Y CUANDO EXISTA UN {tipo_tramite} VIGENTE.
+3.- QUE EL DOMICILIO DE "EL PRESTADOR" ESTÁ UBICADO EN HUEJUTLA DE REYES, HGO. PLAZA TECOLUCO, AV. CORONA DEL ROSAL.
+4.- "EL PRESTADOR" ES EL ENCARGADO DE REALIZAR EL TRÁMITE EN CUESTIÓN DEL {tipo_tramite}.
+5.- QUE "EL PRESTADOR" FINANCIARÁ CON RECURSOS PROPIOS, EN CALIDAD DE PRÉSTAMO TEMPORAL, LOS GASTOS ESTRICTAMENTE NECESARIOS PARA EL TRÁMITE DEL {tipo_tramite} DE "EL INTERESADO", TALES COMO: EL AVALÚO DEL PREDIO O CASA HABITACIÓN, GASTOS ANTE EL REGISTRO PÚBLICO DE LA PROPIEDAD, ESCRITURAS PÚBLICAS Y OTROS GASTOS INDISPENSABLES PREVIAMENTE AUTORIZADOS POR ESCRITO POR "EL INTERESADO". DICHOS GASTOS SERÁN REEMBOLSADOS AL FINALIZAR EL TRÁMITE POR EL "INTERESADO".',
 
-<h3>¿Con quién compartimos sus datos?</h3>
-<p>Sus datos personales no serán transferidos a terceros sin su consentimiento, salvo en los casos previstos por la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), tales como instituciones públicas como el INFONAVIT, FOVISSSTE o notarías, cuando sea estrictamente necesario para concluir el trámite solicitado.</p>
+            'contrato_declaraciones_interesado' => '1.- QUE CUENTA CON UN {tipo_tramite} VIGENTE Y CAPACIDAD LEGAL PARA OBLIGARSE EN ESTE ACTO.
+2.- QUE ACEPTA QUE "EL PRESTADOR" FINANCIE LOS GASTOS ANTES INDICADOS, COMPROMETIÉNDOSE A REEMBOLSAR CONFORME LO PACTADO.
+3.- QUIEN SE IDENTIFICA CON CURP {curp}, QUIEN BAJO PROTESTA DE DECIR VERDAD ASEGURA CONTAR CON EL DERECHO DE PODER REALIZAR EL TRÁMITE.
+4.- QUE CUENTA CON DOMICILIO EN {dom_acreditado}.
+5.- QUE CUENTA CON RFC {rfc}.
+6.- QUE SE ENCUENTRA BIEN DE SUS FACULTADES MENTALES Y CUENTA CON EL DERECHO DE PODER REALIZAR EL TRÁMITE DEL {tipo_tramite}.',
 
-<h3>¿Cómo protegemos sus datos?</h3>
-<p>Implementamos medidas de seguridad administrativas, técnicas y físicas para proteger sus datos personales contra daño, pérdida, alteración, destrucción o el uso, acceso o tratamiento no autorizado.</p>
+            'contrato_clausulas' => 'A.-) AMBAS PARTES ESTÁN TOTALMENTE DE ACUERDO EN QUE SE REALICE EL TRÁMITE DEL {tipo_tramite}.
+B.-) "EL PRESTADOR" SE COMPROMETE A DESEMPEÑAR TODO SU CONOCIMIENTO PARA CUMPLIR SATISFACTORIAMENTE EL OBJETIVO DEL PRESENTE CONTRATO BAJO SU EXPERIENCIA, ASÍ COMO RESPONDER POR LA CALIDAD DE SUS SERVICIOS Y DE CUALQUIER INCIDENTE QUE SUCEDA REFERENTE AL TRÁMITE DE "EL INTERESADO".
+C.-) EL "INTERESADO" SE OBLIGA A BRINDAR TODA LA INFORMACIÓN QUE SE REQUIERA POR PARTE DE "EL PRESTADOR" PARA PODER LLEVAR A CABO EL TRÁMITE DEL {tipo_tramite}.
+D.-) "EL PRESTADOR" FINANCIARÁ LOS GASTOS QUE CONLLEVE EL TRÁMITE TALES COMO AVALÚO, ESCRITURAS PÚBLICAS Y LOS DEMÁS QUE RESULTEN, OTORGÁNDOLOS EN FORMA DE PRÉSTAMO A "EL INTERESADO".
+E.-) "EL INTERESADO" SE COMPROMETE A REEMBOLSAR LOS GASTOS MENCIONADOS EN LA CLÁUSULA "D" AL MOMENTO DE FORMALIZAR EL TRÁMITE.
+F.-) "EL INTERESADO" REALIZARÁ LA ENTREGA DEL REMANENTE EN UNA SOLA EXHIBICIÓN.
+G.-) "EL INTERESADO" LE COMUNICARÁ A "EL PRESTADOR" CUALQUIER HECHO QUE SE SUSCITE DURANTE EL PROCESO.
+H.-) "EL PRESTADOR" PODRÁ RESCINDIR EL PRESENTE CONTRATO SIN TENER CLÁUSULAS PENALES NI RESPONSABILIDADES.
+I.-) POR PARTE DE "EL INTERESADO" NO PODRÁ RESCINDIR DICHO CONTRATO SIN CAUSA JUSTIFICADA.
+J.-) EN CASO DE QUE "EL INTERESADO" RESCINDA EL CONTRATO, SE VERÁ EN LA NECESIDAD DE CUBRIR LOS PAGOS DE GASTOS REALIZADOS TALES COMO VALUADOR Y TRÁMITES NOTARIALES, ASÍ COMO EL 20% DEL MONTO TOTAL DEL {tipo_tramite}.
+K.-) "EL INTERESADO" SE COMPROMETE A NO COMETER ACTOS DE MOLESTIA NI ACTOS ILÍCITOS CONTRA "EL PRESTADOR", NI CAUSAR DAÑOS MORALES NI PATRIMONIALES.
+L.-) "EL INTERESADO" ACUDIRÁ A LAS INSTALACIONES DE "EL PRESTADOR" CUANDO SE LE SOLICITE, EN RAZÓN DE REQUERIR FIRMA O REQUISITOS ADICIONALES.
+M.-) EN CUESTIÓN DE LOS HONORARIOS DE "EL PRESTADOR", "EL INTERESADO" ACEPTA PAGAR {pct_honorarios} DE HONORARIOS SOBRE EL MONTO TOTAL DEL CRÉDITO, EQUIVALENTE A {monto_honorarios} MXN.
+N.-) DERIVADO DEL INCUMPLIMIENTO DEL INCISO ANTERIOR, "EL PRESTADOR" SE VERÁ EN LA NECESIDAD DE ACUDIR ANTE LOS TRIBUNALES CIVILES COMPETENTES PARA HACER CUMPLIR EL PRESENTE CONTRATO.
+Ñ.-) "LAS PARTES" MANIFIESTAN QUE A LA FIRMA DEL PRESENTE CONTRATO NO EXISTE DOLO, ERROR, VIOLENCIA, MALA FE O CUALQUIER OTRO VICIO DE CONSENTIMIENTO QUE PUDIERA INVALIDARLO.',
 
-<h3>¿Cuáles son sus derechos ARCO?</h3>
-<p>Usted tiene derecho a <strong>Acceder</strong>, <strong>Rectificar</strong>, <strong>Cancelar</strong> u <strong>Oponerse</strong> al tratamiento de sus datos personales (derechos ARCO). Para ejercerlos, puede contactarnos a través de:</p>
-<ul>
-  <li>Correo electrónico registrado en nuestra página de contacto</li>
-  <li>WhatsApp o teléfono de atención al cliente</li>
-</ul>
-<p>Daremos respuesta a su solicitud en un plazo máximo de 20 días hábiles.</p>
+            // ── Convenio de Honorarios ─────────────────────────────────────────
+            'convenio_intro' => 'EN LA CIUDAD DE {ciudad}, A LOS {fecha} DÍAS DEL MES DE MAYO DEL AÑO 2026, CELEBRAN EL PRESENTE CONVENIO DE HONORARIOS PROFESIONALES POR UNA PARTE LIC. JOSE ANTONIO SOLIS SANTUARIO, EN ADELANTE "EL PRESTADOR", CON DOMICILIO EN {domicilio}. Y POR LA OTRA EL C. {acreditado}, EN ADELANTE "EL INTERESADO", QUIENES ACUERDAN LAS CONDICIONES DE RETRIBUCIÓN POR LOS SERVICIOS PROFESIONALES PRESTADOS, EN TÉRMINOS DEL CONTRATO DE PRESTACIÓN DE SERVICIOS PROFESIONALES Y FINANCIAMIENTO DE GASTOS SUSCRITO CON NÚMERO DE EXPEDIENTE {folio}.',
 
-<h3>Cambios al aviso de privacidad</h3>
-<p>Nos reservamos el derecho de efectuar modificaciones o actualizaciones al presente aviso de privacidad. Dichas modificaciones estarán disponibles en esta misma página.</p>
+            'convenio_clausulas' => 'PRIMERA. MONTO DE HONORARIOS.- "EL INTERESADO" ACUERDA PAGAR A "EL PRESTADOR" POR CONCEPTO DE HONORARIOS PROFESIONALES LA CANTIDAD DE {monto_honorarios} MXN, EQUIVALENTE AL {pct_honorarios} DEL MONTO TOTAL DEL {tipo_tramite}. DICHO MONTO INCLUYE LA GESTIÓN INTEGRAL DEL TRÁMITE, ASESORÍA PERSONALIZADA Y SEGUIMIENTO HASTA SU FORMALIZACIÓN.
 
-<h3>Cookies y tecnologías de rastreo</h3>
-<p>Nuestro sitio web puede utilizar cookies con la finalidad de mejorar su experiencia de navegación. Estas cookies no recopilan información personal identificable.</p>
+SEGUNDA. FORMA DE PAGO.- "EL INTERESADO" SE COMPROMETE A PAGAR LOS HONORARIOS EN UNA SOLA EXHIBICIÓN AL MOMENTO EN QUE SE FORMALICE EL TRÁMITE Y SE LIBERE EL RECURSO DEL {tipo_tramite} POR LA INSTITUCIÓN CORRESPONDIENTE. NO SE ACEPTARÁN PAGOS PARCIALES SALVO ACUERDO EXPRESO Y POR ESCRITO ENTRE LAS PARTES.
 
-<p><em>Última actualización: 12 de May de 2026</em></p>',
+TERCERA. SERVICIOS INCLUIDOS.- LOS HONORARIOS PACTADOS AMPARAN LOS SIGUIENTES SERVICIOS: Integración y revisión del expediente documental. Gestión ante la institución de crédito correspondiente ({tipo_tramite}). Coordinación con valuador y notario público. Seguimiento de etapas hasta la firma de escrituras o entrega del recurso. Asesoría y atención personalizada durante todo el proceso.
+
+CUARTA. GASTOS ADICIONALES.- LOS GASTOS DERIVADOS DEL TRÁMITE TALES COMO AVALÚO, DERECHOS REGISTRALES, ESCRITURAS Y OTROS COSTOS INSTITUCIONALES NO ESTÁN INCLUIDOS EN LOS HONORARIOS Y SERÁN CUBIERTOS CONFORME A LO PACTADO EN EL CONTRATO DE PRESTACIÓN DE SERVICIOS CORRESPONDIENTE.
+
+QUINTA. RESCISIÓN.- EN CASO DE QUE "EL INTERESADO" DESISTA DEL TRÁMITE UNA VEZ INICIADAS LAS GESTIONES, SE OBLIGARÁ A CUBRIR LOS GASTOS YA EROGADOS POR "EL PRESTADOR" Y EL 20% DEL MONTO TOTAL DEL CRÉDITO EN CONCEPTO DE PENALIZACIÓN POR RESCISIÓN, CONFORME A LO ESTABLECIDO EN EL CONTRATO DE PRESTACIÓN DE SERVICIOS.
+
+SEXTA. CONFIDENCIALIDAD.- LAS PARTES SE OBLIGAN A MANTENER LA CONFIDENCIALIDAD DE TODA LA INFORMACIÓN FINANCIERA Y PERSONAL COMPARTIDA DURANTE LA VIGENCIA DEL PRESENTE CONVENIO Y CON POSTERIORIDAD A SU CONCLUSIÓN.',
+
+            // ── Carta de Mandato ────────────────────────────────────────────────
+            'carta_mandato_intro' => null,
+            'carta_mandato_clausulas' => null,
         ];
 
         foreach ($configs as $clave => $valor) {
+            if ($valor === null) {
+                continue;
+            }
             Configuracion::firstOrCreate(
                 ['clave' => $clave],
                 ['valor' => $valor]

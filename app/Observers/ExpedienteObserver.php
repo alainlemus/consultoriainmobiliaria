@@ -37,22 +37,13 @@ class ExpedienteObserver
             $existe = Comision::where('expediente_id', $expediente->id)->exists();
 
             if (! $existe) {
-                $porcentaje = $expediente->honorarios_porcentaje ?? 0;
-                $montoBase  = $expediente->honorarios_monto;
-
-                if ($porcentaje > 0 && $expediente->monto_total_estimado > 0) {
-                    $montoBase     = $expediente->monto_total_estimado;
-                    $montoComision = round($montoBase * ($porcentaje / 100), 2);
-                } else {
-                    $porcentaje    = 100;
-                    $montoComision = $montoBase;
-                }
+                $montoComision = 10000; // $10,000 MXN fijo por cierre
 
                 Comision::create([
                     'expediente_id'       => $expediente->id,
                     'asesor_id'           => $expediente->asesor_id,
-                    'monto_base'          => $montoBase,
-                    'porcentaje_comision' => $porcentaje,
+                    'monto_base'          => $expediente->honorarios_monto,
+                    'porcentaje_comision' => 0,
                     'monto_comision'      => $montoComision,
                     'estado'              => 'pendiente',
                     'fecha_generacion'    => now()->toDateString(),

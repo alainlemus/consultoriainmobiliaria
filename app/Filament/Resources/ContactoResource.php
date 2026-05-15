@@ -56,6 +56,9 @@ class ContactoResource extends Resource
 
     public static function getGlobalSearchResultUrl(Model $record): string
     {
+        if ($record->estado_prospecto === 'convertido') {
+            return static::getUrl('view', ['record' => $record]);
+        }
         return static::getUrl('edit', ['record' => $record]);
     }
 
@@ -66,6 +69,9 @@ class ContactoResource extends Resource
         if (Auth::check() && Auth::user()->hasRole('asesor')) {
             $query->where('asesor_id', Auth::id());
         }
+
+        // Excluir prospectos convertidos de la lista
+        $query->where('estado_prospecto', '!=', 'convertido');
 
         return $query;
     }
@@ -129,7 +135,7 @@ class ContactoResource extends Resource
                             'nuevo'            => 'Nuevo',
                             'contactado'       => 'Contactado',
                             'precalificado'    => 'Precalificado',
-                            'pendiente_cierre' => 'Pendiente de cierre (con dueño)',
+                            'pendiente_cierre' => 'Pendiente de cierre (con gestor)',
                             'contrato_firmado' => 'Contrato firmado',
                             'convertido'       => 'Convertido a expediente',
                             'descartado'       => 'Descartado',
@@ -168,8 +174,8 @@ class ContactoResource extends Resource
                 ])->columns(2),
 
             // ── Sección visible solo cuando está pendiente de cierre ──────
-            Forms\Components\Section::make('Cierre con el dueño')
-                ->description('Indica cómo el dueño debe contactar o reunirse con el prospecto para cerrar.')
+            Forms\Components\Section::make('Cierre con el gestor')
+                ->description('Indica cómo el gestor debe contactar o reunirse con el prospecto para cerrar.')
                 ->visible(fn (Forms\Get $get) => in_array($get('estado_prospecto'), ['pendiente_cierre', 'contrato_firmado', 'convertido']))
                 ->schema([
                     Forms\Components\Select::make('modalidad_cierre')
@@ -182,10 +188,10 @@ class ContactoResource extends Resource
                         ])
                         ->required(fn (Forms\Get $get) => $get('estado_prospecto') === 'pendiente_cierre'),
                     Forms\Components\Placeholder::make('fecha_envio_dueno_display')
-                        ->label('Enviado al dueño')
+                        ->label('Enviado al gestor')
                         ->content(fn ($record) => $record?->fecha_envio_dueno?->format('d/m/Y H:i') ?? '—'),
                     Forms\Components\Textarea::make('notas_cierre')
-                        ->label('Notas para el dueño')
+                        ->label('Notas para el gestor')
                         ->rows(3)->columnSpanFull()
                         ->hint('Ej: vive en col. Magisterio, disponible de 6pm en adelante, ya revisó su crédito FOVISSSTE'),
                 ])->columns(2)->collapsible(),
@@ -334,21 +340,21 @@ class ContactoResource extends Resource
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->actions([
-                // ── Acción principal del asesor: enviar al dueño ──────────
+                // ── Acción principal del asesor: iniciar gestión ──────────
                 Tables\Actions\Action::make('enviar_dueno')
-                    ->label('Enviar al dueño')
+                    ->label('Iniciar gestión')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('warning')
                     ->visible(fn (Contacto $record) =>
                         Auth::user()?->hasRole('asesor') &&
                         in_array($record->estado_prospecto, ['nuevo', 'contactado', 'precalificado'])
                     )
-                    ->modalHeading('Enviar prospecto al dueño')
-                    ->modalDescription('El dueño recibirá una notificación con los datos del prospecto y la modalidad de cierre elegida.')
-                    ->modalSubmitActionLabel('Sí, enviar ahora')
+                    ->modalHeading('Iniciar gestión del prospecto')
+                    ->modalDescription('Se registrará el inicio de la gestión comercial con el prospecto.')
+                    ->modalSubmitActionLabel('Sí, iniciar')
                     ->form([
                         Forms\Components\Select::make('modalidad_cierre')
-                            ->label('¿Cómo debe contactarlo el dueño?')
+                            ->label('Modalidad de contacto')
                             ->options([
                                 'telefono'         => 'Llamada telefónica',
                                 'cita_oficina'     => 'Cita en oficina',
@@ -357,10 +363,10 @@ class ContactoResource extends Resource
                             ])
                             ->required(),
                         Forms\Components\Textarea::make('notas_cierre')
-                            ->label('Notas para el dueño')
+                            ->label('Notas de gestión')
                             ->rows(3)
                             ->placeholder('Ej: vive en col. Magisterio, disponible por las tardes, ya revisó su crédito FOVISSSTE…')
-                            ->helperText('Cualquier detalle que ayude al dueño a preparar la visita o llamada.'),
+                            ->helperText('Cualquier detalle relevante sobre el prospecto.'),
                     ])
                     ->action(function (Contacto $record, array $data) {
                         $record->update([
@@ -379,37 +385,56 @@ class ContactoResource extends Resource
                         };
 
                         $asesorNombre = Auth::user()->name;
-                        $body = "**{$record->nombre}** — {$record->telefono}"
-                            . "\nModalidad: {$modalidadLabel}"
-                            . ($data['notas_cierre'] ? "\nNotas: {$data['notas_cierre']}" : '')
-                            . "\nEnviado por: {$asesorNombre}";
 
-                        // Notificar a todos los super_admin
+                        // Notificar a todos los super_admin usando clase de notificación
                         $admins = User::role('super_admin')->get();
                         foreach ($admins as $admin) {
-                            Notification::make()
-                                ->title('Prospecto listo para cierre')
-                                ->body($body)
-                                ->icon('heroicon-o-user-plus')
-                                ->warning()
-                                ->actions([
-                                    NotifAction::make('ver')
-                                        ->label('Ver prospecto')
-                                        ->url(static::getUrl('edit', ['record' => $record]))
-                                        ->markAsRead(),
-                                ])
-                                ->sendToDatabase($admin);
+                            $admin->notify(new \App\Notifications\ProspectoIniciandoGestion(
+                                $record,
+                                $modalidadLabel,
+                                $data['notas_cierre'] ?? null,
+                                $asesorNombre,
+                            ));
                         }
 
                         Notification::make()
-                            ->title('Prospecto enviado al dueño')
-                            ->body('Se notificó al dueño. En breve se pondrá en contacto con ' . $record->nombre . '.')
+                            ->title('Gestión iniciada')
+                            ->body('El prospecto ' . $record->nombre . ' ha sido marcado como pendiente de cierre.')
                             ->success()
                             ->send();
                     }),
 
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                // Botones solo para super_admin
+Tables\Actions\Action::make('iniciar_expediente')
+                    ->label('Iniciar Expediente')
+                    ->icon('heroicon-o-document-plus')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('¿Iniciar expediente con este prospecto?')
+                    ->modalDescription('Se creará un nuevo expediente vinculado a este contacto.')
+                    ->action(fn (Contacto $record) => $record->update(['estado_prospecto' => 'convertido']))
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+
+                Tables\Actions\Action::make('descartar')
+                    ->label('No cerró')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('¿El prospecto no cerró?')
+                    ->modalDescription('El prospecto regresará a estado "Descartado".')
+                    ->action(fn (Contacto $record) => $record->update(['estado_prospecto' => 'descartado']))
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+
+                Tables\Actions\EditAction::make()
+                    ->visible(fn (Contacto $record) =>
+                        Auth::user()?->hasRole('super_admin') ||
+                        ! in_array($record->estado_prospecto, ['pendiente_cierre', 'contrato_firmado', 'convertido'])
+                    ),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn (Contacto $record) =>
+                        Auth::user()?->hasRole('super_admin') ||
+                        ! in_array($record->estado_prospecto, ['pendiente_cierre', 'contrato_firmado', 'convertido'])
+                    ),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -429,6 +454,7 @@ class ContactoResource extends Resource
         return [
             'index'  => Pages\ListContactos::route('/'),
             'create' => Pages\CreateContacto::route('/create'),
+            'view'   => Pages\ViewContacto::route('/{record}'),
             'edit'   => Pages\EditContacto::route('/{record}/edit'),
         ];
     }

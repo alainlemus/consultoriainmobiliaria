@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class AdminUserSeeder extends Seeder
 {
@@ -16,14 +17,14 @@ class AdminUserSeeder extends Seeder
             ['name' => 'super_admin', 'guard_name' => 'web']
         );
         Role::firstOrCreate(
-            ['name' => 'panel_user', 'guard_name' => 'web']
+            ['name' => 'asesor', 'guard_name' => 'web']
         );
 
         // Crear usuario admin
         $user = User::firstOrCreate(
             ['email' => 'admin@consultoria.mx'],
             [
-                'name'     => 'Admin',
+                'name'     => 'Jose Antonio Solis Santuario',
                 'password' => Hash::make('password'),
                 'activo'   => true,
             ]
@@ -32,6 +33,16 @@ class AdminUserSeeder extends Seeder
         // Asignar rol super_admin
         if (! $user->hasRole('super_admin')) {
             $user->assignRole($superAdmin);
+        }
+
+        // Asignar todos los permisos al admin (se generan con shield:generate)
+        try {
+            $permissions = Permission::pluck('name')->toArray();
+            if (count($permissions) > 0) {
+                $user->syncPermissions($permissions);
+            }
+        } catch (\Throwable $e) {
+            // Los permisos se generan con shield:generate después del primer seed
         }
     }
 }

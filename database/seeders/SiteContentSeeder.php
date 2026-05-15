@@ -14,11 +14,11 @@ class SiteContentSeeder extends Seeder
     {
         // ── Servicios ────────────────────────────────────────────────────────
         $servicios = [
-            ['titulo' => 'Crédito INFONAVIT',      'descripcion' => 'Te acompañamos en todo el proceso para ejercer tu crédito INFONAVIT y adquirir la propiedad que deseas.',          'icono' => null, 'orden' => 1],
-            ['titulo' => 'Crédito FOVISSSTE',       'descripcion' => 'Gestionamos tu crédito FOVISSSTE de principio a fin, con asesoría personalizada para trabajadores del sector público.', 'icono' => null, 'orden' => 2],
-            ['titulo' => 'Avalúos',                 'descripcion' => 'Realizamos avalúos inmobiliarios, fiscales y comerciales con peritos certificados en Hidalgo, Veracruz y SLP.',     'icono' => null, 'orden' => 3],
-            ['titulo' => 'Gestión de Escrituras',   'descripcion' => 'Coordinamos todo el proceso notarial para que la escrituración de tu propiedad sea rápida y sin contratiempos.',   'icono' => null, 'orden' => 4],
-            ['titulo' => 'Asesoría Personalizada',  'descripcion' => 'Analizamos tu situación particular y te orientamos hacia la mejor opción para adquirir o vender tu propiedad.',     'icono' => null, 'orden' => 5],
+            ['titulo' => 'Crédito INFONAVIT',     'items' => ['Te acompañamos en todo el proceso para ejercer tu crédito INFONAVIT y adquirir la propiedad que deseas.'], 'wa_texto' => 'Necesito información sobre Crédito INFONAVIT', 'icon_path' => '', 'orden' => 1],
+            ['titulo' => 'Crédito FOVISSSTE',      'items' => ['Gestionamos tu crédito FOVISSSTE de principio a fin, con asesoría personalizada para trabajadores del sector público.'], 'wa_texto' => 'Necesito información sobre Crédito FOVISSSTE', 'icon_path' => '', 'orden' => 2],
+            ['titulo' => 'Avalúos',                'items' => ['Realizamos avalúos inmobiliarios, fiscales y comerciales con peritos certificados en Hidalgo, Veracruz y SLP.'], 'wa_texto' => 'Necesito información sobre Avalúos', 'icon_path' => '', 'orden' => 3],
+            ['titulo' => 'Gestión de Escrituras',  'items' => ['Coordinamos todo el proceso notarial para que la escrituración de tu propiedad sea rápida y sin contratiempos.'], 'wa_texto' => 'Necesito información sobre Gestión de Escrituras', 'icon_path' => '', 'orden' => 4],
+            ['titulo' => 'Asesoría Personalizada', 'items' => ['Analizamos tu situación particular y te orientamos hacia la mejor opción para adquirir o vender tu propiedad.'], 'wa_texto' => 'Necesito información sobre Asesoría Personalizada', 'icon_path' => '', 'orden' => 5],
         ];
 
         foreach ($servicios as $data) {
@@ -49,9 +49,9 @@ class SiteContentSeeder extends Seeder
 
         // ── Coberturas ────────────────────────────────────────────────────────
         $coberturas = [
-            ['nombre' => 'Hidalgo',          'detalle' => 'Huejutla de Reyes, Hgo. Plaza Tecoluco, Av. Corona del Rosal', 'activo' => true],
-            ['nombre' => 'Veracruz',         'detalle' => 'Contáctanos para agendar tu cita en tu municipio',            'activo' => true],
-            ['nombre' => 'San Luis Potosí',  'detalle' => 'Contáctanos para agendar tu cita en tu municipio',            'activo' => true],
+            ['nombre' => 'Hidalgo',          'descripcion' => 'Huejutla de Reyes, Hgo. Plaza Tecoluco, Av. Corona del Rosal', 'detalle' => '', 'activo' => true],
+            ['nombre' => 'Veracruz',         'descripcion' => 'Contáctanos para agendar tu cita en tu municipio',            'detalle' => '', 'activo' => true],
+            ['nombre' => 'San Luis Potosí',  'descripcion' => 'Contáctanos para agendar tu cita en tu municipio',            'detalle' => '', 'activo' => true],
         ];
 
         foreach ($coberturas as $data) {

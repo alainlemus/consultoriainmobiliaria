@@ -128,6 +128,8 @@ class ExpedienteResource extends Resource
                                 )
                                 ->required()
                                 ->searchable()
+                                ->disabled(fn () => ! auth()->user()?->hasRole('super_admin'))
+                                ->dehydrated(fn () => auth()->user()?->hasRole('super_admin'))
                                 ->hint('Depende del tipo de trámite seleccionado'),
                             Forms\Components\Select::make('estado')
                                 ->label('Estado general')
@@ -141,6 +143,8 @@ class ExpedienteResource extends Resource
                                 ])
                                 ->default('en_proceso')
                                 ->required()
+                                ->disabled(fn () => ! auth()->user()?->hasRole('super_admin'))
+                                ->dehydrated(fn () => auth()->user()?->hasRole('super_admin'))
                                 ->hint('Al cambiar a "Cerrado" se genera la comisión automáticamente'),
                             Forms\Components\Select::make('asesor_id')
                                 ->label('Asesor asignado')
@@ -441,11 +445,13 @@ class ExpedienteResource extends Resource
                                         ->hint('Monto fijo pactado con el cliente'),
                                     Forms\Components\Toggle::make('honorarios_pagados')
                                         ->label('Honorarios cobrados')
-                                        ->hint('Activa cuando el cliente haya pagado'),
+                                        ->hint('Activa cuando el cliente haya pagado')
+                                        ->visible(fn ($record) => $record?->etapa?->es_final ?? false),
                                     Forms\Components\DatePicker::make('fecha_pago_honorarios')
                                         ->label('Fecha de cobro')
                                         ->beforeOrEqual('today')
-                                        ->validationMessages(['before_or_equal' => 'La fecha de cobro no puede ser futura.']),
+                                        ->validationMessages(['before_or_equal' => 'La fecha de cobro no puede ser futura.'])
+                                        ->visible(fn ($record) => $record?->etapa?->es_final ?? false),
                                     Forms\Components\DatePicker::make('fecha_cierre')
                                         ->label('Fecha de cierre')
                                         ->beforeOrEqual('today')
@@ -464,6 +470,16 @@ class ExpedienteResource extends Resource
 
                 ])->columnSpanFull()->persistTabInQueryString(),
         ]);
+    }
+
+public static function canDelete(Model $record): bool
+    {
+        return Auth::user()?->hasRole('super_admin') ?? false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return true;
     }
 
     public static function table(Table $table): Table
@@ -581,12 +597,16 @@ class ExpedienteResource extends Resource
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->hidden(fn ($record) => Auth::user()?->hasRole('asesor')
+                        && $record->etapa && $record->etapa->orden >= 5),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()?->hasRole('super_admin')),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

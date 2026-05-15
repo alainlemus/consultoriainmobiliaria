@@ -17,6 +17,10 @@ class Contacto extends Model
         'fecha_primer_contacto', 'modalidad_cierre', 'notas_cierre', 'fecha_envio_dueno',
     ];
 
+    protected $attributes = [
+        'estado_prospecto' => 'nuevo',
+    ];
+
     protected $casts = [
         'fecha_nacimiento'       => 'date',
         'fecha_primer_contacto'  => 'date',

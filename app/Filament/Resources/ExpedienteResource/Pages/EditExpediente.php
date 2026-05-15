@@ -144,6 +144,7 @@ class EditExpediente extends EditRecord
                 )),
 
             Actions\DeleteAction::make()
+                ->visible(fn () => auth()->user()?->hasRole('super_admin'))
                 ->requiresConfirmation()
                 ->modalHeading('Eliminar expediente')
                 ->modalDescription(fn () => new HtmlString(

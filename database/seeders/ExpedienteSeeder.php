@@ -647,21 +647,13 @@ class ExpedienteSeeder extends Seeder
             if (($data['estado'] ?? '') === 'cerrado' && ($data['honorarios_monto'] ?? 0) > 0) {
                 $existe = \App\Models\Comision::where('expediente_id', $expediente->id)->exists();
                 if (! $existe) {
-                    $porcentaje = $data['honorarios_porcentaje'] ?? 0;
-                    $montoBase  = $data['honorarios_monto'];
-                    if ($porcentaje > 0 && ($data['monto_total_estimado'] ?? 0) > 0) {
-                        $montoBase     = $data['monto_total_estimado'];
-                        $montoComision = round($montoBase * ($porcentaje / 100), 2);
-                    } else {
-                        $porcentaje    = 100;
-                        $montoComision = $montoBase;
-                    }
+                    $montoComision = 10000; // $10,000 MXN fijo por cierre
                     \App\Models\Comision::firstOrCreate(
                         ['expediente_id' => $expediente->id],
                         [
                             'asesor_id'           => $expediente->asesor_id,
-                            'monto_base'          => $montoBase,
-                            'porcentaje_comision' => $porcentaje,
+                            'monto_base'          => $data['honorarios_monto'],
+                            'porcentaje_comision' => 0,
                             'monto_comision'      => $montoComision,
                             'estado'              => 'pendiente',
                             'fecha_generacion'    => $data['fecha_cierre'] ?? now()->toDateString(),

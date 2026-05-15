@@ -16,6 +16,21 @@
     $cfg = $estadoConfig[$record->estado] ?? ['label' => ucfirst($record->estado), 'bg' => '#6b7280', 'text' => '#fff'];
 @endphp
 
+@once
+@push('scripts')
+<script>
+let lastReload = 0;
+window.addEventListener('livewire:update', () => {
+    const now = Date.now();
+    if (now - lastReload > 2000) {
+        lastReload = now;
+        setTimeout(() => location.reload(), 1000);
+    }
+});
+</script>
+@endpush
+@endonce
+
 <div style="padding: 16px 0 8px;">
     {{-- Stepper --}}
     <div style="display:flex; align-items:flex-start; position:relative;">

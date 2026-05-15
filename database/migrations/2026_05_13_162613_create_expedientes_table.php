@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('etapa_tramite_id')->constrained();
             $table->foreignId('asesor_id')->constrained('users'); // asesor asignado
             $table->foreignId('contacto_id')->nullable()->constrained('contactos'); // prospecto origen
-            $table->foreignId('revisor_id')->nullable()->constrained('users');      // dueño/admin
+            $table->foreignId('revisor_id')->nullable()->constrained('users');      // gestor/admin
 
             // Estado general
             $table->enum('estado', [

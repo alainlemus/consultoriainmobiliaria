@@ -33,7 +33,7 @@ class ProspectosPendientesCierreWidget extends BaseWidget
                     ->orderBy('fecha_envio_dueno', 'asc')
             )
             ->emptyStateHeading('Sin prospectos pendientes')
-            ->emptyStateDescription('Cuando un asesor envíe un prospecto al dueño, aparecerá aquí.')
+            ->emptyStateDescription('Cuando un asesor envíe un prospecto al gestor, aparecerá aquí.')
             ->emptyStateIcon('heroicon-o-user-group')
             ->columns([
                 Tables\Columns\TextColumn::make('fecha_envio_dueno')
@@ -96,24 +96,6 @@ class ProspectosPendientesCierreWidget extends BaseWidget
                     ->icon('heroicon-o-eye')
                     ->url(fn (Contacto $record) => \App\Filament\Resources\ContactoResource::getUrl('edit', ['record' => $record]))
                     ->color('gray'),
-
-                Tables\Actions\Action::make('marcar_firmado')
-                    ->label('Contrato firmado')
-                    ->icon('heroicon-o-check-badge')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->modalHeading('¿El prospecto firmó el contrato?')
-                    ->modalDescription('Esto cambiará el estado a "Contrato firmado". Después podrás convertirlo en expediente.')
-                    ->action(fn (Contacto $record) => $record->update(['estado_prospecto' => 'contrato_firmado'])),
-
-                Tables\Actions\Action::make('descartar')
-                    ->label('No cerró')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalHeading('¿El prospecto no cerró?')
-                    ->modalDescription('El prospecto regresará a estado "Descartado".')
-                    ->action(fn (Contacto $record) => $record->update(['estado_prospecto' => 'descartado'])),
             ]);
     }
 }
