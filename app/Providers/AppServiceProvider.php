@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Expediente;
 use App\Observers\ExpedienteObserver;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
