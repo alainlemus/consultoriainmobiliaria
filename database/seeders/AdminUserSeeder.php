@@ -35,14 +35,10 @@ class AdminUserSeeder extends Seeder
             $user->assignRole($superAdmin);
         }
 
-        // Asignar todos los permisos al admin (se generan con shield:generate)
-        try {
-            $permissions = Permission::pluck('name')->toArray();
-            if (count($permissions) > 0) {
-                $user->syncPermissions($permissions);
-            }
-        } catch (\Throwable $e) {
-            // Los permisos se generan con shield:generate después del primer seed
+        // Asignar todos los permisos al rol super_admin (no al usuario directamente)
+        $permissions = Permission::where('guard_name', 'web')->pluck('name')->toArray();
+        if (count($permissions) > 0) {
+            $superAdmin->syncPermissions($permissions);
         }
     }
 }

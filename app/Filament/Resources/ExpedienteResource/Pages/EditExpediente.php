@@ -46,7 +46,15 @@ class EditExpediente extends EditRecord
             )
             : '';
 
-        return new HtmlString($folio . $badgeEstado . $badgeTipo);
+        $nombre = $this->record->acreditado_nombre;
+        $nombreHtml = $nombre
+            ? sprintf(
+                '<div style="font-size:1.35rem;font-weight:600;color:#ffffff;margin-top:2px;line-height:1.3;">%s</div>',
+                e($nombre)
+            )
+            : '';
+
+        return new HtmlString('<div>' . $folio . $badgeEstado . $badgeTipo . $nombreHtml . '</div>');
     }
 
     protected function getHeaderActions(): array

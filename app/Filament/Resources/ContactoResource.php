@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ContactoResource\Pages;
 use App\Models\Contacto;
+use App\Models\Expediente;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -405,15 +406,41 @@ class ContactoResource extends Resource
                     }),
 
                 // Botones solo para super_admin
-Tables\Actions\Action::make('iniciar_expediente')
+                Tables\Actions\Action::make('iniciar_expediente')
                     ->label('Iniciar Expediente')
                     ->icon('heroicon-o-document-plus')
                     ->color('success')
                     ->requiresConfirmation()
                     ->modalHeading('¿Iniciar expediente con este prospecto?')
                     ->modalDescription('Se creará un nuevo expediente vinculado a este contacto.')
-                    ->action(fn (Contacto $record) => $record->update(['estado_prospecto' => 'convertido']))
-                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+                    ->action(function (Contacto $record) {
+                        // Evitar duplicados
+                        if (Expediente::where('contacto_id', $record->id)->exists()) {
+                            Notification::make()
+                                ->title('Ya existe un expediente para este prospecto.')
+                                ->warning()
+                                ->send();
+                            return;
+                        }
+                        Expediente::create([
+                            'contacto_id'         => $record->id,
+                            'asesor_id'           => $record->asesor_id,
+                            'acreditado_nombre'   => $record->nombre,
+                            'acreditado_telefono' => $record->telefono,
+                            'acreditado_email'    => $record->email,
+                            'acreditado_curp'     => $record->curp,
+                            'tipo_tramite_id'     => 1,
+                            'etapa_tramite_id'    => 1,
+                            'estado'              => 'en_proceso',
+                        ]);
+                        $record->update(['estado_prospecto' => 'convertido']);
+                        Notification::make()
+                            ->title('Expediente creado correctamente.')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn (Contacto $record) => Auth::user()?->hasRole('super_admin')
+                        && ! in_array($record->estado_prospecto, ['convertido', 'descartado'])),
 
                 Tables\Actions\Action::make('descartar')
                     ->label('No cerró')
