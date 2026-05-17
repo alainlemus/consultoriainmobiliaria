@@ -40,5 +40,18 @@ class AdminUserSeeder extends Seeder
         if (count($permissions) > 0) {
             $superAdmin->syncPermissions($permissions);
         }
+
+        // Garantizar permisos de las páginas API Móvil (pueden no estar en Shield aún)
+        $apiPermisos = [
+            'page_ApiConfiguracion',
+            'page_ApiDocumentacion',
+            'page_ApiMonitor',
+        ];
+        foreach ($apiPermisos as $permiso) {
+            $perm = Permission::firstOrCreate(['name' => $permiso, 'guard_name' => 'web']);
+            if (! $superAdmin->hasPermissionTo($perm)) {
+                $superAdmin->givePermissionTo($perm);
+            }
+        }
     }
 }
