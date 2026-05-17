@@ -11,10 +11,10 @@ return new class extends Migration
         Schema::create('contactos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
-            $table->string('telefono');
+            $table->string('telefono')->nullable();
             $table->string('email')->nullable();
             $table->string('servicio')->nullable();
-            $table->text('mensaje');
+            $table->text('mensaje')->nullable();
             $table->enum('estado', ['nuevo', 'en_proceso', 'atendido'])->default('nuevo');
             $table->text('notas')->nullable();
             $table->timestamps();

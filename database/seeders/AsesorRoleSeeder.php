@@ -17,10 +17,9 @@ class AsesorRoleSeeder extends Seeder
             'page_DashboardAsesor',
             'page_MiPerfil',
 
-            // Contactos (prospectos): CRUD completo solo sobre los suyos
+            // Contactos (prospectos): ver y editar solo los suyos — sin eliminar
             'view_any_contacto', 'view_contacto',
             'create_contacto',   'update_contacto',
-            'delete_contacto',   'delete_any_contacto',
 
             // Expedientes: crear desde prospecto + ver y editar los asignados
             'view_any_expediente', 'view_expediente',

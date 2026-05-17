@@ -499,14 +499,12 @@ class ContactoResource extends Resource
                         ! in_array($record->estado_prospecto, ['pendiente_cierre', 'contrato_firmado', 'convertido'])
                     ),
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn (Contacto $record) =>
-                        Auth::user()?->hasRole('super_admin') ||
-                        ! in_array($record->estado_prospecto, ['pendiente_cierre', 'contrato_firmado', 'convertido'])
-                    ),
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()?->hasRole('super_admin')),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
