@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\ContactoResource\Actions\EnviarEmailMasivoBulkAction;
 use App\Filament\Resources\ContactoResource\Pages;
 use App\Models\Contacto;
 use App\Models\Expediente;
@@ -381,14 +382,14 @@ class ContactoResource extends Resource
             ->actions([
                 // ── Acción principal del asesor: iniciar gestión ──────────
                 Tables\Actions\Action::make('enviar_dueno')
-                    ->label('Iniciar gestión')
+                    ->label('Iniciar expediente')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('warning')
                     ->visible(fn (Contacto $record) =>
                         Auth::user()?->hasRole('asesor') &&
                         in_array($record->estado_prospecto, ['nuevo', 'contactado', 'precalificado'])
                     )
-                    ->modalHeading('Iniciar gestión del prospecto')
+                    ->modalHeading('Iniciar expediente del prospecto')
                     ->modalDescription('Se registrará el inicio de la gestión comercial con el prospecto.')
                     ->modalSubmitActionLabel('Sí, iniciar')
                     ->form([
@@ -503,6 +504,7 @@ class ContactoResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    EnviarEmailMasivoBulkAction::make(),
                     Tables\Actions\DeleteBulkAction::make()
                         ->visible(fn () => Auth::user()?->hasRole('super_admin')),
                 ]),

@@ -164,6 +164,23 @@ class EditExpediente extends EditRecord
                     route('contratos.convenio_honorarios', $this->record->id)
                 )),
 
+            Action::make('carta_mandato')
+                ->label('Carta Mandato')
+                ->icon('heroicon-o-identification')
+                ->color('info')
+                ->modalHeading('Vista previa — Carta Mandato')
+                ->modalWidth('5xl')
+                ->modalSubmitActionLabel('Descargar PDF')
+                ->modalContent(fn () => new HtmlString(
+                    '<iframe src="' . route('contratos.carta_mandato', $this->record->id) . '?preview=1"
+                        style="width:100%;height:75vh;border:none;border-radius:4px;"
+                        title="Carta Mandato">
+                    </iframe>'
+                ))
+                ->action(fn () => redirect()->away(
+                    route('contratos.carta_mandato', $this->record->id)
+                )),
+
             Actions\DeleteAction::make()
                 ->visible(fn () => auth()->user()?->hasRole('super_admin'))
                 ->requiresConfirmation()

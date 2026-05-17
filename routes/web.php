@@ -10,6 +10,10 @@ use App\Http\Controllers\KpisReporteController;
 use App\Http\Controllers\ContratosController;
 use App\Http\Controllers\TestimonioPublicoController;
 
+// Alias para que el middleware 'auth' de Laravel redirija al login de Filament
+// (Se usa una ruta distinta a /admin/login para no interferir con Filament)
+Route::redirect('/login', '/admin/login', 302)->name('login');
+
 // Página principal
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -37,6 +41,7 @@ Route::middleware(['web', 'auth'])->prefix('admin/reportes/kpis')->name('kpis.re
 Route::middleware(['web', 'auth'])->prefix('admin/contratos')->name('contratos.')->group(function () {
     Route::get('/{expediente}/prestacion-servicios',[ContratosController::class, 'prestacionServicios'])->name('prestacion_servicios');
     Route::get('/{expediente}/convenio-honorarios', [ContratosController::class, 'convenioHonorarios'])->name('convenio_honorarios');
+    Route::get('/{expediente}/carta-mandato',       [ContratosController::class, 'cartaMandato'])->name('carta_mandato');
 });
 
 // Formulario de testimonio con token de un solo uso (7 días de vigencia)

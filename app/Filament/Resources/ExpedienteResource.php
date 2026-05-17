@@ -180,6 +180,23 @@ class ExpedienteResource extends Resource
                                 ->validationMessages([
                                     'required' => 'Debes indicar el uso del crédito.',
                                 ]),
+                            Forms\Components\Select::make('modalidad_credito')
+                                ->label('Modalidad')
+                                ->options([
+                                    'individual'   => 'Individual',
+                                    'mancomunado'  => 'Mancomunado (con cónyuge)',
+                                ])
+                                ->default('individual')
+                                ->hint('Mancomunado suma la capacidad de crédito de ambos cónyuges'),
+                            Forms\Components\Select::make('banco_participante')
+                                ->label('Banco participante')
+                                ->options([
+                                    'HSBC'    => 'HSBC',
+                                    'Banorte' => 'Banorte',
+                                    'BBVA'    => 'BBVA',
+                                ])
+                                ->nullable()
+                                ->hint('Solo aplica a FOVISSSTE Para Todos'),
                             Forms\Components\DatePicker::make('fecha_apertura')
                                 ->label('Fecha de apertura')
                                 ->default(now())
@@ -406,14 +423,83 @@ class ExpedienteResource extends Resource
                             Forms\Components\TextInput::make('vivienda_estado')
                                 ->label('Estado')
                                 ->maxLength(100),
-                            Forms\Components\Textarea::make('vivienda_descripcion_titulo')
+                             Forms\Components\Textarea::make('vivienda_descripcion_titulo')
                                 ->label('Datos del título de propiedad')
                                 ->hint('Folio real, notaría, número de escritura y fecha — como aparece en el título')
                                 ->rows(3)
                                 ->columnSpanFull(),
                         ])->columns(2),
 
-                    // ── TAB 5: FINANCIERO ─────────────────────────────────
+                    // ── TAB 5: CÓNYUGE (visible solo cuando aplica) ───────
+                    Forms\Components\Tabs\Tab::make('Cónyuge')
+                        ->icon('heroicon-o-user-group')
+                        ->schema([
+                            Forms\Components\Placeholder::make('info_conyuge')
+                                ->label('')
+                                ->content('Llena esta sección para créditos Conyugales o Mancomunados (FOVISSSTE-INFONAVIT Individual). Si el crédito es individual, deja esta sección vacía.')
+                                ->columnSpanFull(),
+                            Forms\Components\TextInput::make('conyuge_nombre')
+                                ->label('Nombre completo (cónyuge)')
+                                ->maxLength(255),
+                            Forms\Components\TextInput::make('conyuge_curp')
+                                ->label('CURP (cónyuge)')
+                                ->maxLength(18)
+                                ->minLength(18)
+                                ->regex('/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i')
+                                ->validationMessages(['regex' => 'La CURP del cónyuge no tiene el formato correcto.'])
+                                ->extraAttributes(['style' => 'text-transform:uppercase']),
+                            Forms\Components\TextInput::make('conyuge_rfc')
+                                ->label('RFC (cónyuge)')
+                                ->maxLength(13)
+                                ->extraAttributes(['style' => 'text-transform:uppercase']),
+                            Forms\Components\TextInput::make('conyuge_telefono')
+                                ->label('Teléfono (cónyuge)')
+                                ->tel()
+                                ->regex('/^\d{10}$/')
+                                ->maxLength(10)
+                                ->validationMessages(['regex' => 'El teléfono del cónyuge debe tener exactamente 10 dígitos.']),
+                            Forms\Components\Select::make('conyuge_institucion')
+                                ->label('Institución donde cotiza el cónyuge')
+                                ->options([
+                                    'FOVISSSTE' => 'FOVISSSTE (ISSSTE)',
+                                    'INFONAVIT'  => 'INFONAVIT',
+                                ])
+                                ->hint('Selecciona según el tipo de crédito conyugal'),
+                            Forms\Components\TextInput::make('conyuge_numero_credito')
+                                ->label('Número de crédito (cónyuge)')
+                                ->maxLength(50)
+                                ->hint('Número asignado por FOVISSSTE o INFONAVIT'),
+                        ])->columns(2),
+
+                    // ── TAB 6: PENSIONADO ─────────────────────────────────
+                    Forms\Components\Tabs\Tab::make('Pensionado')
+                        ->icon('heroicon-o-identification')
+                        ->schema([
+                            Forms\Components\Placeholder::make('info_pensionado')
+                                ->label('')
+                                ->content('Llena esta sección solo para el producto "Crédito Pensionados FOVISSSTE". Verifica la clave de pensión en el talón de pago del acreditado.')
+                                ->columnSpanFull(),
+                            Forms\Components\TextInput::make('numero_pension')
+                                ->label('Número de pensión')
+                                ->maxLength(50)
+                                ->hint('Aparece en el talón de pago como "NUMERO PENSION"'),
+                            Forms\Components\Select::make('clave_pension')
+                                ->label('Clave de pensión')
+                                ->options([
+                                    '101' => '101 — Jubilación',
+                                    '102' => '102 — Retiro por Edad y Tiempo de Servicio',
+                                    '634' => '634 — Cesantía en Edad Avanzada',
+                                ])
+                                ->hint('Verificar en talón de pago, columna "PENSION ACTUAL"'),
+                            Forms\Components\DatePicker::make('fecha_inicio_pension')
+                                ->label('Fecha de inicio de pensión')
+                                ->hint('Aparece en el talón como "FECHA DE INICIO DE PENSIÓN"'),
+                            Forms\Components\TextInput::make('monto_pension_mensual')
+                                ->label('Monto de pensión mensual')
+                                ->numeric()->prefix('$')
+                                ->minValue(0)
+                                ->hint('Concepto 001 del talón (pensión base, sin bonos). Mín. $32,200.60 para crédito máximo.'),
+                        ])->columns(2),
                     Forms\Components\Tabs\Tab::make('Financiero')
                         ->icon('heroicon-o-banknotes')
                         ->schema([

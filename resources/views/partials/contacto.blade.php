@@ -221,9 +221,25 @@
                     </div>
 
                     <div>
-                        <label for="mensaje" class="block text-xs text-cream-300 uppercase tracking-wider mb-1">Mensaje *</label>
-                        <textarea id="mensaje" name="mensaje" rows="4"
-                                  required
+                        <label for="curp" class="block text-xs text-cream-300 uppercase tracking-wider mb-1">
+                            CURP <span class="text-dark-400 normal-case">(opcional — para precalificación inmediata)</span>
+                        </label>
+                        <input type="text" id="curp" name="curp"
+                               value="{{ old('curp') }}"
+                               maxlength="18"
+                               placeholder="AAAA000000XAAAAA00"
+                               style="text-transform:uppercase"
+                               oninput="this.value = this.value.toUpperCase()"
+                               class="input-field font-mono tracking-widest @error('curp') border-crimson-500 @enderror">
+                        @error('curp')
+                            <p class="text-crimson-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                        <p class="text-dark-400 text-xs mt-1">Si compartes tu CURP, nuestro asesor podrá preparar tu precalificación antes de contactarte.</p>
+                    </div>
+
+                    <div>
+                        <label for="mensaje" class="block text-xs text-cream-300 uppercase tracking-wider mb-1">Mensaje <span class="text-dark-400 normal-case">(opcional)</span></label>
+                        <textarea id="mensaje" name="mensaje" rows="3"
                                   placeholder="Cuéntanos brevemente tu situación o consulta..."
                                   class="input-field resize-none @error('mensaje') border-crimson-500 @enderror">{{ old('mensaje') }}</textarea>
                         @error('mensaje')

@@ -28,9 +28,15 @@ class Expediente extends Model
         'vivienda_calle', 'vivienda_numero', 'vivienda_colonia', 'vivienda_municipio',
         'vivienda_estado', 'vivienda_cp', 'vivienda_tipo', 'vivienda_descripcion_titulo',
         // Trámite
-        'uso_credito', 'monto_credito', 'subcuenta_vivienda', 'monto_total_estimado',
+        'uso_credito', 'modalidad_credito', 'banco_participante',
+        'monto_credito', 'subcuenta_vivienda', 'monto_total_estimado',
         'honorarios_porcentaje', 'honorarios_monto', 'honorarios_pagados', 'fecha_pago_honorarios',
         'total_gastos_financiados', 'notas_internas', 'fecha_apertura', 'fecha_cierre',
+        // Cónyuge (crédito conyugal / mancomunado)
+        'conyuge_nombre', 'conyuge_curp', 'conyuge_rfc', 'conyuge_telefono',
+        'conyuge_institucion', 'conyuge_numero_credito',
+        // Pensionado
+        'numero_pension', 'clave_pension', 'fecha_inicio_pension', 'monto_pension_mensual',
     ];
 
     protected $casts = [
@@ -42,12 +48,14 @@ class Expediente extends Model
         'fecha_pago_honorarios'           => 'date',
         'fecha_apertura'                  => 'date',
         'fecha_cierre'                    => 'date',
+        'fecha_inicio_pension'            => 'date',
         'monto_credito'                   => 'decimal:2',
         'subcuenta_vivienda'              => 'decimal:2',
         'monto_total_estimado'            => 'decimal:2',
         'honorarios_porcentaje'           => 'decimal:2',
         'honorarios_monto'                => 'decimal:2',
         'total_gastos_financiados'        => 'decimal:2',
+        'monto_pension_mensual'           => 'decimal:2',
     ];
 
     protected static function booted(): void

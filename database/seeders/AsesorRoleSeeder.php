@@ -16,6 +16,7 @@ class AsesorRoleSeeder extends Seeder
             // Dashboard y páginas del asesor (Shield los bloquea sin estos permisos)
             'page_DashboardAsesor',
             'page_MiPerfil',
+            'page_SimuladorPrecalificacion',
 
             // Contactos (prospectos): ver y editar solo los suyos — sin eliminar
             'view_any_contacto', 'view_contacto',

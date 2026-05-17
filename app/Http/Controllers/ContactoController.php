@@ -47,7 +47,8 @@ class ContactoController extends Controller
             'telefono' => 'required|string|max:20',
             'email'    => 'required|email|max:150',
             'servicio' => 'required|string|max:60',
-            'mensaje'  => 'required|string|max:1000',
+            'mensaje'  => 'nullable|string|max:1000',
+            'curp'     => 'nullable|string|size:18|regex:/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i',
         ], [
             'nombre.required'   => 'El nombre es obligatorio.',
             'nombre.max'        => 'El nombre no puede superar 100 caracteres.',
@@ -58,9 +59,14 @@ class ContactoController extends Controller
             'email.max'         => 'El correo no puede superar 150 caracteres.',
             'servicio.required' => 'Selecciona el servicio de interés.',
             'servicio.max'      => 'El servicio seleccionado no es válido.',
-            'mensaje.required'  => 'El mensaje es obligatorio.',
             'mensaje.max'       => 'El mensaje no puede superar 1000 caracteres.',
+            'curp.size'         => 'La CURP debe tener exactamente 18 caracteres.',
+            'curp.regex'        => 'La CURP no tiene el formato correcto.',
         ]);
+
+        if (isset($validated['curp'])) {
+            $validated['curp'] = strtoupper($validated['curp']);
+        }
 
         $contacto = Contacto::create($validated);
 
