@@ -38,7 +38,11 @@ class PropiedadResource extends Resource
                     ->live(onBlur: true)
                     ->afterStateUpdated(fn ($state, Forms\Set $set) =>
                         $set('slug', Str::slug($state))
-                    ),
+                    )
+                    ->validationMessages([
+                        'required' => 'El título de la propiedad es obligatorio.',
+                        'max'      => 'El título no puede superar los 255 caracteres.',
+                    ]),
 
                 Forms\Components\TextInput::make('slug')
                     ->label('Slug (URL)')
@@ -50,13 +54,19 @@ class PropiedadResource extends Resource
                 Forms\Components\Select::make('tipo')
                     ->label('Tipo de propiedad')
                     ->options(Propiedad::tipos())
-                    ->required(),
+                    ->required()
+                    ->validationMessages([
+                        'required' => 'Debes seleccionar el tipo de propiedad.',
+                    ]),
 
                 Forms\Components\Select::make('estatus')
                     ->label('Estatus')
                     ->options(Propiedad::estatuses())
                     ->default('en_venta')
-                    ->required(),
+                    ->required()
+                    ->validationMessages([
+                        'required' => 'Debes seleccionar el estatus de la propiedad.',
+                    ]),
 
                 Forms\Components\Textarea::make('descripcion')
                     ->label('Descripción')
@@ -75,11 +85,17 @@ class PropiedadResource extends Resource
                         'Jalisco','Michoacán','Morelos','Nayarit','Nuevo León','Oaxaca',
                         'Puebla','Querétaro','Quintana Roo','San Luis Potosí','Sinaloa',
                         'Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas',
+                    ])
+                    ->validationMessages([
+                        'required' => 'El estado de la propiedad es obligatorio.',
                     ]),
 
                 Forms\Components\TextInput::make('municipio')
                     ->label('Municipio')
-                    ->required(),
+                    ->required()
+                    ->validationMessages([
+                        'required' => 'El municipio de la propiedad es obligatorio.',
+                    ]),
 
                 Forms\Components\TextInput::make('colonia')
                     ->label('Colonia'),

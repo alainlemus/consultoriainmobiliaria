@@ -29,6 +29,9 @@ class ComisionesRelationManager extends RelationManager
                 ])
                 ->required()
                 ->live()
+                ->validationMessages([
+                    'required' => 'El estado de la comisión es obligatorio.',
+                ])
                 ->afterStateUpdated(function ($state, Forms\Set $set) {
                     if ($state === 'aprobada') {
                         $set('fecha_aprobacion', now()->toDateString());
@@ -40,10 +43,18 @@ class ComisionesRelationManager extends RelationManager
                 }),
 
             Forms\Components\DatePicker::make('fecha_aprobacion')
-                ->label('Fecha Aprobación'),
+                ->label('Fecha Aprobación')
+                ->beforeOrEqual('today')
+                ->validationMessages([
+                    'before_or_equal' => 'La fecha de aprobación no puede ser futura.',
+                ]),
 
             Forms\Components\DatePicker::make('fecha_pago')
-                ->label('Fecha Pago'),
+                ->label('Fecha Pago')
+                ->beforeOrEqual('today')
+                ->validationMessages([
+                    'before_or_equal' => 'La fecha de pago no puede ser futura.',
+                ]),
 
             Forms\Components\Textarea::make('notas')
                 ->label('Notas')

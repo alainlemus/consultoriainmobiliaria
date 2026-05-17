@@ -39,7 +39,11 @@ class PostResource extends Resource
                     ->live(onBlur: true)
                     ->afterStateUpdated(fn ($state, Forms\Set $set) =>
                         $set('slug', Str::slug($state))
-                    ),
+                    )
+                    ->validationMessages([
+                        'required' => 'El título del artículo es obligatorio.',
+                        'max'      => 'El título no puede superar los 255 caracteres.',
+                    ]),
 
                 Forms\Components\TextInput::make('slug')
                     ->label('Slug (URL)')
@@ -82,7 +86,10 @@ class PostResource extends Resource
                     ->label('Contenido')
                     ->required()
                     ->fileAttachmentsDirectory('posts/attachments')
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->validationMessages([
+                        'required' => 'El contenido del artículo es obligatorio.',
+                    ]),
             ])->columns(2),
 
             Forms\Components\Section::make('Publicación')->schema([
@@ -101,7 +108,10 @@ class PostResource extends Resource
                         Post::ESTADO_PROGRAMADO => 'Se publicará automáticamente en la fecha indicada.',
                         Post::ESTADO_PUBLICADO  => 'El artículo es visible en el sitio ahora.',
                         default                 => '',
-                    }),
+                    })
+                    ->validationMessages([
+                        'required' => 'Debes seleccionar el estado del artículo.',
+                    ]),
 
                 Forms\Components\DateTimePicker::make('published_at')
                     ->label('Fecha de publicación')
@@ -110,7 +120,10 @@ class PostResource extends Resource
                     ->required()
                     ->native(false)
                     ->displayFormat('d/m/Y H:i')
-                    ->visible(fn (Forms\Get $get) => $get('estado') !== Post::ESTADO_BORRADOR),
+                    ->visible(fn (Forms\Get $get) => $get('estado') !== Post::ESTADO_BORRADOR)
+                    ->validationMessages([
+                        'required' => 'La fecha de publicación es obligatoria para artículos programados o publicados.',
+                    ]),
             ])->columns(2),
         ]);
     }

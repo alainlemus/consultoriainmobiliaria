@@ -105,13 +105,25 @@ class ContactoResource extends Resource
                 ->description('Información básica del prospecto.')
                 ->schema([
                     Forms\Components\TextInput::make('nombre')
-                        ->label('Nombre')->required()->maxLength(255),
+                        ->label('Nombre')->required()->maxLength(255)
+                        ->validationMessages([
+                            'required' => 'El nombre del prospecto es obligatorio.',
+                            'max'      => 'El nombre no puede superar los 255 caracteres.',
+                        ]),
                     Forms\Components\TextInput::make('telefono')
                         ->label('Teléfono')->required()->tel()
                         ->regex('/^\d{10}$/')->maxLength(10)
-                        ->validationMessages(['regex' => 'El teléfono debe tener exactamente 10 dígitos.']),
+                        ->validationMessages([
+                            'required' => 'El teléfono es obligatorio.',
+                            'regex'    => 'El teléfono debe tener exactamente 10 dígitos.',
+                            'max'      => 'El teléfono no puede superar los 10 dígitos.',
+                        ]),
                     Forms\Components\TextInput::make('email')
-                        ->label('Correo')->email()->maxLength(150),
+                        ->label('Correo')->email()->maxLength(150)
+                        ->validationMessages([
+                            'email' => 'Ingresa un correo electrónico válido (ej: usuario@dominio.com).',
+                            'max'   => 'El correo no puede superar los 150 caracteres.',
+                        ]),
                     Forms\Components\Select::make('servicio')
                         ->label('Servicio de interés')
                         ->options([
@@ -169,7 +181,10 @@ class ContactoResource extends Resource
                         ->visible(fn () => Auth::user()?->hasRole('super_admin')),
                     Forms\Components\DatePicker::make('fecha_primer_contacto')
                         ->label('Fecha primer contacto')
-                        ->beforeOrEqual('today'),
+                        ->beforeOrEqual('today')
+                        ->validationMessages([
+                            'before_or_equal' => 'La fecha de primer contacto no puede ser futura.',
+                        ]),
                     Forms\Components\Textarea::make('notas')
                         ->label('Notas internas')->rows(3)->columnSpanFull(),
                 ])->columns(2),
@@ -187,7 +202,10 @@ class ContactoResource extends Resource
                             'visita_domicilio'=> 'Visita a domicilio',
                             'whatsapp'        => 'WhatsApp',
                         ])
-                        ->required(fn (Forms\Get $get) => $get('estado_prospecto') === 'pendiente_cierre'),
+                        ->required(fn (Forms\Get $get) => $get('estado_prospecto') === 'pendiente_cierre')
+                        ->validationMessages([
+                            'required' => 'La modalidad de cierre es obligatoria cuando el estado es "Pendiente de cierre".',
+                        ]),
                     Forms\Components\Placeholder::make('fecha_envio_dueno_display')
                         ->label('Enviado al gestor')
                         ->content(fn ($record) => $record?->fecha_envio_dueno?->format('d/m/Y H:i') ?? '—'),
@@ -203,16 +221,30 @@ class ContactoResource extends Resource
                     Forms\Components\TextInput::make('curp')
                         ->label('CURP')->maxLength(18)->minLength(18)
                         ->regex('/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i')
-                        ->validationMessages(['regex' => 'La CURP no tiene el formato correcto.'])
+                        ->validationMessages([
+                            'regex' => 'La CURP no tiene el formato correcto (ej: LOHA850101HDFPLN02).',
+                            'min'   => 'La CURP debe tener exactamente 18 caracteres.',
+                            'max'   => 'La CURP debe tener exactamente 18 caracteres.',
+                        ])
                         ->live(onBlur: true)
                         ->extraAttributes(['style' => 'text-transform:uppercase']),
                     Forms\Components\DatePicker::make('fecha_nacimiento')
-                        ->label('Fecha de nacimiento')->before('today'),
+                        ->label('Fecha de nacimiento')->before('today')
+                        ->validationMessages([
+                            'before' => 'La fecha de nacimiento debe ser anterior a hoy.',
+                        ]),
                     Forms\Components\TextInput::make('antiguedad_laboral')
                         ->label('Antigüedad laboral (años)')
-                        ->numeric()->minValue(0)->maxValue(50),
+                        ->numeric()->minValue(0)->maxValue(50)
+                        ->validationMessages([
+                            'min' => 'La antigüedad no puede ser negativa.',
+                            'max' => 'La antigüedad no puede superar los 50 años.',
+                        ]),
                     Forms\Components\TextInput::make('salario_mensual')
-                        ->label('Salario mensual')->numeric()->prefix('$')->minValue(0),
+                        ->label('Salario mensual')->numeric()->prefix('$')->minValue(0)
+                        ->validationMessages([
+                            'min' => 'El salario no puede ser negativo.',
+                        ]),
                     Forms\Components\Select::make('tipo_credito_interes')
                         ->label('Tipo de crédito')
                         ->options([
@@ -222,9 +254,15 @@ class ContactoResource extends Resource
                             'otro'      => 'Otro',
                         ]),
                     Forms\Components\TextInput::make('monto_credito_estimado')
-                        ->label('Monto de crédito estimado')->numeric()->prefix('$')->minValue(0),
+                        ->label('Monto de crédito estimado')->numeric()->prefix('$')->minValue(0)
+                        ->validationMessages([
+                            'min' => 'El monto estimado no puede ser negativo.',
+                        ]),
                     Forms\Components\TextInput::make('subcuenta_vivienda')
-                        ->label('Subcuenta de vivienda')->numeric()->prefix('$')->minValue(0),
+                        ->label('Subcuenta de vivienda')->numeric()->prefix('$')->minValue(0)
+                        ->validationMessages([
+                            'min' => 'La subcuenta de vivienda no puede ser negativa.',
+                        ]),
 
                     Forms\Components\Placeholder::make('acceso_simulador')
                         ->label('Simuladores oficiales')->columnSpanFull()
@@ -362,7 +400,10 @@ class ContactoResource extends Resource
                                 'visita_domicilio' => 'Visita a domicilio',
                                 'whatsapp'         => 'WhatsApp',
                             ])
-                            ->required(),
+                            ->required()
+                            ->validationMessages([
+                                'required' => 'Debes seleccionar una modalidad de contacto.',
+                            ]),
                         Forms\Components\Textarea::make('notas_cierre')
                             ->label('Notas de gestión')
                             ->rows(3)

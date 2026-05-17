@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\RedirectAsesorToExpedientes;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use App\Models\Configuracion;
+use Filament\Navigation\NavigationItem;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -59,10 +61,18 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\FunnelEtapasWidget::class,
                 \App\Filament\Widgets\ExpedientesSinMovimientoWidget::class,
                 \App\Filament\Widgets\RankingAsesoresWidget::class,
+                \App\Filament\Widgets\AsesorStatsOverview::class,
+                \App\Filament\Widgets\AsesorProspectosWidget::class,
+                \App\Filament\Widgets\AsesorExpedientesWidget::class,
+                \App\Filament\Widgets\AsesorComisionesWidget::class,
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
             ])
+            ->homeUrl(fn () => auth()->user()?->hasRole('asesor')
+                ? '/admin/dashboard-asesor'
+                : '/admin'
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -73,7 +83,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
-                \App\Http\Middleware\RedirectAsesorToExpedientes::class,
+                RedirectAsesorToExpedientes::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

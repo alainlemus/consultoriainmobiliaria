@@ -31,7 +31,7 @@ class ContratosController extends Controller
 
     public function prestacionServicios(int $expediente): Response
     {
-        $exp = $this->getExpediente($expediente);
+        $exp = $this->getExpediente($expediente, soloAdmin: true);
 
         $pdf = Pdf::loadView('contratos.prestacion_servicios', ['expediente' => $exp])
             ->setPaper('letter', 'portrait')

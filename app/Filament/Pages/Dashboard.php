@@ -18,6 +18,21 @@ class Dashboard extends BaseDashboard
 {
     public static function canAccess(): bool
     {
+        if (! auth()->check()) {
+            return false;
+        }
+
+        // El asesor no ve este dashboard, pero no debe recibir 403 —
+        // el middleware RedirectAsesorToExpedientes lo lleva a su propio dashboard.
+        if (auth()->user()->hasRole('asesor')) {
+            return false;
+        }
+
+        return auth()->user()->hasRole('super_admin');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
         return auth()->check() && auth()->user()->hasRole('super_admin');
     }
 

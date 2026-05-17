@@ -110,15 +110,16 @@ class ExpedienteResource extends Resource
                                 ->label('Folio')
                                 ->disabled()
                                 ->dehydrated()
-                                ->placeholder('Se genera automáticamente')
-                                ->hint('Formato EXP-AÑO-NNNN, asignado por el sistema'),
+                                ->placeholder('Se genera automáticamente'),
                             Forms\Components\Select::make('tipo_tramite_id')
                                 ->label('Tipo de Trámite')
                                 ->options(TipoTramite::where('activo', true)->orderBy('orden')->pluck('nombre', 'id'))
                                 ->required()
                                 ->live()
                                 ->afterStateUpdated(fn (Forms\Set $set) => $set('etapa_tramite_id', null))
-                                ->hint('Selecciona primero para cargar las etapas'),
+                                ->validationMessages([
+                                    'required' => 'Debes seleccionar el tipo de trámite.',
+                                ]),
                             Forms\Components\Select::make('etapa_tramite_id')
                                 ->label('Etapa actual')
                                 ->options(fn (Forms\Get $get) =>
@@ -130,7 +131,9 @@ class ExpedienteResource extends Resource
                                 ->searchable()
                                 ->disabled(fn () => ! auth()->user()?->hasRole('super_admin'))
                                 ->dehydrated(fn () => auth()->user()?->hasRole('super_admin'))
-                                ->hint('Depende del tipo de trámite seleccionado'),
+                                ->validationMessages([
+                                    'required' => 'La etapa del trámite es obligatoria.',
+                                ]),
                             Forms\Components\Select::make('estado')
                                 ->label('Estado general')
                                 ->options([
@@ -145,13 +148,19 @@ class ExpedienteResource extends Resource
                                 ->required()
                                 ->disabled(fn () => ! auth()->user()?->hasRole('super_admin'))
                                 ->dehydrated(fn () => auth()->user()?->hasRole('super_admin'))
-                                ->hint('Al cambiar a "Cerrado" se genera la comisión automáticamente'),
+                                ->hint('Al cambiar a "Cerrado" se genera la comisión automáticamente')
+                                ->validationMessages([
+                                    'required' => 'El estado del expediente es obligatorio.',
+                                ]),
                             Forms\Components\Select::make('asesor_id')
                                 ->label('Asesor asignado')
                                 ->options(User::where('activo', true)->pluck('name', 'id'))
                                 ->searchable()
                                 ->required()
-                                ->hint('Asesor responsable del seguimiento'),
+                                ->hint('Asesor responsable del seguimiento')
+                                ->validationMessages([
+                                    'required' => 'Debes asignar un asesor al expediente.',
+                                ]),
                             Forms\Components\Select::make('contacto_id')
                                 ->label('Prospecto origen')
                                 ->options(Contacto::pluck('nombre', 'id'))
@@ -167,7 +176,10 @@ class ExpedienteResource extends Resource
                                     'otro'           => 'Otro',
                                 ])
                                 ->default('retiro_directo')
-                                ->required(),
+                                ->required()
+                                ->validationMessages([
+                                    'required' => 'Debes indicar el uso del crédito.',
+                                ]),
                             Forms\Components\DatePicker::make('fecha_apertura')
                                 ->label('Fecha de apertura')
                                 ->default(now())
@@ -182,7 +194,11 @@ class ExpedienteResource extends Resource
                                 ->label('Nombre completo')
                                 ->required()
                                 ->maxLength(255)
-                                ->hint('Nombre como aparece en identificación oficial'),
+                                ->hint('Nombre como aparece en identificación oficial')
+                                ->validationMessages([
+                                    'required' => 'El nombre del acreditado es obligatorio.',
+                                    'max'      => 'El nombre no puede superar los 255 caracteres.',
+                                ]),
                             Forms\Components\TextInput::make('acreditado_curp')
                                 ->label('CURP')
                                 ->maxLength(18)
@@ -414,12 +430,27 @@ class ExpedienteResource extends Resource
                                         ->label('Subcuenta de vivienda')
                                         ->numeric()->prefix('$')
                                         ->minValue(0)
-                                        ->hint('Saldo acumulado INFONAVIT/FOVISSSTE'),
+                                        ->hint('Saldo acumulado INFONAVIT/FOVISSSTE')
+                                        ->validationMessages([
+                                            'min' => 'La subcuenta de vivienda no puede ser negativa.',
+                                        ]),
                                     Forms\Components\TextInput::make('monto_total_estimado')
                                         ->label('Monto total estimado')
                                         ->numeric()->prefix('$')
                                         ->minValue(0)
-                                        ->hint('Crédito + subcuenta + otros recursos'),
+                                        ->hint('Crédito + subcuenta + otros recursos')
+                                        ->validationMessages([
+                                            'min' => 'El monto total estimado no puede ser negativo.',
+                                        ])
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
+                                            $total = floatval($state);
+                                            $pct   = floatval($get('honorarios_porcentaje') ?? 0);
+                                            $set('honorarios_monto', $total > 0 && $pct > 0
+                                                ? round($total * $pct / 100, 2)
+                                                : null
+                                            );
+                                        }),
                                     Forms\Components\TextInput::make('total_gastos_financiados')
                                         ->label('Total gastos financiados')
                                         ->numeric()->prefix('$')
@@ -437,12 +468,26 @@ class ExpedienteResource extends Resource
                                             'min' => 'El porcentaje no puede ser negativo.',
                                             'max' => 'El porcentaje no puede superar 100%.',
                                         ])
-                                        ->hint('Porcentaje sobre el monto total'),
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
+                                            $pct   = floatval($state);
+                                            $total = floatval($get('monto_total_estimado') ?? 0);
+                                            $set('honorarios_monto', $total > 0 && $pct > 0
+                                                ? round($total * $pct / 100, 2)
+                                                : null
+                                            );
+                                        }),
+
                                     Forms\Components\TextInput::make('honorarios_monto')
-                                        ->label('Monto de honorarios')
-                                        ->numeric()->prefix('$')
-                                        ->minValue(0)
-                                        ->hint('Monto fijo pactado con el cliente'),
+                                        ->label('Monto de honorarios (calculado)')
+                                        ->prefix('$')
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->placeholder('Se calcula automáticamente')
+                                        ->hint(fn (Forms\Get $get) => ($get('honorarios_porcentaje') && $get('monto_total_estimado'))
+                                            ? number_format(floatval($get('monto_total_estimado')) * floatval($get('honorarios_porcentaje')) / 100, 2) . ' MXN'
+                                            : 'Captura el % y el monto total estimado'
+                                        ),
                                     Forms\Components\Toggle::make('honorarios_pagados')
                                         ->label('Honorarios cobrados')
                                         ->hint('Activa cuando el cliente haya pagado')
@@ -455,7 +500,10 @@ class ExpedienteResource extends Resource
                                     Forms\Components\DatePicker::make('fecha_cierre')
                                         ->label('Fecha de cierre')
                                         ->beforeOrEqual('today')
-                                        ->hint('Fecha en que se formalizó el trámite'),
+                                        ->hint('Fecha en que se formalizó el trámite')
+                                        ->validationMessages([
+                                            'before_or_equal' => 'La fecha de cierre no puede ser futura.',
+                                        ]),
                                 ])->columns(2),
                             Forms\Components\Section::make('Notas internas')
                                 ->description('Visible solo para el equipo admin.')

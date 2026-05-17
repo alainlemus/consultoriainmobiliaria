@@ -33,18 +33,29 @@ class ProcesoResource extends Resource
                 Forms\Components\TextInput::make('numero')
                     ->label('Número (ej. 01, 02…)')
                     ->required()
-                    ->maxLength(4),
+                    ->maxLength(4)
+                    ->validationMessages([
+                        'required' => 'El número del paso es obligatorio.',
+                        'max'      => 'El número no puede superar los 4 caracteres.',
+                    ]),
 
                 Forms\Components\TextInput::make('titulo')
                     ->label('Título del paso')
                     ->required()
-                    ->maxLength(100),
+                    ->maxLength(100)
+                    ->validationMessages([
+                        'required' => 'El título del paso es obligatorio.',
+                        'max'      => 'El título no puede superar los 100 caracteres.',
+                    ]),
 
                 Forms\Components\Textarea::make('descripcion')
                     ->label('Descripción')
                     ->required()
                     ->rows(3)
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->validationMessages([
+                        'required' => 'La descripción del paso es obligatoria.',
+                    ]),
             ])->columns(2),
 
             Forms\Components\Section::make('Visibilidad')->schema([

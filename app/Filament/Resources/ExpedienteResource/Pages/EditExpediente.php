@@ -17,6 +17,18 @@ class EditExpediente extends EditRecord
 {
     protected static string $resource = ExpedienteResource::class;
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $pct   = floatval($data['honorarios_porcentaje'] ?? 0);
+        $total = floatval($data['monto_total_estimado']  ?? 0);
+
+        if ($pct > 0 && $total > 0) {
+            $data['honorarios_monto'] = round($total * $pct / 100, 2);
+        }
+
+        return $data;
+    }
+
     protected static array $estadoConfig = [
         'en_proceso' => ['label' => 'En proceso',  'bg' => '#1d4ed8', 'text' => '#eff6ff'],
         'aprobado'   => ['label' => 'Aprobado',    'bg' => '#15803d', 'text' => '#f0fdf4'],
@@ -120,6 +132,7 @@ class EditExpediente extends EditRecord
                 ->label('Contrato de Servicios')
                 ->icon('heroicon-o-document-text')
                 ->color('gray')
+                ->visible(fn () => auth()->user()?->hasRole('super_admin'))
                 ->modalHeading('Vista previa — Contrato de Servicios')
                 ->modalWidth('5xl')
                 ->modalSubmitActionLabel('Descargar PDF')

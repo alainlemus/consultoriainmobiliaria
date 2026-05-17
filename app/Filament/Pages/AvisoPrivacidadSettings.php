@@ -43,7 +43,10 @@ class AvisoPrivacidadSettings extends Page
                             ->label('Contenido del aviso')
                             ->required()
                             ->fileAttachmentsDirectory('aviso')
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->validationMessages([
+                                'required' => 'El contenido del aviso de privacidad es obligatorio.',
+                            ]),
                     ]),
             ])
             ->statePath('data');

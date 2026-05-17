@@ -34,21 +34,32 @@ class ServicioResource extends Resource
                     ->label('Título')
                     ->required()
                     ->maxLength(150)
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->validationMessages([
+                        'required' => 'El título del servicio es obligatorio.',
+                        'max'      => 'El título no puede superar los 150 caracteres.',
+                    ]),
 
                 Forms\Components\Textarea::make('icon_path')
                     ->label('SVG path del ícono (heroicon outline)')
                     ->helperText('Copia el valor del atributo "d" del <path> del ícono SVG.')
                     ->rows(3)
                     ->required()
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->validationMessages([
+                        'required' => 'El SVG path del ícono es obligatorio.',
+                    ]),
 
                 Forms\Components\TextInput::make('wa_texto')
                     ->label('Texto para enlace WhatsApp')
                     ->helperText('Ej: crédito INFONAVIT — se usará en el mensaje predefinido de WhatsApp.')
                     ->required()
                     ->maxLength(100)
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->validationMessages([
+                        'required' => 'El texto del enlace WhatsApp es obligatorio.',
+                        'max'      => 'El texto no puede superar los 100 caracteres.',
+                    ]),
             ]),
 
             Forms\Components\Section::make('Beneficios / Lista de ítems')->schema([

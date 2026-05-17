@@ -32,38 +32,22 @@ class DocumentosRelationManager extends RelationManager
                 ->maxLength(150)
                 ->columnSpanFull(),
 
-            Forms\Components\Select::make('estado')
-                ->label('Estado')
-                ->required()
-                ->options([
-                    'pendiente' => 'Pendiente',
-                    'recibido'  => 'Recibido',
-                    'no_aplica' => 'No aplica',
-                ])
-                ->default('pendiente'),
-
-            Forms\Components\TextInput::make('notas')
-                ->label('Notas')
-                ->maxLength(255)
-                ->columnSpanFull(),
-
             Forms\Components\FileUpload::make('ruta_archivo')
                 ->label('Archivo del documento')
                 ->disk('public')
                 ->directory('documentos-expediente')
                 ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
-                ->maxSize(10240) // 10 MB
+                ->maxSize(10240)
                 ->downloadable()
                 ->openable()
                 ->columnSpanFull()
-                ->helperText('PDF o imagen — máx. 10 MB')
-                ->afterStateUpdated(function ($state, Forms\Set $set) {
-                    // Si se sube archivo, marcar como recibido automáticamente
-                    if ($state) {
-                        $set('estado', 'recibido');
-                    }
-                })
-                ->live(),
+                ->helperText('PDF o imagen — máx. 10 MB. Al subir un archivo el estado cambia automáticamente a Recibido; al quitarlo vuelve a Pendiente.'),
+
+            Forms\Components\TextInput::make('notas')
+                ->label('Notas u observaciones')
+                ->maxLength(255)
+                ->placeholder('Opcional — ej: "pendiente firma", "copia simple aceptada"...')
+                ->columnSpanFull(),
         ]);
     }
 
@@ -172,10 +156,17 @@ class DocumentosRelationManager extends RelationManager
                     ->icon('heroicon-o-paper-clip')
                     ->mutateRecordDataUsing(fn (array $data) => $data)
                     ->using(function (Model $record, array $data): Model {
-                        // Si se subió un archivo, estado pasa a recibido
-                        if (!empty($data['ruta_archivo']) && $data['ruta_archivo'] !== $record->ruta_archivo) {
+                        $archivoNuevo   = $data['ruta_archivo'] ?? null;
+                        $archivoActual  = $record->ruta_archivo;
+
+                        if ($archivoNuevo && $archivoNuevo !== $archivoActual) {
+                            // Se subió un archivo nuevo → recibido
                             $data['estado'] = 'recibido';
+                        } elseif (! $archivoNuevo && $archivoActual) {
+                            // Se eliminó el archivo → pendiente
+                            $data['estado'] = 'pendiente';
                         }
+
                         $record->update($data);
                         return $record;
                     }),

@@ -18,6 +18,7 @@ class SeoSettings extends Page
 
     protected static ?string $navigationIcon  = 'heroicon-o-magnifying-glass';
     protected static ?string $navigationLabel = 'SEO';
+    protected static ?string $title           = 'SEO';
     protected static ?string $navigationGroup = 'Configuración del sitio';
     protected static ?int    $navigationSort  = 11;
     protected static string  $view            = 'filament.pages.seo-settings';
@@ -46,7 +47,11 @@ class SeoSettings extends Page
                         ->required()
                         ->maxLength(70)
                         ->helperText('Recomendado: máximo 60-70 caracteres.')
-                        ->columnSpanFull(),
+                        ->columnSpanFull()
+                        ->validationMessages([
+                            'required' => 'El título SEO es obligatorio.',
+                            'max'      => 'El título no puede superar los 70 caracteres.',
+                        ]),
 
                     Forms\Components\Textarea::make('seo_descripcion')
                         ->label('Descripción (meta description)')
@@ -54,17 +59,27 @@ class SeoSettings extends Page
                         ->rows(3)
                         ->maxLength(165)
                         ->helperText('Recomendado: máximo 150-160 caracteres.')
-                        ->columnSpanFull(),
+                        ->columnSpanFull()
+                        ->validationMessages([
+                            'required' => 'La descripción SEO es obligatoria.',
+                            'max'      => 'La descripción no puede superar los 165 caracteres.',
+                        ]),
 
                     Forms\Components\TextInput::make('seo_keywords')
                         ->label('Palabras clave (meta keywords)')
                         ->helperText('Separadas por comas. Ej: avalúos, INFONAVIT, Hidalgo')
                         ->maxLength(255)
-                        ->columnSpanFull(),
+                        ->columnSpanFull()
+                        ->validationMessages([
+                            'max' => 'Las palabras clave no pueden superar los 255 caracteres.',
+                        ]),
 
                     Forms\Components\TextInput::make('seo_autor')
                         ->label('Autor (meta author)')
-                        ->maxLength(100),
+                        ->maxLength(100)
+                        ->validationMessages([
+                            'max' => 'El nombre del autor no puede superar los 100 caracteres.',
+                        ]),
 
                     Forms\Components\Select::make('seo_robots')
                         ->label('Robots (meta robots)')
@@ -75,7 +90,10 @@ class SeoSettings extends Page
                             'noindex, nofollow' => 'noindex, nofollow',
                         ])
                         ->default('index, follow')
-                        ->required(),
+                        ->required()
+                        ->validationMessages([
+                            'required' => 'Debes seleccionar el valor de robots.',
+                        ]),
                 ])->columns(2),
 
                 Forms\Components\Section::make('Open Graph / Redes sociales')->schema([
