@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\ExpedienteController;
 use App\Http\Controllers\Api\V1\DocumentoController;
 use App\Http\Controllers\Api\V1\UbicacionController;
 use App\Http\Controllers\Api\V1\SyncController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\ComisionController;
 
 /*
@@ -80,5 +81,9 @@ Route::prefix('v1')->group(function () {
 
         // Dispositivos FCM
         Route::post('/dispositivos',      [DeviceTokenController::class, 'store']);
+
+        // Comisiones del asesor
+        Route::get('/comisiones',         [ComisionController::class, 'index']);
+        Route::get('/comisiones/resumen', [ComisionController::class, 'resumen']);
     });
 });
