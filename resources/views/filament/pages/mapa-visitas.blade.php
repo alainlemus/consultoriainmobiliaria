@@ -4,8 +4,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     @php
-        $stats     = $this->getStats();
-        $asesores  = $this->getAsesores();
+        $stats        = $this->getStats();
+        $asesores     = $this->getAsesores();
+        $esSuperAdmin = $this->esSuperAdmin();
     @endphp
 
     <div class="space-y-6" x-data="mapaVisitas()" x-init="init()">
@@ -48,7 +49,7 @@
                 </div>
                 <div>
                     <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['asesores'] }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Asesores activos</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $esSuperAdmin ? 'Asesores activos' : 'Asesor' }}</p>
                 </div>
             </div>
         </div>
@@ -76,8 +77,8 @@
                 </button>
             </div>
 
-            {{-- Asesor --}}
-            @if($asesores->count() > 0)
+            {{-- Asesor (solo super_admin) --}}
+            @if($esSuperAdmin && $asesores->count() > 0)
             <select x-model="filtroAsesor" @change="aplicarFiltros()"
                 class="text-xs border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400">
                 <option value="">Todos los asesores</option>

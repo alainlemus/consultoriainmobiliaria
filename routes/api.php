@@ -6,8 +6,8 @@ use App\Http\Controllers\Api\V1\ContactoController;
 use App\Http\Controllers\Api\V1\ExpedienteController;
 use App\Http\Controllers\Api\V1\DocumentoController;
 use App\Http\Controllers\Api\V1\UbicacionController;
-use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\SyncController;
+use App\Http\Controllers\Api\V1\ComisionController;
 
 /*
 |--------------------------------------------------------------------------

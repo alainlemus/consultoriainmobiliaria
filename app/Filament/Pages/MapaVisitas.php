@@ -20,10 +20,11 @@ class MapaVisitas extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('super_admin');
+        $user = auth()->user();
+        return $user && ($user->hasRole('super_admin') || $user->hasRole('asesor'));
     }
 
-    /** Todos los asesores para el filtro */
+    /** Asesores para el filtro — solo visible para super_admin */
     public function getAsesores(): Collection
     {
         return User::role('asesor')
@@ -31,39 +32,54 @@ class MapaVisitas extends Page
             ->get(['id', 'name']);
     }
 
-    /** Ubicaciones con relaciones, listas para JSON */
+    /** Indica si el usuario actual es super_admin (usado en la blade) */
+    public function esSuperAdmin(): bool
+    {
+        return auth()->user()?->hasRole('super_admin') ?? false;
+    }
+
+    /** Ubicaciones filtradas por rol */
     public function getUbicacionesJson(): string
     {
-        $ubicaciones = Ubicacion::with(['contacto:id,nombre', 'user:id,name', 'fotos'])
-            ->orderByDesc('visitado_en')
-            ->get()
-            ->map(fn (Ubicacion $u) => [
-                'id'          => $u->id,
-                'latitud'     => $u->latitud,
-                'longitud'    => $u->longitud,
-                'tipo'        => $u->tipo,
-                'notas'       => $u->notas,
-                'visitado_en' => $u->visitado_en?->format('d/m/Y H:i'),
-                'contacto'    => $u->contacto?->nombre,
-                'asesor'      => $u->user?->name,
-                'asesor_id'   => $u->user_id,
-                'fotos'       => $u->fotos->map(fn ($f) => [
-                    'id'  => $f->id,
-                    // URL firmada válida 30 min — no requiere sesión, el browser la carga directo
-                    'url' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
-                ])->values(),
-            ]);
+        $query = Ubicacion::with(['contacto:id,nombre', 'user:id,name', 'fotos'])
+            ->orderByDesc('visitado_en');
+
+        if (! $this->esSuperAdmin()) {
+            $query->where('user_id', auth()->id());
+        }
+
+        $ubicaciones = $query->get()->map(fn (Ubicacion $u) => [
+            'id'          => $u->id,
+            'latitud'     => $u->latitud,
+            'longitud'    => $u->longitud,
+            'tipo'        => $u->tipo,
+            'notas'       => $u->notas,
+            'visitado_en' => $u->visitado_en?->format('d/m/Y H:i'),
+            'contacto'    => $u->contacto?->nombre,
+            'asesor'      => $u->user?->name,
+            'asesor_id'   => $u->user_id,
+            'fotos'       => $u->fotos->map(fn ($f) => [
+                'id'  => $f->id,
+                'url' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
+            ])->values(),
+        ]);
 
         return json_encode($ubicaciones);
     }
 
-    /** Stats rápidas para las tarjetas */
+    /** Stats filtradas por rol */
     public function getStats(): array
     {
-        $total    = Ubicacion::count();
-        $clientes = Ubicacion::where('tipo', 'visita_cliente')->count();
-        $props    = Ubicacion::where('tipo', 'propiedad')->count();
-        $asesores = Ubicacion::distinct('user_id')->count('user_id');
+        $base = $this->esSuperAdmin()
+            ? Ubicacion::query()
+            : Ubicacion::where('user_id', auth()->id());
+
+        $total    = (clone $base)->count();
+        $clientes = (clone $base)->where('tipo', 'visita_cliente')->count();
+        $props    = (clone $base)->where('tipo', 'propiedad')->count();
+        $asesores = $this->esSuperAdmin()
+            ? Ubicacion::distinct('user_id')->count('user_id')
+            : 1;
 
         return compact('total', 'clientes', 'props', 'asesores');
     }

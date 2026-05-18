@@ -28,7 +28,8 @@ class UbicacionResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('super_admin');
+        $user = auth()->user();
+        return $user && ($user->hasRole('super_admin') || $user->hasRole('asesor'));
     }
 
     // Sin crear ni editar desde el admin — solo lectura
@@ -73,7 +74,8 @@ class UbicacionResource extends Resource
 
                 TextColumn::make('user.name')
                     ->label('Asesor')
-                    ->searchable(),
+                    ->searchable()
+                    ->visible(fn () => auth()->user()?->hasRole('super_admin')),
 
                 TextColumn::make('municipio')
                     ->label('Municipio')
@@ -112,7 +114,8 @@ class UbicacionResource extends Resource
                 SelectFilter::make('user_id')
                     ->label('Asesor')
                     ->options(fn () => User::role('asesor')->pluck('name', 'id')->toArray())
-                    ->searchable(),
+                    ->searchable()
+                    ->visible(fn () => auth()->user()?->hasRole('super_admin')),
 
                 Filter::make('municipio')
                     ->label('Municipio')
@@ -157,6 +160,13 @@ class UbicacionResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['contacto', 'user', 'fotos']);
+        $query = parent::getEloquentQuery()->with(['contacto', 'user', 'fotos']);
+
+        $user = auth()->user();
+        if ($user && ! $user->hasRole('super_admin')) {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query;
     }
 }
