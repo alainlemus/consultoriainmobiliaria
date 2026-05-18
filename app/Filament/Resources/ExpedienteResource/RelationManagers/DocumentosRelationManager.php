@@ -34,12 +34,10 @@ class DocumentosRelationManager extends RelationManager
 
             Forms\Components\FileUpload::make('ruta_archivo')
                 ->label('Archivo del documento')
-                ->disk('public')
-                ->directory('documentos-expediente')
+                ->disk('local')
+                ->directory(fn ($record) => 'expedientes/' . ($record?->expediente_id ?? 'tmp') . '/docs')
                 ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
                 ->maxSize(10240)
-                ->downloadable()
-                ->openable()
                 ->columnSpanFull()
                 ->helperText('PDF o imagen — máx. 10 MB. Al subir un archivo el estado cambia automáticamente a Recibido; al quitarlo vuelve a Pendiente.'),
 
@@ -137,7 +135,11 @@ class DocumentosRelationManager extends RelationManager
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Cerrar')
                     ->modalContent(function ($record) {
-                        $url    = Storage::disk('public')->url($record->ruta_archivo);
+                        $url    = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                            'api.documentos.descargar',
+                            now()->addMinutes(30),
+                            ['expedienteId' => $record->expediente_id, 'documentoId' => $record->id]
+                        );
                         $nombre = strtolower($record->ruta_archivo ?? '');
                         $esPdf  = str_ends_with($nombre, '.pdf');
 

@@ -74,20 +74,29 @@ class DocumentoController extends Controller
         $nombre  = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
         $ruta    = "expedientes/{$expedienteId}/docs/{$nombre}";
 
+        // Si ya existe un doc de este tipo, borrar el archivo anterior
+        $existente = DocumentoExpediente::where('expediente_id', $expedienteId)
+            ->where('tipo', $request->tipo_documento)
+            ->first();
+        if ($existente?->ruta_archivo) {
+            Storage::disk(self::DISK)->delete($existente->ruta_archivo);
+        }
+
         Storage::disk(self::DISK)->putFileAs(
             "expedientes/{$expedienteId}/docs",
             $archivo,
             $nombre
         );
 
-        $doc = DocumentoExpediente::create([
-            'expediente_id' => $expedienteId,
-            'tipo'          => $request->tipo_documento,
-            'nombre'        => $archivo->getClientOriginalName(),
-            'estado'        => 'pendiente',
-            'notas'         => $request->input('notas'),
-            'ruta_archivo'  => $ruta,
-        ]);
+        $doc = DocumentoExpediente::updateOrCreate(
+            ['expediente_id' => $expedienteId, 'tipo' => $request->tipo_documento],
+            [
+                'nombre'       => $archivo->getClientOriginalName(),
+                'estado'       => 'pendiente',
+                'notas'        => $request->input('notas'),
+                'ruta_archivo' => $ruta,
+            ]
+        );
 
         return response()->json(['data' => $this->serialize($doc)], 201);
     }
@@ -111,23 +120,12 @@ class DocumentoController extends Controller
             abort(404, 'Este documento no tiene archivo adjunto.');
         }
 
-        // URL firmada apuntando al endpoint de descarga, válida 5 minutos.
-        // Se genera con MOBILE_URL para que el dispositivo pueda resolver la firma
-        // sin que el host cambie después (lo que invalidaría la firma).
-        $mobileUrl = config('app.mobile_url');
-        if ($mobileUrl) {
-            URL::forceRootUrl($mobileUrl);
-        }
-
+        // URL firmada apuntando al endpoint de descarga, válida 5 minutos
         $url = URL::temporarySignedRoute(
             'api.documentos.descargar',
             now()->addMinutes(5),
             ['expedienteId' => $expedienteId, 'documentoId' => $documentoId]
         );
-
-        if ($mobileUrl) {
-            URL::forceRootUrl(null);
-        }
 
         return response()->json(['url' => $url, 'expira_en' => 300]);
     }
