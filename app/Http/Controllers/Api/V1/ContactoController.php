@@ -54,11 +54,10 @@ class ContactoController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'nombre'                  => ['required', 'string', 'max:100'],
-            'apellido_paterno'        => ['required', 'string', 'max:100'],
-            'apellido_materno'        => ['nullable', 'string', 'max:100'],
+            'nombre'                  => ['required', 'string', 'max:200'],
             'telefono'                => ['nullable', 'string', 'max:20'],
             'email'                   => ['nullable', 'email', 'max:150'],
+            'servicio'                => ['nullable', 'in:FOVISSSTE,INFONAVIT'],
             'estado_prospecto'        => ['nullable', 'in:nuevo,contactado,precalificado,en_tramite,cerrado,no_interesado'],
             'notas'                   => ['nullable', 'string'],
             'origen'                  => ['nullable', 'string', 'max:80'],
@@ -68,13 +67,11 @@ class ContactoController extends Controller
             'curp'                    => ['nullable', 'string', 'max:18'],
         ]);
 
-        // El campo 'nombre' en el modelo es el nombre completo o solo el primer nombre.
-        // La app envía nombre + apellido_paterno + apellido_materno por separado;
-        // los almacenamos en los campos CRM correctos.
         $contacto = Contacto::create([
             ...$data,
             'asesor_id'        => $request->user()->id,
             'estado_prospecto' => $data['estado_prospecto'] ?? 'nuevo',
+            'origen'           => 'app_movil',
         ]);
 
         return response()->json(['data' => $contacto], 201);
@@ -98,11 +95,10 @@ class ContactoController extends Controller
         $contacto = $this->findForUser($request, $id);
 
         $data = $request->validate([
-            'nombre'                  => ['sometimes', 'string', 'max:100'],
-            'apellido_paterno'        => ['sometimes', 'string', 'max:100'],
-            'apellido_materno'        => ['nullable', 'string', 'max:100'],
+            'nombre'                  => ['sometimes', 'string', 'max:200'],
             'telefono'                => ['nullable', 'string', 'max:20'],
             'email'                   => ['nullable', 'email', 'max:150'],
+            'servicio'                => ['nullable', 'in:FOVISSSTE,INFONAVIT'],
             'estado_prospecto'        => ['nullable', 'in:nuevo,contactado,precalificado,en_tramite,cerrado,no_interesado'],
             'notas'                   => ['nullable', 'string'],
             'monto_credito_estimado'  => ['nullable', 'numeric', 'min:0'],

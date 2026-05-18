@@ -12,6 +12,7 @@ use App\Notifications\ComisionGenerada;
 use App\Notifications\ComisionPagada;
 use App\Notifications\EtapaExpedienteCambiada;
 use App\Notifications\ExpedienteCerrado;
+use App\Notifications\NuevoProspectoCreado;
 use App\Notifications\ProspectoAsignado;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -293,5 +294,70 @@ class NotificacionesTest extends TestCase
 
         // Debe haber solo 1 notificación (la del created), no una segunda del update
         Notification::assertSentTo($this->asesor, ProspectoAsignado::class, 1);
+    }
+
+    // ─── NuevoProspectoCreado → super_admin ───────────────────────────────
+
+    public function test_super_admin_recibe_notificacion_al_crear_prospecto_con_asesor(): void
+    {
+        Notification::fake();
+
+        Contacto::create([
+            'nombre'    => 'Prospecto App',
+            'telefono'  => '5512345678',
+            'asesor_id' => $this->asesor->id,
+            'origen'    => 'app_movil',
+        ]);
+
+        Notification::assertSentTo($this->admin, NuevoProspectoCreado::class);
+    }
+
+    public function test_super_admin_recibe_notificacion_al_crear_prospecto_sin_asesor(): void
+    {
+        Notification::fake();
+
+        Contacto::create([
+            'nombre'    => 'Prospecto Sin Asesor',
+            'telefono'  => '5598765432',
+            'asesor_id' => null,
+        ]);
+
+        Notification::assertSentTo($this->admin, NuevoProspectoCreado::class);
+    }
+
+    public function test_super_admin_no_recibe_notificacion_al_actualizar_prospecto(): void
+    {
+        Notification::fake();
+
+        $contacto = Contacto::create([
+            'nombre'    => 'Prospecto Existente',
+            'asesor_id' => $this->asesor->id,
+        ]);
+
+        Notification::assertSentTo($this->admin, NuevoProspectoCreado::class, 1);
+
+        // Actualizar no debe disparar otra notificacion
+        $contacto->update(['notas' => 'Actualizado']);
+
+        Notification::assertSentTo($this->admin, NuevoProspectoCreado::class, 1);
+    }
+
+    public function test_notificacion_nuevo_prospecto_muestra_origen_app_movil(): void
+    {
+        Notification::fake();
+
+        Contacto::create([
+            'nombre'    => 'Desde App',
+            'asesor_id' => $this->asesor->id,
+            'origen'    => 'app_movil',
+        ]);
+
+        Notification::assertSentTo(
+            $this->admin,
+            NuevoProspectoCreado::class,
+            function (NuevoProspectoCreado $notif) {
+                return $notif->contacto->origen === 'app_movil';
+            }
+        );
     }
 }
