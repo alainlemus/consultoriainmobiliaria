@@ -111,12 +111,23 @@ class DocumentoController extends Controller
             abort(404, 'Este documento no tiene archivo adjunto.');
         }
 
-        // URL firmada apuntando al endpoint de descarga, válida 5 minutos
+        // URL firmada apuntando al endpoint de descarga, válida 5 minutos.
+        // Se genera con MOBILE_URL para que el dispositivo pueda resolver la firma
+        // sin que el host cambie después (lo que invalidaría la firma).
+        $mobileUrl = config('app.mobile_url');
+        if ($mobileUrl) {
+            URL::forceRootUrl($mobileUrl);
+        }
+
         $url = URL::temporarySignedRoute(
             'api.documentos.descargar',
             now()->addMinutes(5),
             ['expedienteId' => $expedienteId, 'documentoId' => $documentoId]
         );
+
+        if ($mobileUrl) {
+            URL::forceRootUrl(null);
+        }
 
         return response()->json(['url' => $url, 'expira_en' => 300]);
     }
@@ -138,7 +149,15 @@ class DocumentoController extends Controller
             abort(404, 'Archivo no encontrado.');
         }
 
-        return Storage::disk(self::DISK)->response($doc->ruta_archivo, $doc->nombre);
+        $path     = Storage::disk(self::DISK)->path($doc->ruta_archivo);
+        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
+        $nombre   = $doc->nombre ?? basename($doc->ruta_archivo);
+
+        return response()->file($path, [
+            'Content-Type'        => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $nombre . '"',
+            'Cache-Control'       => 'private, max-age=300',
+        ]);
     }
 
     /**

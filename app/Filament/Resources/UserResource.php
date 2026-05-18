@@ -70,7 +70,8 @@ class UserResource extends Resource
                     Forms\Components\ViewField::make('foto_perfil_url')
                         ->label('')
                         ->view('filament.forms.components.foto-perfil')
-                        ->dehydrated(false),
+                        ->dehydrated(false)
+                        ->columnSpanFull(),
                 ])
                 ->visibleOn(['view', 'edit']),
 

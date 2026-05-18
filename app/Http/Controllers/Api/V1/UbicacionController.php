@@ -170,11 +170,11 @@ class UbicacionController extends Controller
                     'visitado_en' => $u->visitado_en,
                     'contacto_id' => $u->contacto_id,
                     'contacto'    => $u->contacto?->nombre,
-                    'fotos'       => $u->fotos->map(fn ($f) => [
-                        'id'  => $f->id,
-                        // URL firmada válida 1 hora — Image en RN puede cargarla sin headers
-                        'url' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addHour()),
-                    ]),
+                     'fotos'       => $u->fotos->map(fn ($f) => [
+                         'id'  => $f->id,
+                         // URL firmada válida 1 hora — Image en RN puede cargarla sin headers
+                         'url' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addHour()),
+                     ]),
                 ];
             });
 

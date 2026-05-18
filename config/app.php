@@ -54,6 +54,11 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // URL pública accesible desde dispositivos móviles en la red local.
+    // Se usa para generar URLs firmadas que el móvil pueda resolver sin que
+    // cambiar el host invalide la firma HMAC.
+    'mobile_url' => env('MOBILE_URL'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

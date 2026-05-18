@@ -8,6 +8,7 @@
             src="{{ $url }}"
             alt="Foto de perfil"
             class="w-24 h-24 rounded-full object-cover ring-2 ring-primary-500"
+            style="width:96px;height:96px;border-radius:9999px;object-fit:cover;"
             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
         />
         <div class="w-24 h-24 rounded-full bg-gray-200 items-center justify-center text-gray-400 text-sm hidden">
