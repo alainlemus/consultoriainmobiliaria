@@ -13,7 +13,7 @@ class MapaVisitas extends Page
     protected static ?string $navigationLabel = 'Mapa de Visitas';
     protected static ?string $title           = 'Mapa de Visitas y Alcance';
     protected static ?string $navigationGroup = 'CRM';
-    protected static ?int    $navigationSort  = 10;
+    protected static ?int    $navigationSort  = 9;
     protected static ?string $slug            = 'mapa-visitas';
 
     protected static string $view = 'filament.pages.mapa-visitas';
@@ -34,19 +34,24 @@ class MapaVisitas extends Page
     /** Ubicaciones con relaciones, listas para JSON */
     public function getUbicacionesJson(): string
     {
-        $ubicaciones = Ubicacion::with(['contacto:id,nombre', 'user:id,name'])
+        $ubicaciones = Ubicacion::with(['contacto:id,nombre', 'user:id,name', 'fotos'])
             ->orderByDesc('visitado_en')
             ->get()
             ->map(fn (Ubicacion $u) => [
-                'id'             => $u->id,
-                'latitud'        => $u->latitud,
-                'longitud'       => $u->longitud,
-                'tipo'           => $u->tipo,
-                'notas'          => $u->notas,
-                'visitado_en'    => $u->visitado_en?->format('d/m/Y H:i'),
-                'contacto'       => $u->contacto?->nombre,
-                'asesor'         => $u->user?->name,
-                'asesor_id'      => $u->user_id,
+                'id'          => $u->id,
+                'latitud'     => $u->latitud,
+                'longitud'    => $u->longitud,
+                'tipo'        => $u->tipo,
+                'notas'       => $u->notas,
+                'visitado_en' => $u->visitado_en?->format('d/m/Y H:i'),
+                'contacto'    => $u->contacto?->nombre,
+                'asesor'      => $u->user?->name,
+                'asesor_id'   => $u->user_id,
+                'fotos'       => $u->fotos->map(fn ($f) => [
+                    'id'  => $f->id,
+                    // URL firmada válida 30 min — no requiere sesión, el browser la carga directo
+                    'url' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
+                ])->values(),
             ]);
 
         return json_encode($ubicaciones);

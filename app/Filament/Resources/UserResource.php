@@ -64,6 +64,16 @@ class UserResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
+            Forms\Components\Section::make('Foto de perfil')
+                ->description('Subida por el asesor desde la app móvil.')
+                ->schema([
+                    Forms\Components\ViewField::make('foto_perfil_url')
+                        ->label('')
+                        ->view('filament.forms.components.foto-perfil')
+                        ->dehydrated(false),
+                ])
+                ->visibleOn(['view', 'edit']),
+
             Forms\Components\Section::make('Información personal')
                 ->description('Datos de acceso del usuario al sistema de administración.')
                 ->schema([
@@ -186,6 +196,13 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('foto_perfil_url')
+                    ->label('Foto')
+                    ->getStateUsing(fn (User $record) => $record->foto_perfil_url)
+                    ->circular()
+                    ->defaultImageUrl(null)
+                    ->toggleable(isToggledHiddenByDefault: false),
+
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
                     ->searchable()

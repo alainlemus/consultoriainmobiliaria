@@ -25,6 +25,18 @@ Route::get(
     [DocumentoController::class, 'descargar']
 )->middleware('signed')->name('api.documentos.descargar');
 
+// ── Foto de visita con URL firmada (1 hora) ────────────────────────────────
+Route::get(
+    '/ubicaciones/fotos/{fotoId}',
+    [UbicacionController::class, 'verFoto']
+)->middleware('signed')->name('api.ubicacion.foto');
+
+// ── Foto de perfil de usuario con URL firmada (1 hora) ─────────────────────
+Route::get(
+    '/users/{user}/foto-perfil',
+    [AuthController::class, 'verFotoPerfil']
+)->middleware('signed')->name('api.user.foto');
+
 Route::prefix('v1')->group(function () {
 
     // ── Públicas (sin token) ──────────────────────────────────────────────
@@ -34,8 +46,10 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
 
         // Auth
-        Route::post('/auth/logout', [AuthController::class, 'logout']);
-        Route::get('/auth/me',      [AuthController::class, 'me']);
+        Route::post('/auth/logout',           [AuthController::class, 'logout']);
+        Route::get('/auth/me',                [AuthController::class, 'me']);
+        Route::put('/auth/perfil',            [AuthController::class, 'updatePerfil']);
+        Route::post('/auth/perfil/foto',      [AuthController::class, 'subirFotoPerfil']);
 
         // Prospectos / Contactos
         Route::get('/contactos',          [ContactoController::class, 'index']);
@@ -57,8 +71,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/reemplazar',         [DocumentoController::class, 'reemplazar']);
 
         // Ubicaciones GPS
-        Route::post('/ubicaciones',       [UbicacionController::class, 'store']);
-        Route::get('/ubicaciones/mapa',   [UbicacionController::class, 'mapa']);
+        Route::post('/ubicaciones',              [UbicacionController::class, 'store']);
+        Route::get('/ubicaciones/mapa',          [UbicacionController::class, 'mapa']);
+        Route::post('/ubicaciones/{id}/fotos',   [UbicacionController::class, 'subirFotos']);
 
         // Sync offline batch
         Route::post('/sync',              [SyncController::class, 'batch']);

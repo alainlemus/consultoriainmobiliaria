@@ -8,7 +8,10 @@
         $asesores  = $this->getAsesores();
     @endphp
 
-    <div class="space-y-6" x-data="mapaVisitas({{ $this->getUbicacionesJson() }})" x-init="init()">
+    <div class="space-y-6" x-data="mapaVisitas()" x-init="init()">
+
+        {{-- JSON de ubicaciones — type application/json es ignorado por Livewire morph --}}
+        <script type="application/json" id="ubicaciones-data">{!! $this->getUbicacionesJson() !!}</script>
 
         {{-- Stats --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -112,10 +115,11 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-    function mapaVisitas(datos) {
+    function mapaVisitas() {
+        const datos = JSON.parse(document.getElementById('ubicaciones-data').textContent);
         return {
-            mapa:               null,
-            todos:              datos,
+            mapa:                null,
+            todos:               datos,
             marcadoresFiltrados: datos,
             filtroTipo:         'todos',
             filtroAsesor:       '',
@@ -168,17 +172,55 @@
                     const m = L.marker([u.latitud, u.longitud], { icon: this.iconoPara(u.tipo) });
 
                     const tipoLabel = u.tipo === 'visita_cliente' ? 'Visita cliente' : 'Propiedad';
-                    const contacto  = u.contacto  ? `<p style="margin:2px 0;color:#374151"><b>Cliente:</b> ${u.contacto}</p>`  : '';
-                    const asesor    = u.asesor     ? `<p style="margin:2px 0;color:#374151"><b>Asesor:</b> ${u.asesor}</p>`     : '';
-                    const notas     = u.notas      ? `<p style="margin:4px 0 2px;color:#6b7280;font-style:italic">"${u.notas}"</p>` : '';
-                    const fecha     = u.visitado_en? `<p style="margin:4px 0 0;color:#9ca3af;font-size:11px">📅 ${u.visitado_en}</p>` : '';
 
-                    m.bindPopup(`
-                        <div style="font-family:sans-serif;font-size:13px;min-width:180px;max-width:240px;">
-                            <p style="font-weight:700;font-size:14px;margin:0 0 6px;color:#111827">${tipoLabel}</p>
-                            ${contacto}${asesor}${notas}${fecha}
-                        </div>
-                    `);
+                    // Crear popup con elemento DOM real (evita sanitización de Leaflet)
+                    const popupEl = document.createElement('div');
+                    popupEl.style.cssText = 'font-family:sans-serif;font-size:13px;min-width:180px;max-width:260px;';
+
+                    const titulo = document.createElement('p');
+                    titulo.style.cssText = 'font-weight:700;font-size:14px;margin:0 0 6px;color:#111827';
+                    titulo.textContent = tipoLabel;
+                    popupEl.appendChild(titulo);
+
+                    if (u.contacto) {
+                        const p = document.createElement('p');
+                        p.style.cssText = 'margin:2px 0;color:#374151';
+                        p.innerHTML = `<b>Cliente:</b> ${u.contacto}`;
+                        popupEl.appendChild(p);
+                    }
+                    if (u.asesor) {
+                        const p = document.createElement('p');
+                        p.style.cssText = 'margin:2px 0;color:#374151';
+                        p.innerHTML = `<b>Asesor:</b> ${u.asesor}`;
+                        popupEl.appendChild(p);
+                    }
+                    if (u.notas) {
+                        const p = document.createElement('p');
+                        p.style.cssText = 'margin:4px 0 2px;color:#6b7280;font-style:italic';
+                        p.textContent = `"${u.notas}"`;
+                        popupEl.appendChild(p);
+                    }
+                    if (u.visitado_en) {
+                        const p = document.createElement('p');
+                        p.style.cssText = 'margin:4px 0 0;color:#9ca3af;font-size:11px';
+                        p.textContent = `📅 ${u.visitado_en}`;
+                        popupEl.appendChild(p);
+                    }
+
+                    if (u.fotos && u.fotos.length > 0) {
+                        const grid = document.createElement('div');
+                        grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:8px';
+                        u.fotos.forEach(f => {
+                            const img = document.createElement('img');
+                            img.src = f.url;
+                            img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:pointer;';
+                            img.addEventListener('click', () => window.open(f.url, '_blank'));
+                            grid.appendChild(img);
+                        });
+                        popupEl.appendChild(grid);
+                    }
+
+                    m.bindPopup(popupEl, { maxWidth: 300 });
 
                     m.addTo(this.mapa);
                     this.capas.push(m);

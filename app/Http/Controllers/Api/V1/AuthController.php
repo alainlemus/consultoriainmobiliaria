@@ -6,11 +6,26 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
 
 class AuthController extends Controller
 {
+    private function userPayload(User $user): array
+    {
+        return [
+            'id'              => $user->id,
+            'name'            => $user->name,
+            'email'           => $user->email,
+            'telefono'        => $user->telefono,
+            'banco'           => $user->banco,
+            'clabe'           => $user->clabe,
+            'foto_perfil_url' => $user->foto_perfil_url,
+            'roles'           => $user->getRoleNames(),
+        ];
+    }
+
     public function login(Request $request): JsonResponse
     {
         $request->validate([
@@ -30,7 +45,6 @@ class AuthController extends Controller
             return response()->json(['message' => 'Cuenta inactiva.'], 403);
         }
 
-        // Revocar tokens previos del mismo dispositivo si se envía nombre
         $tokenName = $request->input('device_name', 'app-movil');
         $user->tokens()->where('name', $tokenName)->delete();
 
@@ -38,15 +52,7 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user'  => [
-                'id'       => $user->id,
-                'name'     => $user->name,
-                'email'    => $user->email,
-                'telefono' => $user->telefono,
-                'banco'    => $user->banco,
-                'clabe'    => $user->clabe,
-                'roles'    => $user->getRoleNames(),
-            ],
+            'user'  => $this->userPayload($user),
         ]);
     }
 
@@ -59,18 +65,64 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
+        return response()->json([
+            'data' => $this->userPayload($request->user()),
+        ]);
+    }
+
+    public function updatePerfil(Request $request): JsonResponse
+    {
         $user = $request->user();
 
-        return response()->json([
-            'data' => [
-                'id'       => $user->id,
-                'name'     => $user->name,
-                'email'    => $user->email,
-                'telefono' => $user->telefono,
-                'banco'    => $user->banco,
-                'clabe'    => $user->clabe,
-                'roles'    => $user->getRoleNames(),
-            ],
+        $data = $request->validate([
+            'name'     => ['sometimes', 'string', 'max:255'],
+            'telefono' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'banco'    => ['sometimes', 'nullable', 'string', 'max:100'],
+            'clabe'    => ['sometimes', 'nullable', 'string', 'max:18'],
         ]);
+
+        $user->update($data);
+
+        return response()->json([
+            'message' => 'Perfil actualizado.',
+            'data'    => $this->userPayload($user->fresh()),
+        ]);
+    }
+
+    public function subirFotoPerfil(Request $request): JsonResponse
+    {
+        $request->validate([
+            'foto' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+        ]);
+
+        $user = $request->user();
+
+        // Eliminar foto anterior si existe
+        if ($user->foto_perfil) {
+            Storage::disk('local')->delete($user->foto_perfil);
+        }
+
+        $path = $request->file('foto')->store("fotos_perfil/{$user->id}", 'local');
+
+        $user->update(['foto_perfil' => $path]);
+
+        return response()->json([
+            'message'         => 'Foto de perfil actualizada.',
+            'foto_perfil_url' => $user->fresh()->foto_perfil_url,
+        ]);
+    }
+
+    public function verFotoPerfil(Request $request, User $user)
+    {
+        abort_unless($request->hasValidSignature(), 403);
+
+        if (! $user->foto_perfil || ! Storage::disk('local')->exists($user->foto_perfil)) {
+            abort(404);
+        }
+
+        return response()->file(
+            Storage::disk('local')->path($user->foto_perfil),
+            ['Cache-Control' => 'private, max-age=3600']
+        );
     }
 }

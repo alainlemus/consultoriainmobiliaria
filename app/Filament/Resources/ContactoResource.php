@@ -172,6 +172,7 @@ class ContactoResource extends Resource
                             'campo'     => 'Campo / visita directa',
                             'referido'  => 'Referido',
                             'whatsapp'  => 'WhatsApp',
+                            'app_movil' => 'App móvil',
                             'otro'      => 'Otro',
                         ])
                         ->default('sitio_web'),
@@ -313,6 +314,7 @@ class ContactoResource extends Resource
                         'campo'     => 'Campo',
                         'referido'  => 'Referido',
                         'whatsapp'  => 'WhatsApp',
+                        'app_movil' => '📱 App móvil',
                         default     => 'Otro',
                     }),
                 Tables\Columns\BadgeColumn::make('estado_prospecto')
@@ -373,6 +375,8 @@ class ContactoResource extends Resource
                         'campo'     => 'Campo',
                         'referido'  => 'Referido',
                         'whatsapp'  => 'WhatsApp',
+                        'app_movil' => 'App móvil',
+                        'otro'      => 'Otro',
                     ]),
                 Tables\Filters\SelectFilter::make('asesor_id')
                     ->label('Asesor')

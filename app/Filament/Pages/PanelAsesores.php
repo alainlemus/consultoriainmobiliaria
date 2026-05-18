@@ -19,7 +19,7 @@ class PanelAsesores extends Page implements HasTable
     protected static ?string $navigationIcon  = 'heroicon-o-user-group';
     protected static ?string $navigationLabel = 'Panel de Asesores';
     protected static ?string $navigationGroup = 'CRM';
-    protected static ?int    $navigationSort  = 10;
+    protected static ?int    $navigationSort  = 20;
     protected static string  $view            = 'filament.pages.panel-asesores';
 
     public static function canAccess(): bool
