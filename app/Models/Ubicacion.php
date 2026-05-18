@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Ubicacion extends Model
+{
+    protected $table = 'ubicaciones';
+
+    protected $fillable = [
+        'user_id',
+        'contacto_id',
+        'latitud',
+        'longitud',
+        'tipo',
+        'notas',
+        'visitado_en',
+    ];
+
+    protected $casts = [
+        'latitud'     => 'float',
+        'longitud'    => 'float',
+        'visitado_en' => 'datetime',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function contacto(): BelongsTo
+    {
+        return $this->belongsTo(Contacto::class);
+    }
+}
