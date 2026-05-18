@@ -12,6 +12,7 @@ use App\Notifications\ComisionGenerada;
 use App\Notifications\ComisionPagada;
 use App\Notifications\EtapaExpedienteCambiada;
 use App\Notifications\ExpedienteCerrado;
+use App\Notifications\NuevoExpedienteCreado;
 use App\Notifications\NuevoProspectoCreado;
 use App\Notifications\ProspectoAsignado;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -358,6 +359,68 @@ class NotificacionesTest extends TestCase
             function (NuevoProspectoCreado $notif) {
                 return $notif->contacto->origen === 'app_movil';
             }
+        );
+    }
+
+    // ─── NuevoExpedienteCreado → super_admin ──────────────────────────────
+
+    public function test_super_admin_recibe_notificacion_al_crear_expediente(): void
+    {
+        Notification::fake();
+
+        $contacto = Contacto::create(['nombre' => 'Cliente Exp', 'asesor_id' => $this->asesor->id]);
+
+        Expediente::create([
+            'asesor_id'        => $this->asesor->id,
+            'contacto_id'      => $contacto->id,
+            'tipo_tramite_id'  => $this->tipo->id,
+            'etapa_tramite_id' => $this->etapa1->id,
+            'estado'           => 'en_proceso',
+        ]);
+
+        Notification::assertSentTo($this->admin, NuevoExpedienteCreado::class);
+    }
+
+    public function test_super_admin_no_recibe_notificacion_al_actualizar_expediente(): void
+    {
+        Notification::fake();
+
+        $contacto = Contacto::create(['nombre' => 'Cliente Exp2', 'asesor_id' => $this->asesor->id]);
+
+        $exp = Expediente::create([
+            'asesor_id'        => $this->asesor->id,
+            'contacto_id'      => $contacto->id,
+            'tipo_tramite_id'  => $this->tipo->id,
+            'etapa_tramite_id' => $this->etapa1->id,
+            'estado'           => 'en_proceso',
+        ]);
+
+        Notification::assertSentTo($this->admin, NuevoExpedienteCreado::class, 1);
+
+        // Actualizar no debe disparar otra notificacion
+        $exp->update(['estado' => 'documentacion']);
+
+        Notification::assertSentTo($this->admin, NuevoExpedienteCreado::class, 1);
+    }
+
+    public function test_notificacion_expediente_contiene_datos_del_asesor(): void
+    {
+        Notification::fake();
+
+        $contacto = Contacto::create(['nombre' => 'Cliente Exp3', 'asesor_id' => $this->asesor->id]);
+
+        Expediente::create([
+            'asesor_id'        => $this->asesor->id,
+            'contacto_id'      => $contacto->id,
+            'tipo_tramite_id'  => $this->tipo->id,
+            'etapa_tramite_id' => $this->etapa1->id,
+            'estado'           => 'en_proceso',
+        ]);
+
+        Notification::assertSentTo(
+            $this->admin,
+            NuevoExpedienteCreado::class,
+            fn (NuevoExpedienteCreado $notif) => $notif->expediente->asesor_id === $this->asesor->id
         );
     }
 }

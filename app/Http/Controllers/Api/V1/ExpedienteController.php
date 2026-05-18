@@ -14,7 +14,7 @@ class ExpedienteController extends Controller
     {
         $user  = $request->user();
         $query = Expediente::with([
-            'contacto:id,nombre,apellido_paterno,apellido_materno,email,telefono,estado_prospecto',
+            'contacto:id,nombre,email,telefono,estado_prospecto',
             'tipoTramite:id,nombre',
             'etapa:id,nombre',
         ]);
@@ -46,7 +46,7 @@ class ExpedienteController extends Controller
         $exp = $this->findForUser($request, $id);
 
         $exp->load([
-            'contacto:id,nombre,apellido_paterno,apellido_materno,email,telefono,estado_prospecto',
+            'contacto:id,nombre,email,telefono,estado_prospecto',
             'tipoTramite:id,nombre',
             'etapa:id,nombre',
             'documentos',
@@ -73,9 +73,12 @@ class ExpedienteController extends Controller
             'estado'           => $data['estado'] ?? 'en_proceso',
             'etapa_tramite_id' => $data['etapa_tramite_id']
                 ?? EtapaTramite::where('tipo_tramite_id', $data['tipo_tramite_id'])->orderBy('orden')->value('id'),
+            // Si no se envía acreditado_nombre, se toma del contacto
+            'acreditado_nombre' => $data['acreditado_nombre']
+                ?? \App\Models\Contacto::find($data['contacto_id'])?->nombre,
         ]);
 
-        return response()->json(['data' => $exp->load(['tipoTramite:id,nombre', 'contacto:id,nombre,apellido_paterno'])], 201);
+        return response()->json(['data' => $exp->load(['tipoTramite:id,nombre', 'contacto:id,nombre'])], 201);
     }
 
     public function update(Request $request, int $id): JsonResponse

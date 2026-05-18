@@ -5,17 +5,24 @@ namespace App\Observers;
 use App\Models\Comision;
 use App\Models\DocumentoExpediente;
 use App\Models\Expediente;
+use App\Models\User;
 use App\Notifications\ExpedienteCerrado;
 use App\Notifications\EtapaExpedienteCambiada;
+use App\Notifications\NuevoExpedienteCreado;
 
 class ExpedienteObserver
 {
     /**
-     * Al crear un expediente: generar checklist de documentos.
+     * Al crear un expediente: generar checklist de documentos
+     * y notificar a todos los super_admin.
      */
     public function created(Expediente $expediente): void
     {
         $this->sincronizarChecklist($expediente);
+
+        User::role('super_admin')
+            ->get()
+            ->each(fn (User $admin) => $admin->notify(new NuevoExpedienteCreado($expediente)));
     }
 
     /**
