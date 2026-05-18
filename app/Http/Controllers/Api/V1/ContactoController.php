@@ -84,7 +84,17 @@ class ContactoController extends Controller
     {
         $contacto = $this->findForUser($request, $id);
 
-        return response()->json(['data' => $contacto]);
+        // Incluir el expediente más reciente para que la app sepa si ya está en trámite
+        $expediente = $contacto->expedientes()
+            ->whereNotIn('estado', ['cancelado'])
+            ->latest()
+            ->select(['id', 'folio', 'estado', 'tipo_tramite_id', 'created_at'])
+            ->first();
+
+        $data = $contacto->toArray();
+        $data['expediente_activo'] = $expediente;
+
+        return response()->json(['data' => $data]);
     }
 
     /**

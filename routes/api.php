@@ -17,6 +17,14 @@ use App\Http\Controllers\Api\V1\SyncController;
 | Autenticación:      Laravel Sanctum (Bearer token)
 */
 
+// ── Descarga de documento con URL firmada temporalmente ────────────────────
+// No requiere Bearer token — la firma de la URL es la autorización.
+// Válida 5 minutos (generada por DocumentoController@ver).
+Route::get(
+    '/documentos/{expedienteId}/{documentoId}/descargar',
+    [DocumentoController::class, 'descargar']
+)->middleware('signed')->name('api.documentos.descargar');
+
 Route::prefix('v1')->group(function () {
 
     // ── Públicas (sin token) ──────────────────────────────────────────────
@@ -42,8 +50,11 @@ Route::prefix('v1')->group(function () {
         Route::put('/expedientes/{id}',   [ExpedienteController::class, 'update']);
 
         // Documentos
-        Route::get('/expedientes/{expedienteId}/documentos',  [DocumentoController::class, 'index']);
-        Route::post('/expedientes/{expedienteId}/documentos', [DocumentoController::class, 'store']);
+        Route::get('/expedientes/{expedienteId}/documentos',                                   [DocumentoController::class, 'index']);
+        Route::post('/expedientes/{expedienteId}/documentos',                                  [DocumentoController::class, 'store']);
+        Route::get('/expedientes/{expedienteId}/documentos/{documentoId}/ver',                 [DocumentoController::class, 'ver']);
+        Route::delete('/expedientes/{expedienteId}/documentos/{documentoId}',                  [DocumentoController::class, 'destroy']);
+        Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/reemplazar',         [DocumentoController::class, 'reemplazar']);
 
         // Ubicaciones GPS
         Route::post('/ubicaciones',       [UbicacionController::class, 'store']);

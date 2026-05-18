@@ -13,12 +13,19 @@ use App\Notifications\NuevoExpedienteCreado;
 class ExpedienteObserver
 {
     /**
-     * Al crear un expediente: generar checklist de documentos
-     * y notificar a todos los super_admin.
+     * Al crear un expediente: generar checklist de documentos,
+     * notificar a todos los super_admin y marcar el contacto como en_tramite.
      */
     public function created(Expediente $expediente): void
     {
         $this->sincronizarChecklist($expediente);
+
+        // El contacto ya no es un prospecto — está en trámite
+        if ($expediente->contacto_id) {
+            \App\Models\Contacto::where('id', $expediente->contacto_id)
+                ->whereNotIn('estado_prospecto', ['cerrado'])   // no pisar un cierre
+                ->update(['estado_prospecto' => 'en_tramite']);
+        }
 
         User::role('super_admin')
             ->get()

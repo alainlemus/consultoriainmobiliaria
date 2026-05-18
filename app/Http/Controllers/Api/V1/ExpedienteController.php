@@ -52,7 +52,16 @@ class ExpedienteController extends Controller
             'documentos',
         ]);
 
-        return response()->json(['data' => $exp]);
+        // Serializar documentos igual que DocumentoController (sin URL directa)
+        $data = $exp->toArray();
+        $data['documentos'] = $exp->documentos->map(fn ($d) => [
+            ...$d->toArray(),
+            'tipo_documento' => $d->tipo,
+            'url'            => null,            // se obtiene via /ver (URL firmada)
+            'tiene_archivo'  => (bool) $d->ruta_archivo,
+        ])->values()->all();
+
+        return response()->json(['data' => $data]);
     }
 
     public function store(Request $request): JsonResponse
