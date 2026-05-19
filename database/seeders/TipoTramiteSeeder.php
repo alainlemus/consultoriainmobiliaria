@@ -134,7 +134,7 @@ class TipoTramiteSeeder extends Seeder
         ];
 
         foreach ($tipos as $tipo) {
-            TipoTramite::updateOrCreate(['id' => $tipo['id']], $tipo);
+            TipoTramite::updateOrCreate(['slug' => $tipo['slug']], $tipo);
         }
 
         // ─── Etapas para tipos nuevos ─────────────────────────────────────────
