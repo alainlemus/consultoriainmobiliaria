@@ -134,7 +134,23 @@ class TipoTramiteSeeder extends Seeder
         ];
 
         foreach ($tipos as $tipo) {
-            TipoTramite::updateOrCreate(['slug' => $tipo['slug']], $tipo);
+            // Buscar primero por id, luego por slug para evitar duplicados
+            $existing = TipoTramite::find($tipo['id'])
+                ?? TipoTramite::where('slug', $tipo['slug'])->first();
+
+            if ($existing) {
+                $existing->update([
+                    'nombre'               => $tipo['nombre'],
+                    'slug'                 => $tipo['slug'],
+                    'descripcion'          => $tipo['descripcion'],
+                    'porcentaje_honorarios' => $tipo['porcentaje_honorarios'],
+                    'activo'               => $tipo['activo'],
+                    'orden'                => $tipo['orden'],
+                ]);
+            } else {
+                TipoTramite::insert(array_merge($tipo, ['activo' => (int) $tipo['activo'],
+                    'created_at' => now(), 'updated_at' => now()]));
+            }
         }
 
         // ─── Etapas para tipos nuevos ─────────────────────────────────────────
