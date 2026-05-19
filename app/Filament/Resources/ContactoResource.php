@@ -72,8 +72,9 @@ class ContactoResource extends Resource
             $query->where('asesor_id', Auth::id());
         }
 
-        // Excluir prospectos convertidos de la lista
-        $query->where('estado_prospecto', '!=', 'convertido');
+        // Excluir prospectos que ya no son prospectos activos
+        $query->whereNotIn('estado_prospecto', ['convertido', 'descartado'])
+              ->whereDoesntHave('expedientes');
 
         return $query;
     }
