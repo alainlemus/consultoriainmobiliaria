@@ -27,7 +27,6 @@
     </div>
 </section>
 
-@once
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
@@ -46,4 +45,3 @@
     ]
 }
 </script>
-@endonce
