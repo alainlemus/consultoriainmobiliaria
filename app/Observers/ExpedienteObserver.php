@@ -5,15 +5,31 @@ namespace App\Observers;
 use App\Models\Comision;
 use App\Models\DocumentoExpediente;
 use App\Models\Expediente;
+use App\Models\User;
+use App\Notifications\ExpedienteCerrado;
+use App\Notifications\EtapaExpedienteCambiada;
+use App\Notifications\NuevoExpedienteCreado;
 
 class ExpedienteObserver
 {
     /**
-     * Al crear un expediente: generar checklist de documentos.
+     * Al crear un expediente: generar checklist de documentos,
+     * notificar a todos los super_admin y marcar el contacto como en_tramite.
      */
     public function created(Expediente $expediente): void
     {
         $this->sincronizarChecklist($expediente);
+
+        // El contacto ya no es un prospecto — está en trámite
+        if ($expediente->contacto_id) {
+            \App\Models\Contacto::where('id', $expediente->contacto_id)
+                ->whereNotIn('estado_prospecto', ['cerrado'])   // no pisar un cierre
+                ->update(['estado_prospecto' => 'en_tramite']);
+        }
+
+        User::role('super_admin')
+            ->get()
+            ->each(fn (User $admin) => $admin->notify(new NuevoExpedienteCreado($expediente)));
     }
 
     /**
@@ -27,7 +43,20 @@ class ExpedienteObserver
             $this->sincronizarChecklist($expediente);
         }
 
-        // Generar comisión al cerrar expediente
+        // Notificar al asesor si la etapa cambia
+        if ($expediente->wasChanged('etapa_tramite_id') && $expediente->asesor) {
+            $etapaAnterior = $expediente->getOriginal('etapa_tramite_id');
+            $nombreAnterior = \App\Models\EtapaTramite::find($etapaAnterior)?->nombre ?? 'Anterior';
+            $nombreNueva    = $expediente->etapa?->nombre ?? 'Nueva etapa';
+
+            $expediente->asesor->notify(new EtapaExpedienteCambiada(
+                expediente:     $expediente,
+                etapaAnterior:  $nombreAnterior,
+                etapaNueva:     $nombreNueva,
+            ));
+        }
+
+        // Generar comisión al cerrar expediente y notificar al asesor
         if (
             $expediente->wasChanged('estado') &&
             $expediente->estado === 'cerrado' &&
@@ -37,18 +66,19 @@ class ExpedienteObserver
             $existe = Comision::where('expediente_id', $expediente->id)->exists();
 
             if (! $existe) {
-                $montoComision = 10000; // $10,000 MXN fijo por cierre
-
                 Comision::create([
                     'expediente_id'       => $expediente->id,
                     'asesor_id'           => $expediente->asesor_id,
                     'monto_base'          => $expediente->honorarios_monto,
-                    'porcentaje_comision' => 0,
-                    'monto_comision'      => $montoComision,
+                    'porcentaje_comision' => $expediente->honorarios_porcentaje ?? 0,
+                    'monto_comision'      => $expediente->honorarios_monto,
                     'estado'              => 'pendiente',
                     'fecha_generacion'    => now()->toDateString(),
                 ]);
             }
+
+            // Notificar al asesor que su expediente fue cerrado
+            $expediente->asesor?->notify(new ExpedienteCerrado($expediente));
         }
     }
 

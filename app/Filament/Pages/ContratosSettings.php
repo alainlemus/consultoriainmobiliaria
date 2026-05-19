@@ -62,12 +62,20 @@ class ContratosSettings extends Page
                         Forms\Components\TextInput::make('firma_prestador')
                             ->label('Firma de "El Prestador"')
                             ->required()
-                            ->maxLength(150),
+                            ->maxLength(150)
+                            ->validationMessages([
+                                'required' => 'El nombre del prestador es obligatorio.',
+                                'max'      => 'El nombre no puede superar los 150 caracteres.',
+                            ]),
 
                         Forms\Components\TextInput::make('firma_juridico')
                             ->label('Firma por parte del Jurídico')
                             ->required()
-                            ->maxLength(150),
+                            ->maxLength(150)
+                            ->validationMessages([
+                                'required' => 'El nombre del jurídico es obligatorio.',
+                                'max'      => 'El nombre no puede superar los 150 caracteres.',
+                            ]),
                     ]),
 
                 // ── CONTRATO DE PRESTACIÓN DE SERVICIOS ───────────────────────

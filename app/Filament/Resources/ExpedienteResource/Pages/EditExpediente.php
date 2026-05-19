@@ -17,6 +17,18 @@ class EditExpediente extends EditRecord
 {
     protected static string $resource = ExpedienteResource::class;
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $pct   = floatval($data['honorarios_porcentaje'] ?? 0);
+        $total = floatval($data['monto_total_estimado']  ?? 0);
+
+        if ($pct > 0 && $total > 0) {
+            $data['honorarios_monto'] = round($total * $pct / 100, 2);
+        }
+
+        return $data;
+    }
+
     protected static array $estadoConfig = [
         'en_proceso' => ['label' => 'En proceso',  'bg' => '#1d4ed8', 'text' => '#eff6ff'],
         'aprobado'   => ['label' => 'Aprobado',    'bg' => '#15803d', 'text' => '#f0fdf4'],
@@ -46,7 +58,15 @@ class EditExpediente extends EditRecord
             )
             : '';
 
-        return new HtmlString($folio . $badgeEstado . $badgeTipo);
+        $nombre = $this->record->acreditado_nombre;
+        $nombreHtml = $nombre
+            ? sprintf(
+                '<div style="font-size:1.35rem;font-weight:600;color:#ffffff;margin-top:2px;line-height:1.3;">%s</div>',
+                e($nombre)
+            )
+            : '';
+
+        return new HtmlString('<div>' . $folio . $badgeEstado . $badgeTipo . $nombreHtml . '</div>');
     }
 
     protected function getHeaderActions(): array
@@ -112,6 +132,7 @@ class EditExpediente extends EditRecord
                 ->label('Contrato de Servicios')
                 ->icon('heroicon-o-document-text')
                 ->color('gray')
+                ->visible(fn () => auth()->user()?->hasRole('super_admin'))
                 ->modalHeading('Vista previa — Contrato de Servicios')
                 ->modalWidth('5xl')
                 ->modalSubmitActionLabel('Descargar PDF')
@@ -141,6 +162,23 @@ class EditExpediente extends EditRecord
                 ))
                 ->action(fn () => redirect()->away(
                     route('contratos.convenio_honorarios', $this->record->id)
+                )),
+
+            Action::make('carta_mandato')
+                ->label('Carta Mandato')
+                ->icon('heroicon-o-identification')
+                ->color('info')
+                ->modalHeading('Vista previa — Carta Mandato')
+                ->modalWidth('5xl')
+                ->modalSubmitActionLabel('Descargar PDF')
+                ->modalContent(fn () => new HtmlString(
+                    '<iframe src="' . route('contratos.carta_mandato', $this->record->id) . '?preview=1"
+                        style="width:100%;height:75vh;border:none;border-radius:4px;"
+                        title="Carta Mandato">
+                    </iframe>'
+                ))
+                ->action(fn () => redirect()->away(
+                    route('contratos.carta_mandato', $this->record->id)
                 )),
 
             Actions\DeleteAction::make()

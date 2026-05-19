@@ -38,7 +38,11 @@ class TipoTramiteResource extends Resource
                     ->required()
                     ->maxLength(255)
                     ->unique(ignoreRecord: true)
-                    ->validationMessages(['unique' => 'Ya existe un tipo de trámite con ese nombre.'])
+                    ->validationMessages([
+                        'required' => 'El nombre del tipo de trámite es obligatorio.',
+                        'max'      => 'El nombre no puede superar los 255 caracteres.',
+                        'unique'   => 'Ya existe un tipo de trámite con ese nombre.',
+                    ])
                     ->live(onBlur: true)
                     ->afterStateUpdated(fn ($state, Forms\Set $set) =>
                         $set('slug', Str::slug($state))
@@ -49,7 +53,12 @@ class TipoTramiteResource extends Resource
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(255)
-                    ->hint('Se genera automáticamente — no modificar'),
+                    ->hint('Se genera automáticamente — no modificar')
+                    ->validationMessages([
+                        'required' => 'El slug es obligatorio.',
+                        'unique'   => 'Ya existe un tipo de trámite con ese slug.',
+                        'max'      => 'El slug no puede superar los 255 caracteres.',
+                    ]),
                 Forms\Components\Textarea::make('descripcion')
                     ->label('Descripción')
                     ->rows(3)
@@ -67,7 +76,11 @@ class TipoTramiteResource extends Resource
                     ->default(0)
                     ->minValue(0)
                     ->maxValue(100)
-                    ->hint('Se usa como valor inicial en nuevos expedientes'),
+                    ->hint('Se usa como valor inicial en nuevos expedientes')
+                    ->validationMessages([
+                        'min' => 'El porcentaje no puede ser negativo.',
+                        'max' => 'El porcentaje no puede superar el 100%.',
+                    ]),
                 Forms\Components\TextInput::make('orden')
                     ->label('Orden')
                     ->numeric()

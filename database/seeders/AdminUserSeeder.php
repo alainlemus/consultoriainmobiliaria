@@ -35,14 +35,23 @@ class AdminUserSeeder extends Seeder
             $user->assignRole($superAdmin);
         }
 
-        // Asignar todos los permisos al admin (se generan con shield:generate)
-        try {
-            $permissions = Permission::pluck('name')->toArray();
-            if (count($permissions) > 0) {
-                $user->syncPermissions($permissions);
+        // Asignar todos los permisos al rol super_admin (no al usuario directamente)
+        $permissions = Permission::where('guard_name', 'web')->pluck('name')->toArray();
+        if (count($permissions) > 0) {
+            $superAdmin->syncPermissions($permissions);
+        }
+
+        // Garantizar permisos de las páginas API Móvil (pueden no estar en Shield aún)
+        $apiPermisos = [
+            'page_ApiConfiguracion',
+            'page_ApiDocumentacion',
+            'page_ApiMonitor',
+        ];
+        foreach ($apiPermisos as $permiso) {
+            $perm = Permission::firstOrCreate(['name' => $permiso, 'guard_name' => 'web']);
+            if (! $superAdmin->hasPermissionTo($perm)) {
+                $superAdmin->givePermissionTo($perm);
             }
-        } catch (\Throwable $e) {
-            // Los permisos se generan con shield:generate después del primer seed
         }
     }
 }

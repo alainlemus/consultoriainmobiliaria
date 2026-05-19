@@ -33,18 +33,29 @@ class CoberturaResource extends Resource
                 Forms\Components\TextInput::make('nombre')
                     ->label('Estado / Nombre')
                     ->required()
-                    ->maxLength(100),
+                    ->maxLength(100)
+                    ->validationMessages([
+                        'required' => 'El nombre de la zona es obligatorio.',
+                        'max'      => 'El nombre no puede superar los 100 caracteres.',
+                    ]),
 
                 Forms\Components\Textarea::make('descripcion')
                     ->label('Descripción')
                     ->required()
-                    ->rows(3),
+                    ->rows(3)
+                    ->validationMessages([
+                        'required' => 'La descripción de la zona es obligatoria.',
+                    ]),
 
                 Forms\Components\TextInput::make('detalle')
                     ->label('Detalle (dirección o nota de contacto)')
                     ->required()
                     ->maxLength(255)
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->validationMessages([
+                        'required' => 'El detalle de contacto es obligatorio.',
+                        'max'      => 'El detalle no puede superar los 255 caracteres.',
+                    ]),
             ])->columns(2),
 
             Forms\Components\Section::make('Visibilidad')->schema([

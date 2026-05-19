@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ContactoResource\Pages;
 
 use App\Filament\Resources\ContactoResource;
+use App\Filament\Resources\ExpedienteResource;
 use App\Models\Expediente;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -79,7 +80,7 @@ if (Auth::user()->hasRole('super_admin') && $record->estado_prospecto === 'pendi
                         'estado' => 'en_proceso',
                     ]);
                     $record->update(['estado_prospecto' => 'convertido']);
-                    $this->redirect(ContactoResource::getUrl('edit', ['record' => $expediente]), navigate: true);
+                    $this->redirect(ExpedienteResource::getUrl('edit', ['record' => $expediente]), navigate: true);
                 });
         }
 

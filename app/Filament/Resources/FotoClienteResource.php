@@ -42,7 +42,10 @@ class FotoClienteResource extends Resource
                         ->disk('public')
                         ->required()
                         ->columnSpanFull()
-                        ->hint('Se recortará automáticamente en formato cuadrado 1:1.'),
+                        ->hint('Se recortará automáticamente en formato cuadrado 1:1.')
+                        ->validationMessages([
+                            'required' => 'La foto del cliente es obligatoria.',
+                        ]),
 
                     Forms\Components\TextInput::make('nombre')
                         ->label('Nombre del cliente')

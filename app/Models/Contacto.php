@@ -30,6 +30,12 @@ class Contacto extends Model
         'subcuenta_vivienda'     => 'decimal:2',
     ];
 
+    // Normaliza servicio a mayúsculas al leer (datos legacy en minúsculas)
+    public function getServicioAttribute(?string $value): ?string
+    {
+        return $value ? strtoupper($value) : null;
+    }
+
     public function asesor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'asesor_id');

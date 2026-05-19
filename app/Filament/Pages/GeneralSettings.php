@@ -19,6 +19,7 @@ class GeneralSettings extends Page
 
     protected static ?string $navigationIcon  = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'General';
+    protected static ?string $title           = 'Configuración General';
     protected static ?string $navigationGroup = 'Configuración del sitio';
     protected static ?int    $navigationSort  = 10;
     protected static string  $view            = 'filament.pages.general-settings';
@@ -67,30 +68,49 @@ class GeneralSettings extends Page
                         ->label('Teléfono 1')
                         ->tel()
                         ->required()
-                        ->maxLength(20),
+                        ->maxLength(20)
+                        ->validationMessages([
+                            'required' => 'El teléfono principal es obligatorio.',
+                            'max'      => 'El teléfono no puede superar los 20 caracteres.',
+                        ]),
 
                     Forms\Components\TextInput::make('telefono_2')
                         ->label('Teléfono 2')
                         ->tel()
-                        ->maxLength(20),
+                        ->maxLength(20)
+                        ->validationMessages([
+                            'max' => 'El teléfono 2 no puede superar los 20 caracteres.',
+                        ]),
 
                     Forms\Components\TextInput::make('whatsapp_1')
                         ->label('WhatsApp 1 (con código de país)')
                         ->helperText('Ej: 527711910395')
                         ->required()
-                        ->maxLength(20),
+                        ->maxLength(20)
+                        ->validationMessages([
+                            'required' => 'El número de WhatsApp principal es obligatorio.',
+                            'max'      => 'El número de WhatsApp no puede superar los 20 caracteres.',
+                        ]),
 
                     Forms\Components\TextInput::make('whatsapp_2')
                         ->label('WhatsApp 2 (con código de país)')
                         ->helperText('Ej: 527717818005')
-                        ->maxLength(20),
+                        ->maxLength(20)
+                        ->validationMessages([
+                            'max' => 'El número de WhatsApp 2 no puede superar los 20 caracteres.',
+                        ]),
 
                     Forms\Components\TextInput::make('correo_contacto')
                         ->label('Correo receptor del formulario de contacto')
                         ->email()
                         ->required()
                         ->maxLength(150)
-                        ->columnSpanFull(),
+                        ->columnSpanFull()
+                        ->validationMessages([
+                            'required' => 'El correo de contacto es obligatorio.',
+                            'email'    => 'El correo de contacto debe ser una dirección válida.',
+                            'max'      => 'El correo no puede superar los 150 caracteres.',
+                        ]),
                 ])->columns(2),
 
                 Forms\Components\Section::make('Oficina principal')->schema([

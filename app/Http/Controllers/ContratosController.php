@@ -31,7 +31,7 @@ class ContratosController extends Controller
 
     public function prestacionServicios(int $expediente): Response
     {
-        $exp = $this->getExpediente($expediente);
+        $exp = $this->getExpediente($expediente, soloAdmin: true);
 
         $pdf = Pdf::loadView('contratos.prestacion_servicios', ['expediente' => $exp])
             ->setPaper('letter', 'portrait')
@@ -54,6 +54,22 @@ class ContratosController extends Controller
             ->setOption('defaultFont', 'DejaVu Sans');
 
         $filename = "convenio-honorarios-{$exp->folio}.pdf";
+
+        return request()->boolean('preview')
+            ? $pdf->stream($filename)
+            : $pdf->download($filename);
+    }
+
+    public function cartaMandato(int $expediente): Response
+    {
+        // Asesor puede generar la carta de su propio expediente
+        $exp = $this->getExpediente($expediente, soloAdmin: false);
+
+        $pdf = Pdf::loadView('contratos.carta_mandato', ['expediente' => $exp])
+            ->setPaper('letter', 'portrait')
+            ->setOption('defaultFont', 'DejaVu Sans');
+
+        $filename = "carta-mandato-{$exp->folio}.pdf";
 
         return request()->boolean('preview')
             ? $pdf->stream($filename)

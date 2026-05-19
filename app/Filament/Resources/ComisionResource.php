@@ -18,7 +18,22 @@ class ComisionResource extends Resource
 {
     public static function canViewAny(): bool
     {
+        return auth()->check() && auth()->user()->hasAnyRole(['super_admin', 'asesor']);
+    }
+
+    public static function canEdit(Model $record): bool
+    {
         return auth()->check() && auth()->user()->hasRole('super_admin');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
     }
 
 
@@ -139,6 +154,9 @@ class ComisionResource extends Resource
                         ->required()
                         ->live()
                         ->hint('Pendiente → Aprobada → Pagada')
+                        ->validationMessages([
+                            'required' => 'El estado de la comisión es obligatorio.',
+                        ])
                         ->afterStateUpdated(function ($state, Forms\Set $set) {
                             if ($state === 'aprobada') {
                                 $set('fecha_aprobacion', now()->toDateString());
@@ -328,21 +346,22 @@ class ComisionResource extends Resource
                         ]);
                     }),
 
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+
+                Tables\Actions\ViewAction::make()
+                    ->visible(fn () => Auth::user()?->hasRole('asesor')),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ])
+            ->bulkActions([])
             ->defaultSort('created_at', 'desc');
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListComisiones::route('/'),
-            'edit'  => Pages\EditComision::route('/{record}/edit'),
+            'index'  => Pages\ListComisiones::route('/'),
+            'view'   => Pages\ViewComision::route('/{record}'),
+            'edit'   => Pages\EditComision::route('/{record}/edit'),
         ];
     }
 }

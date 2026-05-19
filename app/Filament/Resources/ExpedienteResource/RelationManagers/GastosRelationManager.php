@@ -21,13 +21,20 @@ class GastosRelationManager extends RelationManager
             Forms\Components\TextInput::make('concepto')
                 ->label('Concepto')
                 ->required()
-                ->columnSpanFull(),
+                ->columnSpanFull()
+                ->validationMessages([
+                    'required' => 'El concepto del gasto es obligatorio.',
+                ]),
 
             Forms\Components\TextInput::make('monto')
                 ->label('Monto')
                 ->numeric()
                 ->prefix('$')
-                ->required(),
+                ->required()
+                ->validationMessages([
+                    'required' => 'El monto del gasto es obligatorio.',
+                    'numeric'  => 'El monto debe ser un valor numérico.',
+                ]),
 
             Forms\Components\Select::make('estado')
                 ->label('Estado')
@@ -37,7 +44,10 @@ class GastosRelationManager extends RelationManager
                     'cancelado' => 'Cancelado',
                 ])
                 ->default('pendiente')
-                ->required(),
+                ->required()
+                ->validationMessages([
+                    'required' => 'El estado del gasto es obligatorio.',
+                ]),
 
             Forms\Components\DatePicker::make('fecha_pago')
                 ->label('Fecha de pago'),

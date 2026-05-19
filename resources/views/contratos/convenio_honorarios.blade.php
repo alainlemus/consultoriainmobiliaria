@@ -110,7 +110,7 @@
             <td>
                 <div class="linea-firma">
                     <strong>FIRMA DEL "INTERESADO"</strong><br>
-                    {{ $acreditado }}<br>
+                    C. {{ $acreditado }}<br>
                     <small>RFC: {{ $rfc }} &nbsp; CURP: {{ $curp }}</small>
                 </div>
             </td>
@@ -132,7 +132,7 @@
             <td>
                 <div class="linea-firma">
                     <strong>FIRMA DEL "OBLIGADO SOLIDARIO"</strong><br>
-                    {{ strtoupper($expediente->obligado_solidario_nombre ?: '________________________') }}
+                    C. {{ strtoupper($expediente->obligado_solidario_nombre ?: '________________________') }}
                 </div>
             </td>
         </tr>

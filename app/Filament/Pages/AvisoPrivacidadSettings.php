@@ -19,6 +19,7 @@ class AvisoPrivacidadSettings extends Page
     protected static ?string $navigationIcon  = 'heroicon-o-shield-check';
     protected static ?string $navigationLabel = 'Aviso de Privacidad';
     protected static ?string $navigationGroup = 'Configuración del sitio';
+    protected static ?string $title           = 'Aviso de Privacidad';
     protected static ?int    $navigationSort  = 12;
     protected static string  $view            = 'filament.pages.aviso-privacidad-settings';
 
@@ -42,7 +43,10 @@ class AvisoPrivacidadSettings extends Page
                             ->label('Contenido del aviso')
                             ->required()
                             ->fileAttachmentsDirectory('aviso')
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->validationMessages([
+                                'required' => 'El contenido del aviso de privacidad es obligatorio.',
+                            ]),
                     ]),
             ])
             ->statePath('data');

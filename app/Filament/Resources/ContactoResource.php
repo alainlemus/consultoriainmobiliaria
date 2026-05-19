@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\ContactoResource\Actions\EnviarEmailMasivoBulkAction;
 use App\Filament\Resources\ContactoResource\Pages;
 use App\Models\Contacto;
+use App\Models\Expediente;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -70,8 +72,9 @@ class ContactoResource extends Resource
             $query->where('asesor_id', Auth::id());
         }
 
-        // Excluir prospectos convertidos de la lista
-        $query->where('estado_prospecto', '!=', 'convertido');
+        // Excluir prospectos que ya no son prospectos activos
+        $query->whereNotIn('estado_prospecto', ['convertido', 'descartado'])
+              ->whereDoesntHave('expedientes');
 
         return $query;
     }
@@ -104,13 +107,25 @@ class ContactoResource extends Resource
                 ->description('Información básica del prospecto.')
                 ->schema([
                     Forms\Components\TextInput::make('nombre')
-                        ->label('Nombre')->required()->maxLength(255),
+                        ->label('Nombre')->required()->maxLength(255)
+                        ->validationMessages([
+                            'required' => 'El nombre del prospecto es obligatorio.',
+                            'max'      => 'El nombre no puede superar los 255 caracteres.',
+                        ]),
                     Forms\Components\TextInput::make('telefono')
                         ->label('Teléfono')->required()->tel()
                         ->regex('/^\d{10}$/')->maxLength(10)
-                        ->validationMessages(['regex' => 'El teléfono debe tener exactamente 10 dígitos.']),
+                        ->validationMessages([
+                            'required' => 'El teléfono es obligatorio.',
+                            'regex'    => 'El teléfono debe tener exactamente 10 dígitos.',
+                            'max'      => 'El teléfono no puede superar los 10 dígitos.',
+                        ]),
                     Forms\Components\TextInput::make('email')
-                        ->label('Correo')->email()->maxLength(150),
+                        ->label('Correo')->email()->maxLength(150)
+                        ->validationMessages([
+                            'email' => 'Ingresa un correo electrónico válido (ej: usuario@dominio.com).',
+                            'max'   => 'El correo no puede superar los 150 caracteres.',
+                        ]),
                     Forms\Components\Select::make('servicio')
                         ->label('Servicio de interés')
                         ->options([
@@ -158,6 +173,7 @@ class ContactoResource extends Resource
                             'campo'     => 'Campo / visita directa',
                             'referido'  => 'Referido',
                             'whatsapp'  => 'WhatsApp',
+                            'app_movil' => 'App móvil',
                             'otro'      => 'Otro',
                         ])
                         ->default('sitio_web'),
@@ -168,7 +184,10 @@ class ContactoResource extends Resource
                         ->visible(fn () => Auth::user()?->hasRole('super_admin')),
                     Forms\Components\DatePicker::make('fecha_primer_contacto')
                         ->label('Fecha primer contacto')
-                        ->beforeOrEqual('today'),
+                        ->beforeOrEqual('today')
+                        ->validationMessages([
+                            'before_or_equal' => 'La fecha de primer contacto no puede ser futura.',
+                        ]),
                     Forms\Components\Textarea::make('notas')
                         ->label('Notas internas')->rows(3)->columnSpanFull(),
                 ])->columns(2),
@@ -186,7 +205,10 @@ class ContactoResource extends Resource
                             'visita_domicilio'=> 'Visita a domicilio',
                             'whatsapp'        => 'WhatsApp',
                         ])
-                        ->required(fn (Forms\Get $get) => $get('estado_prospecto') === 'pendiente_cierre'),
+                        ->required(fn (Forms\Get $get) => $get('estado_prospecto') === 'pendiente_cierre')
+                        ->validationMessages([
+                            'required' => 'La modalidad de cierre es obligatoria cuando el estado es "Pendiente de cierre".',
+                        ]),
                     Forms\Components\Placeholder::make('fecha_envio_dueno_display')
                         ->label('Enviado al gestor')
                         ->content(fn ($record) => $record?->fecha_envio_dueno?->format('d/m/Y H:i') ?? '—'),
@@ -202,16 +224,30 @@ class ContactoResource extends Resource
                     Forms\Components\TextInput::make('curp')
                         ->label('CURP')->maxLength(18)->minLength(18)
                         ->regex('/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i')
-                        ->validationMessages(['regex' => 'La CURP no tiene el formato correcto.'])
+                        ->validationMessages([
+                            'regex' => 'La CURP no tiene el formato correcto (ej: LOHA850101HDFPLN02).',
+                            'min'   => 'La CURP debe tener exactamente 18 caracteres.',
+                            'max'   => 'La CURP debe tener exactamente 18 caracteres.',
+                        ])
                         ->live(onBlur: true)
                         ->extraAttributes(['style' => 'text-transform:uppercase']),
                     Forms\Components\DatePicker::make('fecha_nacimiento')
-                        ->label('Fecha de nacimiento')->before('today'),
+                        ->label('Fecha de nacimiento')->before('today')
+                        ->validationMessages([
+                            'before' => 'La fecha de nacimiento debe ser anterior a hoy.',
+                        ]),
                     Forms\Components\TextInput::make('antiguedad_laboral')
                         ->label('Antigüedad laboral (años)')
-                        ->numeric()->minValue(0)->maxValue(50),
+                        ->numeric()->minValue(0)->maxValue(50)
+                        ->validationMessages([
+                            'min' => 'La antigüedad no puede ser negativa.',
+                            'max' => 'La antigüedad no puede superar los 50 años.',
+                        ]),
                     Forms\Components\TextInput::make('salario_mensual')
-                        ->label('Salario mensual')->numeric()->prefix('$')->minValue(0),
+                        ->label('Salario mensual')->numeric()->prefix('$')->minValue(0)
+                        ->validationMessages([
+                            'min' => 'El salario no puede ser negativo.',
+                        ]),
                     Forms\Components\Select::make('tipo_credito_interes')
                         ->label('Tipo de crédito')
                         ->options([
@@ -221,9 +257,15 @@ class ContactoResource extends Resource
                             'otro'      => 'Otro',
                         ]),
                     Forms\Components\TextInput::make('monto_credito_estimado')
-                        ->label('Monto de crédito estimado')->numeric()->prefix('$')->minValue(0),
+                        ->label('Monto de crédito estimado')->numeric()->prefix('$')->minValue(0)
+                        ->validationMessages([
+                            'min' => 'El monto estimado no puede ser negativo.',
+                        ]),
                     Forms\Components\TextInput::make('subcuenta_vivienda')
-                        ->label('Subcuenta de vivienda')->numeric()->prefix('$')->minValue(0),
+                        ->label('Subcuenta de vivienda')->numeric()->prefix('$')->minValue(0)
+                        ->validationMessages([
+                            'min' => 'La subcuenta de vivienda no puede ser negativa.',
+                        ]),
 
                     Forms\Components\Placeholder::make('acceso_simulador')
                         ->label('Simuladores oficiales')->columnSpanFull()
@@ -273,6 +315,7 @@ class ContactoResource extends Resource
                         'campo'     => 'Campo',
                         'referido'  => 'Referido',
                         'whatsapp'  => 'WhatsApp',
+                        'app_movil' => '📱 App móvil',
                         default     => 'Otro',
                     }),
                 Tables\Columns\BadgeColumn::make('estado_prospecto')
@@ -333,6 +376,8 @@ class ContactoResource extends Resource
                         'campo'     => 'Campo',
                         'referido'  => 'Referido',
                         'whatsapp'  => 'WhatsApp',
+                        'app_movil' => 'App móvil',
+                        'otro'      => 'Otro',
                     ]),
                 Tables\Filters\SelectFilter::make('asesor_id')
                     ->label('Asesor')
@@ -342,14 +387,14 @@ class ContactoResource extends Resource
             ->actions([
                 // ── Acción principal del asesor: iniciar gestión ──────────
                 Tables\Actions\Action::make('enviar_dueno')
-                    ->label('Iniciar gestión')
+                    ->label('Iniciar expediente')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('warning')
                     ->visible(fn (Contacto $record) =>
                         Auth::user()?->hasRole('asesor') &&
                         in_array($record->estado_prospecto, ['nuevo', 'contactado', 'precalificado'])
                     )
-                    ->modalHeading('Iniciar gestión del prospecto')
+                    ->modalHeading('Iniciar expediente del prospecto')
                     ->modalDescription('Se registrará el inicio de la gestión comercial con el prospecto.')
                     ->modalSubmitActionLabel('Sí, iniciar')
                     ->form([
@@ -361,7 +406,10 @@ class ContactoResource extends Resource
                                 'visita_domicilio' => 'Visita a domicilio',
                                 'whatsapp'         => 'WhatsApp',
                             ])
-                            ->required(),
+                            ->required()
+                            ->validationMessages([
+                                'required' => 'Debes seleccionar una modalidad de contacto.',
+                            ]),
                         Forms\Components\Textarea::make('notas_cierre')
                             ->label('Notas de gestión')
                             ->rows(3)
@@ -405,15 +453,41 @@ class ContactoResource extends Resource
                     }),
 
                 // Botones solo para super_admin
-Tables\Actions\Action::make('iniciar_expediente')
+                Tables\Actions\Action::make('iniciar_expediente')
                     ->label('Iniciar Expediente')
                     ->icon('heroicon-o-document-plus')
                     ->color('success')
                     ->requiresConfirmation()
                     ->modalHeading('¿Iniciar expediente con este prospecto?')
                     ->modalDescription('Se creará un nuevo expediente vinculado a este contacto.')
-                    ->action(fn (Contacto $record) => $record->update(['estado_prospecto' => 'convertido']))
-                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+                    ->action(function (Contacto $record) {
+                        // Evitar duplicados
+                        if (Expediente::where('contacto_id', $record->id)->exists()) {
+                            Notification::make()
+                                ->title('Ya existe un expediente para este prospecto.')
+                                ->warning()
+                                ->send();
+                            return;
+                        }
+                        Expediente::create([
+                            'contacto_id'         => $record->id,
+                            'asesor_id'           => $record->asesor_id,
+                            'acreditado_nombre'   => $record->nombre,
+                            'acreditado_telefono' => $record->telefono,
+                            'acreditado_email'    => $record->email,
+                            'acreditado_curp'     => $record->curp,
+                            'tipo_tramite_id'     => 1,
+                            'etapa_tramite_id'    => 1,
+                            'estado'              => 'en_proceso',
+                        ]);
+                        $record->update(['estado_prospecto' => 'convertido']);
+                        Notification::make()
+                            ->title('Expediente creado correctamente.')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn (Contacto $record) => Auth::user()?->hasRole('super_admin')
+                        && ! in_array($record->estado_prospecto, ['convertido', 'descartado'])),
 
                 Tables\Actions\Action::make('descartar')
                     ->label('No cerró')
@@ -431,14 +505,13 @@ Tables\Actions\Action::make('iniciar_expediente')
                         ! in_array($record->estado_prospecto, ['pendiente_cierre', 'contrato_firmado', 'convertido'])
                     ),
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn (Contacto $record) =>
-                        Auth::user()?->hasRole('super_admin') ||
-                        ! in_array($record->estado_prospecto, ['pendiente_cierre', 'contrato_firmado', 'convertido'])
-                    ),
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    EnviarEmailMasivoBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()?->hasRole('super_admin')),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

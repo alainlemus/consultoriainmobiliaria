@@ -39,12 +39,19 @@ class EtapaTramiteResource extends Resource
                 ->options(TipoTramite::pluck('nombre', 'id'))
                 ->required()
                 ->searchable()
-                ->hint('A qué tipo de trámite pertenece esta etapa'),
+                ->hint('A qué tipo de trámite pertenece esta etapa')
+                ->validationMessages([
+                    'required' => 'Debes seleccionar el tipo de trámite.',
+                ]),
             Forms\Components\TextInput::make('nombre')
                 ->label('Nombre de la Etapa')
                 ->required()
                 ->maxLength(255)
-                ->hint('Ej: Precalificación, Integración de expediente, Firma de escrituras'),
+                ->hint('Ej: Precalificación, Integración de expediente, Firma de escrituras')
+                ->validationMessages([
+                    'required' => 'El nombre de la etapa es obligatorio.',
+                    'max'      => 'El nombre no puede superar los 255 caracteres.',
+                ]),
             Forms\Components\Textarea::make('descripcion')
                 ->label('Descripción')
                 ->rows(2)
@@ -63,7 +70,10 @@ class EtapaTramiteResource extends Resource
                 ])
                 ->default('gray')
                 ->required()
-                ->hint('Color visual del badge en la tabla de expedientes'),
+                ->hint('Color visual del badge en la tabla de expedientes')
+                ->validationMessages([
+                    'required' => 'Debes seleccionar un color para la etapa.',
+                ]),
             Forms\Components\TextInput::make('orden')
                 ->label('Orden')
                 ->numeric()

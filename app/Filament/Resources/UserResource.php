@@ -64,6 +64,17 @@ class UserResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
+            Forms\Components\Section::make('Foto de perfil')
+                ->description('Subida por el asesor desde la app móvil.')
+                ->schema([
+                    Forms\Components\ViewField::make('foto_perfil_url')
+                        ->label('')
+                        ->view('filament.forms.components.foto-perfil')
+                        ->dehydrated(false)
+                        ->columnSpanFull(),
+                ])
+                ->visibleOn(['view', 'edit']),
+
             Forms\Components\Section::make('Información personal')
                 ->description('Datos de acceso del usuario al sistema de administración.')
                 ->schema([
@@ -71,7 +82,11 @@ class UserResource extends Resource
                     ->label('Nombre completo')
                     ->required()
                     ->maxLength(100)
-                    ->hint('Nombre real del asesor o administrador'),
+                    ->hint('Nombre real del asesor o administrador')
+                    ->validationMessages([
+                        'required' => 'El nombre completo es obligatorio.',
+                        'max'      => 'El nombre no puede superar los 100 caracteres.',
+                    ]),
 
                 Forms\Components\TextInput::make('email')
                     ->label('Correo electrónico')
@@ -79,7 +94,13 @@ class UserResource extends Resource
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(150)
-                    ->hint('Se usa para iniciar sesión — debe ser único'),
+                    ->hint('Se usa para iniciar sesión — debe ser único')
+                    ->validationMessages([
+                        'required' => 'El correo electrónico es obligatorio.',
+                        'email'    => 'Ingresa un correo electrónico válido (ej: usuario@dominio.com).',
+                        'unique'   => 'Este correo ya está registrado en el sistema.',
+                        'max'      => 'El correo no puede superar los 150 caracteres.',
+                    ]),
             ])->columns(2),
 
             Forms\Components\Section::make('Contraseña')
@@ -95,7 +116,11 @@ class UserResource extends Resource
                     ->required(fn (string $operation) => $operation === 'create')
                     ->helperText(fn (string $operation) => $operation === 'edit'
                         ? 'Deja en blanco para mantener la contraseña actual.'
-                        : null),
+                        : null)
+                    ->validationMessages([
+                        'required' => 'La contraseña es obligatoria al crear un usuario.',
+                        'min'      => 'La contraseña debe tener al menos 8 caracteres.',
+                    ]),
 
                 Forms\Components\TextInput::make('password_confirmation')
                     ->label('Confirmar contraseña')
@@ -103,23 +128,44 @@ class UserResource extends Resource
                     ->revealable()
                     ->same('password')
                     ->required(fn (string $operation) => $operation === 'create')
-                    ->dehydrated(false),
+                    ->dehydrated(false)
+                    ->validationMessages([
+                        'required' => 'Debes confirmar la contraseña.',
+                        'same'     => 'La confirmación no coincide con la contraseña ingresada.',
+                    ]),
             ])->columns(2),
 
             Forms\Components\Section::make('Datos bancarios para comisiones')
                 ->description('CLABE y banco al que se transferirán las comisiones del asesor. Solo visible para el administrador.')
                 ->schema([
+                    Forms\Components\TextInput::make('telefono')
+                        ->label('Teléfono')
+                        ->tel()
+                        ->maxLength(20)
+                        ->placeholder('55 1234 5678')
+                        ->columnSpanFull()
+                        ->validationMessages([
+                            'max' => 'El teléfono no puede superar los 20 caracteres.',
+                        ]),
+
                     Forms\Components\TextInput::make('banco')
                         ->label('Banco')
                         ->maxLength(100)
-                        ->placeholder('Ej: BBVA, Banamex, Banorte…'),
+                        ->placeholder('Ej: BBVA, Banamex, Banorte…')
+                        ->validationMessages([
+                            'max' => 'El nombre del banco no puede superar los 100 caracteres.',
+                        ]),
 
                     Forms\Components\TextInput::make('clabe')
                         ->label('CLABE interbancaria')
                         ->maxLength(18)
                         ->minLength(18)
                         ->regex('/^\d{18}$/')
-                        ->validationMessages(['regex' => 'La CLABE debe tener exactamente 18 dígitos numéricos.'])
+                        ->validationMessages([
+                            'regex' => 'La CLABE debe tener exactamente 18 dígitos numéricos.',
+                            'min'   => 'La CLABE debe tener exactamente 18 dígitos.',
+                            'max'   => 'La CLABE debe tener exactamente 18 dígitos.',
+                        ])
                         ->placeholder('18 dígitos')
                         ->hint('18 dígitos — requerida para transferencia'),
                 ])->columns(2),
@@ -151,6 +197,13 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('foto_perfil_url')
+                    ->label('Foto')
+                    ->getStateUsing(fn (User $record) => $record->foto_perfil_url)
+                    ->circular()
+                    ->defaultImageUrl(null)
+                    ->toggleable(isToggledHiddenByDefault: false),
+
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
                     ->searchable()
@@ -160,6 +213,12 @@ class UserResource extends Resource
                     ->label('Correo')
                     ->searchable()
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('telefono')
+                    ->label('Teléfono')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: false),
 
                 Tables\Columns\TextColumn::make('roles.name')
                     ->label('Roles')

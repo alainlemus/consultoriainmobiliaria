@@ -39,7 +39,10 @@ class DocumentoRequeridoResource extends Resource
                 ->options(TipoTramite::pluck('nombre', 'id'))
                 ->required()
                 ->searchable()
-                ->hint('A qué tipo de trámite aplica este documento'),
+                ->hint('A qué tipo de trámite aplica este documento')
+                ->validationMessages([
+                    'required' => 'Debes seleccionar el tipo de trámite.',
+                ]),
             Forms\Components\Select::make('seccion')
                 ->label('Sección')
                 ->options([
@@ -48,13 +51,20 @@ class DocumentoRequeridoResource extends Resource
                     'vivienda'   => 'Vivienda / Propiedad',
                 ])
                 ->required()
-                ->hint('A quién corresponde entregar este documento'),
+                ->hint('A quién corresponde entregar este documento')
+                ->validationMessages([
+                    'required' => 'Debes seleccionar la sección a la que pertenece el documento.',
+                ]),
             Forms\Components\TextInput::make('nombre')
                 ->label('Nombre del Documento')
                 ->required()
                 ->maxLength(255)
                 ->columnSpanFull()
-                ->hint('Ej: Identificación oficial vigente (INE/pasaporte)'),
+                ->hint('Ej: Identificación oficial vigente (INE/pasaporte)')
+                ->validationMessages([
+                    'required' => 'El nombre del documento es obligatorio.',
+                    'max'      => 'El nombre no puede superar los 255 caracteres.',
+                ]),
             Forms\Components\Textarea::make('descripcion')
                 ->label('Descripción / Instrucciones')
                 ->rows(2)

@@ -25,7 +25,7 @@ return new class extends Migration
             ])->default('en_proceso');
 
             // --- SECCIÓN A: ACREDITADO ---
-            $table->string('acreditado_nombre');
+            $table->string('acreditado_nombre')->nullable();
             $table->string('acreditado_curp', 18)->nullable();
             $table->string('acreditado_rfc', 13)->nullable();
             $table->date('acreditado_fecha_nacimiento')->nullable();

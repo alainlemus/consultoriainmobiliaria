@@ -110,15 +110,16 @@ class ExpedienteResource extends Resource
                                 ->label('Folio')
                                 ->disabled()
                                 ->dehydrated()
-                                ->placeholder('Se genera automáticamente')
-                                ->hint('Formato EXP-AÑO-NNNN, asignado por el sistema'),
+                                ->placeholder('Se genera automáticamente'),
                             Forms\Components\Select::make('tipo_tramite_id')
                                 ->label('Tipo de Trámite')
                                 ->options(TipoTramite::where('activo', true)->orderBy('orden')->pluck('nombre', 'id'))
                                 ->required()
                                 ->live()
                                 ->afterStateUpdated(fn (Forms\Set $set) => $set('etapa_tramite_id', null))
-                                ->hint('Selecciona primero para cargar las etapas'),
+                                ->validationMessages([
+                                    'required' => 'Debes seleccionar el tipo de trámite.',
+                                ]),
                             Forms\Components\Select::make('etapa_tramite_id')
                                 ->label('Etapa actual')
                                 ->options(fn (Forms\Get $get) =>
@@ -130,7 +131,9 @@ class ExpedienteResource extends Resource
                                 ->searchable()
                                 ->disabled(fn () => ! auth()->user()?->hasRole('super_admin'))
                                 ->dehydrated(fn () => auth()->user()?->hasRole('super_admin'))
-                                ->hint('Depende del tipo de trámite seleccionado'),
+                                ->validationMessages([
+                                    'required' => 'La etapa del trámite es obligatoria.',
+                                ]),
                             Forms\Components\Select::make('estado')
                                 ->label('Estado general')
                                 ->options([
@@ -145,13 +148,19 @@ class ExpedienteResource extends Resource
                                 ->required()
                                 ->disabled(fn () => ! auth()->user()?->hasRole('super_admin'))
                                 ->dehydrated(fn () => auth()->user()?->hasRole('super_admin'))
-                                ->hint('Al cambiar a "Cerrado" se genera la comisión automáticamente'),
+                                ->hint('Al cambiar a "Cerrado" se genera la comisión automáticamente')
+                                ->validationMessages([
+                                    'required' => 'El estado del expediente es obligatorio.',
+                                ]),
                             Forms\Components\Select::make('asesor_id')
                                 ->label('Asesor asignado')
                                 ->options(User::where('activo', true)->pluck('name', 'id'))
                                 ->searchable()
                                 ->required()
-                                ->hint('Asesor responsable del seguimiento'),
+                                ->hint('Asesor responsable del seguimiento')
+                                ->validationMessages([
+                                    'required' => 'Debes asignar un asesor al expediente.',
+                                ]),
                             Forms\Components\Select::make('contacto_id')
                                 ->label('Prospecto origen')
                                 ->options(Contacto::pluck('nombre', 'id'))
@@ -167,7 +176,27 @@ class ExpedienteResource extends Resource
                                     'otro'           => 'Otro',
                                 ])
                                 ->default('retiro_directo')
-                                ->required(),
+                                ->required()
+                                ->validationMessages([
+                                    'required' => 'Debes indicar el uso del crédito.',
+                                ]),
+                            Forms\Components\Select::make('modalidad_credito')
+                                ->label('Modalidad')
+                                ->options([
+                                    'individual'   => 'Individual',
+                                    'mancomunado'  => 'Mancomunado (con cónyuge)',
+                                ])
+                                ->default('individual')
+                                ->hint('Mancomunado suma la capacidad de crédito de ambos cónyuges'),
+                            Forms\Components\Select::make('banco_participante')
+                                ->label('Banco participante')
+                                ->options([
+                                    'HSBC'    => 'HSBC',
+                                    'Banorte' => 'Banorte',
+                                    'BBVA'    => 'BBVA',
+                                ])
+                                ->nullable()
+                                ->hint('Solo aplica a FOVISSSTE Para Todos'),
                             Forms\Components\DatePicker::make('fecha_apertura')
                                 ->label('Fecha de apertura')
                                 ->default(now())
@@ -182,7 +211,11 @@ class ExpedienteResource extends Resource
                                 ->label('Nombre completo')
                                 ->required()
                                 ->maxLength(255)
-                                ->hint('Nombre como aparece en identificación oficial'),
+                                ->hint('Nombre como aparece en identificación oficial')
+                                ->validationMessages([
+                                    'required' => 'El nombre del acreditado es obligatorio.',
+                                    'max'      => 'El nombre no puede superar los 255 caracteres.',
+                                ]),
                             Forms\Components\TextInput::make('acreditado_curp')
                                 ->label('CURP')
                                 ->maxLength(18)
@@ -390,14 +423,83 @@ class ExpedienteResource extends Resource
                             Forms\Components\TextInput::make('vivienda_estado')
                                 ->label('Estado')
                                 ->maxLength(100),
-                            Forms\Components\Textarea::make('vivienda_descripcion_titulo')
+                             Forms\Components\Textarea::make('vivienda_descripcion_titulo')
                                 ->label('Datos del título de propiedad')
                                 ->hint('Folio real, notaría, número de escritura y fecha — como aparece en el título')
                                 ->rows(3)
                                 ->columnSpanFull(),
                         ])->columns(2),
 
-                    // ── TAB 5: FINANCIERO ─────────────────────────────────
+                    // ── TAB 5: CÓNYUGE (visible solo cuando aplica) ───────
+                    Forms\Components\Tabs\Tab::make('Cónyuge')
+                        ->icon('heroicon-o-user-group')
+                        ->schema([
+                            Forms\Components\Placeholder::make('info_conyuge')
+                                ->label('')
+                                ->content('Llena esta sección para créditos Conyugales o Mancomunados (FOVISSSTE-INFONAVIT Individual). Si el crédito es individual, deja esta sección vacía.')
+                                ->columnSpanFull(),
+                            Forms\Components\TextInput::make('conyuge_nombre')
+                                ->label('Nombre completo (cónyuge)')
+                                ->maxLength(255),
+                            Forms\Components\TextInput::make('conyuge_curp')
+                                ->label('CURP (cónyuge)')
+                                ->maxLength(18)
+                                ->minLength(18)
+                                ->regex('/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i')
+                                ->validationMessages(['regex' => 'La CURP del cónyuge no tiene el formato correcto.'])
+                                ->extraAttributes(['style' => 'text-transform:uppercase']),
+                            Forms\Components\TextInput::make('conyuge_rfc')
+                                ->label('RFC (cónyuge)')
+                                ->maxLength(13)
+                                ->extraAttributes(['style' => 'text-transform:uppercase']),
+                            Forms\Components\TextInput::make('conyuge_telefono')
+                                ->label('Teléfono (cónyuge)')
+                                ->tel()
+                                ->regex('/^\d{10}$/')
+                                ->maxLength(10)
+                                ->validationMessages(['regex' => 'El teléfono del cónyuge debe tener exactamente 10 dígitos.']),
+                            Forms\Components\Select::make('conyuge_institucion')
+                                ->label('Institución donde cotiza el cónyuge')
+                                ->options([
+                                    'FOVISSSTE' => 'FOVISSSTE (ISSSTE)',
+                                    'INFONAVIT'  => 'INFONAVIT',
+                                ])
+                                ->hint('Selecciona según el tipo de crédito conyugal'),
+                            Forms\Components\TextInput::make('conyuge_numero_credito')
+                                ->label('Número de crédito (cónyuge)')
+                                ->maxLength(50)
+                                ->hint('Número asignado por FOVISSSTE o INFONAVIT'),
+                        ])->columns(2),
+
+                    // ── TAB 6: PENSIONADO ─────────────────────────────────
+                    Forms\Components\Tabs\Tab::make('Pensionado')
+                        ->icon('heroicon-o-identification')
+                        ->schema([
+                            Forms\Components\Placeholder::make('info_pensionado')
+                                ->label('')
+                                ->content('Llena esta sección solo para el producto "Crédito Pensionados FOVISSSTE". Verifica la clave de pensión en el talón de pago del acreditado.')
+                                ->columnSpanFull(),
+                            Forms\Components\TextInput::make('numero_pension')
+                                ->label('Número de pensión')
+                                ->maxLength(50)
+                                ->hint('Aparece en el talón de pago como "NUMERO PENSION"'),
+                            Forms\Components\Select::make('clave_pension')
+                                ->label('Clave de pensión')
+                                ->options([
+                                    '101' => '101 — Jubilación',
+                                    '102' => '102 — Retiro por Edad y Tiempo de Servicio',
+                                    '634' => '634 — Cesantía en Edad Avanzada',
+                                ])
+                                ->hint('Verificar en talón de pago, columna "PENSION ACTUAL"'),
+                            Forms\Components\DatePicker::make('fecha_inicio_pension')
+                                ->label('Fecha de inicio de pensión')
+                                ->hint('Aparece en el talón como "FECHA DE INICIO DE PENSIÓN"'),
+                            Forms\Components\TextInput::make('monto_pension_mensual')
+                                ->label('Monto de pensión mensual')
+                                ->numeric()->prefix('$')
+                                ->minValue(0)
+                                ->hint('Concepto 001 del talón (pensión base, sin bonos). Mín. $32,200.60 para crédito máximo.'),
+                        ])->columns(2),
                     Forms\Components\Tabs\Tab::make('Financiero')
                         ->icon('heroicon-o-banknotes')
                         ->schema([
@@ -414,12 +516,27 @@ class ExpedienteResource extends Resource
                                         ->label('Subcuenta de vivienda')
                                         ->numeric()->prefix('$')
                                         ->minValue(0)
-                                        ->hint('Saldo acumulado INFONAVIT/FOVISSSTE'),
+                                        ->hint('Saldo acumulado INFONAVIT/FOVISSSTE')
+                                        ->validationMessages([
+                                            'min' => 'La subcuenta de vivienda no puede ser negativa.',
+                                        ]),
                                     Forms\Components\TextInput::make('monto_total_estimado')
                                         ->label('Monto total estimado')
                                         ->numeric()->prefix('$')
                                         ->minValue(0)
-                                        ->hint('Crédito + subcuenta + otros recursos'),
+                                        ->hint('Crédito + subcuenta + otros recursos')
+                                        ->validationMessages([
+                                            'min' => 'El monto total estimado no puede ser negativo.',
+                                        ])
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
+                                            $total = floatval($state);
+                                            $pct   = floatval($get('honorarios_porcentaje') ?? 0);
+                                            $set('honorarios_monto', $total > 0 && $pct > 0
+                                                ? round($total * $pct / 100, 2)
+                                                : null
+                                            );
+                                        }),
                                     Forms\Components\TextInput::make('total_gastos_financiados')
                                         ->label('Total gastos financiados')
                                         ->numeric()->prefix('$')
@@ -437,12 +554,26 @@ class ExpedienteResource extends Resource
                                             'min' => 'El porcentaje no puede ser negativo.',
                                             'max' => 'El porcentaje no puede superar 100%.',
                                         ])
-                                        ->hint('Porcentaje sobre el monto total'),
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
+                                            $pct   = floatval($state);
+                                            $total = floatval($get('monto_total_estimado') ?? 0);
+                                            $set('honorarios_monto', $total > 0 && $pct > 0
+                                                ? round($total * $pct / 100, 2)
+                                                : null
+                                            );
+                                        }),
+
                                     Forms\Components\TextInput::make('honorarios_monto')
-                                        ->label('Monto de honorarios')
-                                        ->numeric()->prefix('$')
-                                        ->minValue(0)
-                                        ->hint('Monto fijo pactado con el cliente'),
+                                        ->label('Monto de honorarios (calculado)')
+                                        ->prefix('$')
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->placeholder('Se calcula automáticamente')
+                                        ->hint(fn (Forms\Get $get) => ($get('honorarios_porcentaje') && $get('monto_total_estimado'))
+                                            ? number_format(floatval($get('monto_total_estimado')) * floatval($get('honorarios_porcentaje')) / 100, 2) . ' MXN'
+                                            : 'Captura el % y el monto total estimado'
+                                        ),
                                     Forms\Components\Toggle::make('honorarios_pagados')
                                         ->label('Honorarios cobrados')
                                         ->hint('Activa cuando el cliente haya pagado')
@@ -455,7 +586,10 @@ class ExpedienteResource extends Resource
                                     Forms\Components\DatePicker::make('fecha_cierre')
                                         ->label('Fecha de cierre')
                                         ->beforeOrEqual('today')
-                                        ->hint('Fecha en que se formalizó el trámite'),
+                                        ->hint('Fecha en que se formalizó el trámite')
+                                        ->validationMessages([
+                                            'before_or_equal' => 'La fecha de cierre no puede ser futura.',
+                                        ]),
                                 ])->columns(2),
                             Forms\Components\Section::make('Notas internas')
                                 ->description('Visible solo para el equipo admin.')

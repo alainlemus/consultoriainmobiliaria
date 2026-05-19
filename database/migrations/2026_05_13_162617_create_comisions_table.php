@@ -8,14 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('comisions', function (Blueprint $table) {
+        Schema::create('comisiones', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('expediente_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('expediente_id')->constrained('expedientes')->cascadeOnDelete();
             $table->foreignId('asesor_id')->constrained('users');
             $table->decimal('monto_base', 12, 2);          // honorarios cobrados al cliente
             $table->decimal('porcentaje_comision', 5, 2);  // % al asesor
             $table->decimal('monto_comision', 12, 2);      // calculado
-            $table->enum('estado', ['pendiente', 'aprobada', 'pagada'])->default('pendiente');
+            $table->string('estado')->default('pendiente'); // pendiente, aprobada, pagada, rechazada
             $table->date('fecha_generacion');
             $table->date('fecha_aprobacion')->nullable();
             $table->date('fecha_pago')->nullable();
@@ -27,6 +27,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('comisions');
+        Schema::dropIfExists('comisiones');
     }
 };
