@@ -62,9 +62,30 @@ class Expediente extends Model
     {
         static::creating(function (Expediente $exp) {
             if (empty($exp->folio)) {
-                $año  = now()->year;
-                $last = static::whereYear('created_at', $año)->count() + 1;
-                $exp->folio = 'EXP-' . $año . '-' . str_pad($last, 4, '0', STR_PAD_LEFT);
+                $año = now()->year;
+                // Usar MAX del número secuencial para evitar duplicados con soft-deletes o concurrencia
+                $prefijo = 'EXP-' . $año . '-';
+                $ultimo  = static::withTrashed()
+                    ->where('folio', 'like', $prefijo . '%')
+                    ->orderByRaw('CAST(SUBSTRING(folio, ' . (strlen($prefijo) + 1) . ') AS UNSIGNED) DESC')
+                    ->value('folio');
+
+                $siguiente = $ultimo
+                    ? (int) substr($ultimo, strlen($prefijo)) + 1
+                    : 1;
+
+                // Reintento en caso de colisión (race condition)
+                $intentos = 0;
+                do {
+                    $folio = $prefijo . str_pad($siguiente, 4, '0', STR_PAD_LEFT);
+                    $existe = static::withTrashed()->where('folio', $folio)->exists();
+                    if ($existe) {
+                        $siguiente++;
+                    }
+                    $intentos++;
+                } while ($existe && $intentos < 20);
+
+                $exp->folio = $folio;
             }
             if (empty($exp->fecha_apertura)) {
                 $exp->fecha_apertura = now()->toDateString();
