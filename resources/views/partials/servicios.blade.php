@@ -22,7 +22,7 @@
                     @endforeach
                 </ul>
                 <a href="https://wa.me/527711910395?text=Quiero%20información%20sobre%20{{ urlencode($s->wa_texto) }}"
-                   target="_blank" class="btn-gold text-xs w-full justify-center">Consultar ahora</a>
+                   target="_blank" rel="noopener noreferrer" class="btn-gold text-xs w-full justify-center">Consultar ahora</a>
             </div>
             @endforeach
 
@@ -32,7 +32,7 @@
                     <p class="text-gold-400 font-serif text-lg font-semibold mb-2">¿No sabes por dónde empezar?</p>
                     <p class="text-cream-300 text-sm mb-4">Un asesor experto te orienta sin costo.</p>
                     <p class="font-script text-gold-400 text-xl mb-5">¡Estamos para ayudarte!</p>
-                    <a href="https://wa.me/527711910395" target="_blank" class="btn-gold text-xs">Escribir al WhatsApp</a>
+                    <a href="https://wa.me/527711910395" target="_blank" rel="noopener noreferrer" class="btn-gold text-xs">Escribir al WhatsApp</a>
                     <div class="mt-4 text-cream-300/60 text-xs">771 191 0395 · 771 781 8005</div>
                 </div>
             </div>

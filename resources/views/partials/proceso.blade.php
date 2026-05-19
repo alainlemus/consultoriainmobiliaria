@@ -20,9 +20,30 @@
             @endforeach
         </div>
         <div class="mt-12 text-center">
-            <a href="https://wa.me/527711910395?text=Quiero%20iniciar%20mi%20trámite" target="_blank" class="btn-gold">
+            <a href="https://wa.me/527711910395?text=Quiero%20iniciar%20mi%20trámite" target="_blank" rel="noopener noreferrer" class="btn-gold">
                 Iniciar mi trámite ahora
             </a>
         </div>
     </div>
 </section>
+
+@once
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "Cómo gestionar tu crédito hipotecario INFONAVIT o FOVISSSTE",
+    "description": "Proceso paso a paso para obtener tu crédito hipotecario con asesoría especializada en Consultoría Inmobiliaria.",
+    "step": [
+        @foreach($procesos as $index => $paso)
+        {
+            "@type": "HowToStep",
+            "position": {{ $paso->numero }},
+            "name": "{{ addslashes($paso->titulo) }}",
+            "text": "{{ addslashes($paso->descripcion) }}"
+        }{{ !$loop->last ? ',' : '' }}
+        @endforeach
+    ]
+}
+</script>
+@endonce

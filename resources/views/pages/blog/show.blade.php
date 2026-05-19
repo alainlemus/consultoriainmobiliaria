@@ -1,6 +1,60 @@
 @extends('layouts.app')
 
-@section('title', $post->titulo . ' — Blog')
+@section('seo_title', $post->titulo . ' — Blog Inmobiliario')
+@section('seo_description', $post->resumen ?? Str::limit(strip_tags($post->contenido ?? ''), 155))
+@section('og_title', $post->titulo)
+@section('og_description', $post->resumen ?? Str::limit(strip_tags($post->contenido ?? ''), 155))
+@section('og_type', 'article')
+@section('og_url', route('blog.show', $post->slug))
+@section('og_image', $post->imagen ? asset('storage/' . $post->imagen) : (setting('seo_og_imagen') ? asset('storage/' . setting('seo_og_imagen')) : ''))
+@section('canonical', route('blog.show', $post->slug))
+
+@push('jsonld')
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "{{ $post->titulo }}",
+    "description": "{{ $post->resumen ?? Str::limit(strip_tags($post->contenido ?? ''), 155) }}",
+    "url": "{{ route('blog.show', $post->slug) }}",
+    "datePublished": "{{ ($post->published_at ?? $post->created_at)->toIso8601String() }}",
+    "dateModified": "{{ $post->updated_at->toIso8601String() }}",
+    @if($post->imagen)
+    "image": "{{ asset('storage/' . $post->imagen) }}",
+    @endif
+    "author": {
+        "@type": "Organization",
+        "name": "{{ setting('site_name', 'Consultoría Inmobiliaria') }}",
+        "url": "{{ config('app.url') }}"
+    },
+    "publisher": {
+        "@type": "Organization",
+        "name": "{{ setting('site_name', 'Consultoría Inmobiliaria') }}",
+        "url": "{{ config('app.url') }}",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "{{ setting('logo') ? asset('storage/' . setting('logo')) : asset('favicon.ico') }}"
+        }
+    },
+    "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "{{ route('blog.show', $post->slug) }}"
+    }
+}
+</script>
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ route('home') }}" },
+        { "@type": "ListItem", "position": 2, "name": "Blog", "item": "{{ route('blog.index') }}" },
+        { "@type": "ListItem", "position": 3, "name": "{{ $post->titulo }}", "item": "{{ route('blog.show', $post->slug) }}" }
+    ]
+}
+</script>
+@endpush
 
 @section('content')
 
@@ -45,6 +99,7 @@
             <div class="rounded-sm overflow-hidden mb-10 h-72">
                 <img src="{{ Storage::url($post->imagen) }}"
                      alt="{{ $post->titulo }}"
+                     loading="eager"
                      class="w-full h-full object-cover">
             </div>
         @endif

@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Propiedades en venta — ' . setting('site_name', 'Consultoría Inmobiliaria'))
+@section('seo_title', 'Propiedades en venta — ' . setting('site_name', 'Consultoría Inmobiliaria'))
+@section('seo_description', 'Encuentra propiedades en venta con crédito INFONAVIT y FOVISSSTE en Hidalgo, Veracruz y San Luis Potosí. Casas y terrenos con asesoría especializada.')
+@section('canonical', route('propiedades.index'))
 
 @section('content')
 <section class="bg-dark-900 min-h-screen" style="padding-top: 100px;">
@@ -147,6 +149,7 @@
                         @if($propiedad->imagen_principal)
                             <img src="{{ Storage::url($propiedad->imagen_principal) }}"
                                  alt="{{ $propiedad->titulo }}"
+                                 loading="lazy"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                         @else
                             <div class="w-full h-full flex items-center justify-center">

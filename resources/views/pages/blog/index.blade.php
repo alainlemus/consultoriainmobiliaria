@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Blog — Blog Inmobiliario')
+@section('seo_title', 'Blog Inmobiliario — Consejos INFONAVIT, FOVISSSTE y Bienes Raíces')
+@section('seo_description', 'Artículos, guías y consejos sobre créditos INFONAVIT, FOVISSSTE, avalúos y escrituras. Información útil para tomar las mejores decisiones sobre tu patrimonio.')
+@section('canonical', route('blog.index'))
 
 @section('content')
 <section class="bg-dark-900 min-h-screen" style="padding-top: 100px; padding-bottom: 80px;">
@@ -41,6 +43,7 @@
                         <div class="overflow-hidden h-48">
                             <img src="{{ Storage::url($post->imagen) }}"
                                  alt="{{ $post->titulo }}"
+                                 loading="lazy"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                         </div>
                     @else

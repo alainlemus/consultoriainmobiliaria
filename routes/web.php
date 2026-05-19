@@ -8,6 +8,7 @@ use App\Http\Controllers\PropiedadController;
 use App\Http\Controllers\KpisReporteController;
 use App\Http\Controllers\ContratosController;
 use App\Http\Controllers\TestimonioPublicoController;
+use App\Http\Controllers\SitemapController;
 use App\Models\UbicacionFoto;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,6 +18,9 @@ Route::redirect('/login', '/admin/login', 302)->name('login');
 
 // Página principal
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Sitemap XML
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // Blog / ConsulTips
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
