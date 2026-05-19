@@ -1,5 +1,5 @@
 {{-- Blog / Blog preview --}}
-<section id="consultips" class="py-20 bg-cream-50">
+<section id="blog" class="py-20 bg-cream-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <div class="text-center mb-14">
@@ -17,9 +17,10 @@
                     <article class="bg-white border border-cream-200 rounded-sm overflow-hidden group hover:shadow-lg hover:border-gold-400 transition-all duration-300">
                         @if($post->imagen)
                             <div class="overflow-hidden h-48">
-                                <img src="{{ Storage::url($post->imagen) }}"
-                                     alt="{{ $post->titulo }}"
-                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                             <img src="{{ Storage::url($post->imagen) }}"
+                                      alt="{{ $post->titulo }}"
+                                      loading="lazy"
+                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             </div>
                         @else
                             <div class="h-48 bg-gradient-to-br from-gold-100 to-cream-200 flex items-center justify-center">

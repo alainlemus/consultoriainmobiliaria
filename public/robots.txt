@@ -1,2 +1,8 @@
 User-agent: *
-Disallow:
+Disallow: /admin/
+Disallow: /testimonio/
+Disallow: /admin/reportes/
+Disallow: /admin/contratos/
+Disallow: /admin/ubicaciones/
+
+Sitemap: https://consultoriainmobiliaria.com.mx/sitemap.xml

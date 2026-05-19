@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('seo_title', '¡Gracias por tu testimonio! — ' . setting('seo_titulo', 'Consultoría Inmobiliaria'))
+@section('robots', 'noindex, nofollow')
 
 @section('content')
 <section class="min-h-screen bg-dark-800 flex items-center justify-center py-16 px-4">

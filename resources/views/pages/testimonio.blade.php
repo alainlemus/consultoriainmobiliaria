@@ -2,6 +2,7 @@
 
 @section('seo_title', 'Deja tu testimonio — ' . setting('seo_titulo', 'Consultoría Inmobiliaria'))
 @section('seo_description', 'Comparte tu experiencia con nosotros. Tu opinión nos ayuda a mejorar y a otros clientes a tomar decisiones.')
+@section('robots', 'noindex, nofollow')
 
 @section('content')
 <section class="min-h-screen bg-dark-800 flex items-center justify-center py-16 px-4">

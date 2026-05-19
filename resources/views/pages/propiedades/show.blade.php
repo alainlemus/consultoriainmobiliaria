@@ -21,6 +21,53 @@
 @section('og_type', 'article')
 @section('og_url', route('propiedades.show', $propiedad->slug))
 @section('og_image', $ogImagen)
+@section('canonical', route('propiedades.show', $propiedad->slug))
+
+@push('jsonld')
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    "name": "{{ $propiedad->titulo }}",
+    "description": "{{ addslashes($ogDescripcion) }}",
+    "url": "{{ route('propiedades.show', $propiedad->slug) }}",
+    @if($ogImagen)
+    "image": "{{ $ogImagen }}",
+    @endif
+    @if($propiedad->precio)
+    "offers": {
+        "@type": "Offer",
+        "price": "{{ $propiedad->precio }}",
+        "priceCurrency": "MXN",
+        "availability": "{{ $propiedad->estatus === 'en_venta' ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut' }}"
+    },
+    @endif
+    "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "{{ $propiedad->municipio }}",
+        "addressRegion": "{{ $propiedad->estado }}",
+        "addressCountry": "MX"
+    },
+    "numberOfRooms": {{ $propiedad->recamaras ?? 'null' }},
+    "floorSize": {
+        "@type": "QuantitativeValue",
+        "value": {{ $propiedad->metros_construccion ?? 'null' }},
+        "unitCode": "MTK"
+    }
+}
+</script>
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ route('home') }}" },
+        { "@type": "ListItem", "position": 2, "name": "Propiedades", "item": "{{ route('propiedades.index') }}" },
+        { "@type": "ListItem", "position": 3, "name": "{{ $propiedad->titulo }}", "item": "{{ route('propiedades.show', $propiedad->slug) }}" }
+    ]
+}
+</script>
+@endpush
 
 @section('content')
 <section class="bg-dark-900 min-h-screen" style="padding-top: 100px;">
@@ -222,12 +269,12 @@
 
                         @if($propiedad->estatus === 'en_venta')
                             <a href="https://wa.me/{{ setting('whatsapp_1', '527711910395') }}?text={{ urlencode('Hola, me interesa la propiedad: ' . $propiedad->titulo . ' — ' . route('propiedades.show', $propiedad->slug)) }}"
-                               target="_blank"
+                               target="_blank" rel="noopener noreferrer"
                                class="btn-gold w-full text-center block mb-3">
                                 Solicitar información
                             </a>
                             <a href="https://wa.me/{{ setting('whatsapp_1', '527711910395') }}?text={{ urlencode('Hola, quiero agendar una visita para: ' . $propiedad->titulo) }}"
-                               target="_blank"
+                               target="_blank" rel="noopener noreferrer"
                                class="block w-full text-center border border-gold-400/40 text-gold-400 hover:bg-gold-400/10 text-sm py-2.5 px-4 uppercase tracking-wider transition-all duration-300">
                                 Agendar visita
                             </a>
