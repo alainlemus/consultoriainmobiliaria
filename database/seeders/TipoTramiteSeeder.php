@@ -66,6 +66,43 @@ class TipoTramiteSeeder extends Seeder
                 'activo'               => true,
                 'orden'                => 6,
             ],
+            // ─── Productos INFONAVIT ─────────────────────────────────────────────
+            [
+                'id'                   => 10,
+                'nombre'               => 'Crédito INFONAVIT Tradicional',
+                'slug'                 => 'infonavit-tradicional',
+                'descripcion'          => 'Adquisición de vivienda nueva o usada para trabajadores derechohabientes del IMSS. Tasa diferenciada por salario, plazo hasta 30 años. Descuento vía nómina.',
+                'porcentaje_honorarios' => 8.00,
+                'activo'               => true,
+                'orden'                => 10,
+            ],
+            [
+                'id'                   => 11,
+                'nombre'               => 'Crédito INFONAVIT Total',
+                'slug'                 => 'infonavit-total',
+                'descripcion'          => 'Modalidad de crédito INFONAVIT en pesos (no en VSM). Monto máximo mayor, tasa fija en pesos. Para trabajadores con salario integrado desde 1 salario mínimo.',
+                'porcentaje_honorarios' => 8.00,
+                'activo'               => true,
+                'orden'                => 11,
+            ],
+            [
+                'id'                   => 12,
+                'nombre'               => 'Cofinavit (INFONAVIT + Banco)',
+                'slug'                 => 'cofinavit',
+                'descripcion'          => 'Combina crédito INFONAVIT con crédito bancario para ampliar el monto total. El trabajador paga dos mensualidades: una al INFONAVIT (vía nómina) y otra al banco.',
+                'porcentaje_honorarios' => 8.00,
+                'activo'               => true,
+                'orden'                => 12,
+            ],
+            [
+                'id'                   => 13,
+                'nombre'               => 'Unamos Créditos INFONAVIT',
+                'slug'                 => 'infonavit-unamos',
+                'descripcion'          => 'Dos derechohabientes INFONAVIT (cónyuges, familiares o corresidentes) suman sus subcuentas y capacidades de pago para obtener un mayor financiamiento.',
+                'porcentaje_honorarios' => 8.00,
+                'activo'               => true,
+                'orden'                => 13,
+            ],
             // ─── Servicios complementarios (se conservan) ────────────────────
             [
                 'id'                   => 4,
@@ -119,10 +156,14 @@ class TipoTramiteSeeder extends Seeder
 
         // Tipos de crédito hipotecario nuevos que no tienen etapas aún
         $tiposNuevos = [
-            2 => 'fovissste-pensionados',       // Pensionados
-            7 => 'fovissste-infonavit-individual',
-            8 => 'fovissste-para-todos',
-            9 => 'fovissste-construyes',
+            2  => 'fovissste-pensionados',
+            7  => 'fovissste-infonavit-individual',
+            8  => 'fovissste-para-todos',
+            9  => 'fovissste-construyes',
+            10 => 'infonavit-tradicional',
+            11 => 'infonavit-total',
+            12 => 'cofinavit',
+            13 => 'infonavit-unamos',
         ];
 
         foreach ($tiposNuevos as $tipoId => $slug) {

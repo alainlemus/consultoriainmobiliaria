@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\DocumentoRequerido;
 use App\Models\EtapaTramite;
 use App\Models\Expediente;
 use Illuminate\Http\JsonResponse;
@@ -52,14 +53,60 @@ class ExpedienteController extends Controller
             'documentos',
         ]);
 
-        // Serializar documentos igual que DocumentoController (sin URL directa)
-        $data = $exp->toArray();
-        $data['documentos'] = $exp->documentos->map(fn ($d) => [
+        // Documentos ya subidos al expediente
+        $docSubidos = $exp->documentos->map(fn ($d) => [
             ...$d->toArray(),
             'tipo_documento' => $d->tipo,
-            'url'            => null,            // se obtiene via /ver (URL firmada)
+            'url'            => null,
             'tiene_archivo'  => (bool) $d->ruta_archivo,
-        ])->values()->all();
+        ])->keyBy('tipo_documento');
+
+        // Checklist completo del tipo de trámite (documentos requeridos)
+        $requeridos = DocumentoRequerido::where('tipo_tramite_id', $exp->tipo_tramite_id)
+            ->orderBy('seccion')
+            ->orderBy('orden')
+            ->get();
+
+        // Mezclar: para cada requerido, si ya existe un doc subido se usa ese, si no se crea entrada vacía
+        $checklist = $requeridos->map(function ($req) use ($docSubidos) {
+            $subido = $docSubidos->get($req->nombre);
+            if ($subido) {
+                return array_merge($subido, ['seccion' => $req->seccion, 'orden' => $req->orden, 'obligatorio' => $req->obligatorio]);
+            }
+            return [
+                'id'             => null,
+                'tipo'           => $req->nombre,
+                'tipo_documento' => $req->nombre,
+                'seccion'        => $req->seccion,
+                'orden'          => $req->orden,
+                'obligatorio'    => $req->obligatorio,
+                'descripcion'    => $req->descripcion,
+                'estado'         => 'pendiente',
+                'tiene_archivo'  => false,
+                'url'            => null,
+                'ruta_archivo'   => null,
+            ];
+        });
+
+        // Documentos subidos que no están en el checklist (tipos personalizados)
+        $tiposRequeridos = $requeridos->pluck('nombre')->toArray();
+        $extrasSubidos   = $exp->documentos
+            ->filter(fn ($d) => ! in_array($d->tipo, $tiposRequeridos))
+            ->map(fn ($d) => [
+                ...$d->toArray(),
+                'tipo_documento' => $d->tipo,
+                'seccion'        => 'otros',
+                'orden'          => 99,
+                'obligatorio'    => false,
+                'url'            => null,
+                'tiene_archivo'  => (bool) $d->ruta_archivo,
+            ]);
+
+        $data = $exp->toArray();
+        $data['documentos']         = $checklist->values()->concat($extrasSubidos->values())->all();
+        $data['documentos_requeridos_total']   = $requeridos->count();
+        $data['documentos_subidos_total']      = $exp->documentos->where('ruta_archivo', '!=', null)->count();
+        $data['documentos_pendientes_total']   = $checklist->filter(fn ($d) => ! $d['tiene_archivo'])->count();
 
         return response()->json(['data' => $data]);
     }
