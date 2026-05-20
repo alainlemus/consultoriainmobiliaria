@@ -117,20 +117,20 @@
     {{-- JSON-LD RealEstateAgent (global) --}}
     <script type="application/ld+json">
     {
-        "@context": "https://schema.org",
-        "@type": "RealEstateAgent",
+        "@@context": "https://schema.org",
+        "@@type": "RealEstateAgent",
         "name": "{{ setting('site_name', 'Consultoría Inmobiliaria') }}",
         "url": "{{ config('app.url') }}",
         "logo": "{{ setting('logo') ? asset('storage/' . setting('logo')) : asset('favicon.ico') }}",
         "description": "{{ setting('seo_descripcion', 'Asesores expertos en crédito INFONAVIT, FOVISSSTE, avalúos y escrituras.') }}",
         "telephone": "+52{{ setting('whatsapp_1', '7711910395') }}",
         "areaServed": [
-            { "@type": "State", "name": "Hidalgo", "sameAs": "https://www.wikidata.org/wiki/Q80074" },
-            { "@type": "State", "name": "Veracruz", "sameAs": "https://www.wikidata.org/wiki/Q80080" },
-            { "@type": "State", "name": "San Luis Potosí", "sameAs": "https://www.wikidata.org/wiki/Q80078" }
+            { "@@type": "State", "name": "Hidalgo", "sameAs": "https://www.wikidata.org/wiki/Q80074" },
+            { "@@type": "State", "name": "Veracruz", "sameAs": "https://www.wikidata.org/wiki/Q80080" },
+            { "@@type": "State", "name": "San Luis Potosí", "sameAs": "https://www.wikidata.org/wiki/Q80078" }
         ],
         "contactPoint": {
-            "@type": "ContactPoint",
+            "@@type": "ContactPoint",
             "contactType": "customer service",
             "telephone": "+52{{ setting('whatsapp_1', '7711910395') }}",
             "availableLanguage": "Spanish"

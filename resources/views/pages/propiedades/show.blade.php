@@ -26,8 +26,8 @@
 @push('jsonld')
 <script type="application/ld+json">
 {
-    "@context": "https://schema.org",
-    "@type": "RealEstateListing",
+    "@@context": "https://schema.org",
+    "@@type": "RealEstateListing",
     "name": "{{ $propiedad->titulo }}",
     "description": "{{ addslashes($ogDescripcion) }}",
     "url": "{{ route('propiedades.show', $propiedad->slug) }}",
@@ -36,21 +36,21 @@
     @endif
     @if($propiedad->precio)
     "offers": {
-        "@type": "Offer",
+        "@@type": "Offer",
         "price": "{{ $propiedad->precio }}",
         "priceCurrency": "MXN",
         "availability": "{{ $propiedad->estatus === 'en_venta' ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut' }}"
     },
     @endif
     "address": {
-        "@type": "PostalAddress",
+        "@@type": "PostalAddress",
         "addressLocality": "{{ $propiedad->municipio }}",
         "addressRegion": "{{ $propiedad->estado }}",
         "addressCountry": "MX"
     },
     "numberOfRooms": {{ $propiedad->recamaras ?? 'null' }},
     "floorSize": {
-        "@type": "QuantitativeValue",
+        "@@type": "QuantitativeValue",
         "value": {{ $propiedad->metros_construccion ?? 'null' }},
         "unitCode": "MTK"
     }
@@ -58,12 +58,12 @@
 </script>
 <script type="application/ld+json">
 {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
+    "@@context": "https://schema.org",
+    "@@type": "BreadcrumbList",
     "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ route('home') }}" },
-        { "@type": "ListItem", "position": 2, "name": "Propiedades", "item": "{{ route('propiedades.index') }}" },
-        { "@type": "ListItem", "position": 3, "name": "{{ $propiedad->titulo }}", "item": "{{ route('propiedades.show', $propiedad->slug) }}" }
+        { "@@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ route('home') }}" },
+        { "@@type": "ListItem", "position": 2, "name": "Propiedades", "item": "{{ route('propiedades.index') }}" },
+        { "@@type": "ListItem", "position": 3, "name": "{{ $propiedad->titulo }}", "item": "{{ route('propiedades.show', $propiedad->slug) }}" }
     ]
 }
 </script>

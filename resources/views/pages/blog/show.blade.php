@@ -12,8 +12,8 @@
 @push('jsonld')
 <script type="application/ld+json">
 {
-    "@context": "https://schema.org",
-    "@type": "Article",
+    "@@context": "https://schema.org",
+    "@@type": "Article",
     "headline": "{{ $post->titulo }}",
     "description": "{{ $post->resumen ?? Str::limit(strip_tags($post->contenido ?? ''), 155) }}",
     "url": "{{ route('blog.show', $post->slug) }}",
@@ -23,34 +23,34 @@
     "image": "{{ asset('storage/' . $post->imagen) }}",
     @endif
     "author": {
-        "@type": "Organization",
+        "@@type": "Organization",
         "name": "{{ setting('site_name', 'Consultoría Inmobiliaria') }}",
         "url": "{{ config('app.url') }}"
     },
     "publisher": {
-        "@type": "Organization",
+        "@@type": "Organization",
         "name": "{{ setting('site_name', 'Consultoría Inmobiliaria') }}",
         "url": "{{ config('app.url') }}",
         "logo": {
-            "@type": "ImageObject",
+            "@@type": "ImageObject",
             "url": "{{ setting('logo') ? asset('storage/' . setting('logo')) : asset('favicon.ico') }}"
         }
     },
     "mainEntityOfPage": {
-        "@type": "WebPage",
-        "@id": "{{ route('blog.show', $post->slug) }}"
+        "@@type": "WebPage",
+        "@@id": "{{ route('blog.show', $post->slug) }}"
     }
 }
 </script>
 
 <script type="application/ld+json">
 {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
+    "@@context": "https://schema.org",
+    "@@type": "BreadcrumbList",
     "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ route('home') }}" },
-        { "@type": "ListItem", "position": 2, "name": "Blog", "item": "{{ route('blog.index') }}" },
-        { "@type": "ListItem", "position": 3, "name": "{{ $post->titulo }}", "item": "{{ route('blog.show', $post->slug) }}" }
+        { "@@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ route('home') }}" },
+        { "@@type": "ListItem", "position": 2, "name": "Blog", "item": "{{ route('blog.index') }}" },
+        { "@@type": "ListItem", "position": 3, "name": "{{ $post->titulo }}", "item": "{{ route('blog.show', $post->slug) }}" }
     ]
 }
 </script>
