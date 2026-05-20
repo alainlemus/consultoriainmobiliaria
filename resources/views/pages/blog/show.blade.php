@@ -105,12 +105,7 @@
         @endif
 
         {{-- Contenido --}}
-        <div class="prose prose-lg prose-invert max-w-none text-cream-200 leading-relaxed
-                    prose-headings:font-serif prose-headings:text-white
-                    prose-a:text-gold-400 prose-a:no-underline hover:prose-a:underline
-                    prose-strong:text-white
-                    prose-li:text-cream-200
-                    prose-hr:border-dark-600">
+        <div class="richtext">
             {!! $post->contenido !!}
         </div>
 
