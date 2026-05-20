@@ -11,5 +11,8 @@ mkdir -p /var/www/html/storage/app/livewire-tmp
 
 chmod -R 775 /var/www/html/storage
 
+# Crear symlink de storage
+php artisan storage:link --force || true
+
 # Ejecutar el comando principal
 exec "$@"
