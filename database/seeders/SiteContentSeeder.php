@@ -49,7 +49,7 @@ class SiteContentSeeder extends Seeder
 
         // ── Coberturas ────────────────────────────────────────────────────────
         $coberturas = [
-            ['nombre' => 'Hidalgo',          'descripcion' => 'Huejutla de Reyes, Hgo. Plaza Tecoluco, Av. Corona del Rosal', 'detalle' => '', 'activo' => true],
+            ['nombre' => 'Hidalgo',          'descripcion' => 'Contáctanos para agendar tu cita en tu municipio', 'detalle' => 'Huejutla de Reyes, Hgo. Plaza Tecoluco, Av. Corona del Rosal | Pachuca, Hgo. Centro comercial Via Dorada, Av. Ferrocarril Central', 'activo' => true],
             ['nombre' => 'Veracruz',         'descripcion' => 'Contáctanos para agendar tu cita en tu municipio',            'detalle' => '', 'activo' => true],
             ['nombre' => 'San Luis Potosí',  'descripcion' => 'Contáctanos para agendar tu cita en tu municipio',            'detalle' => '', 'activo' => true],
         ];

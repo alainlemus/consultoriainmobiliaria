@@ -30,6 +30,7 @@ class SeoSettings extends Page
         $claves = [
             'seo_titulo', 'seo_descripcion', 'seo_keywords',
             'seo_og_imagen', 'seo_autor', 'seo_robots',
+            'ga4_id', 'gsc_verification',
         ];
 
         $this->form->fill(
@@ -106,6 +107,20 @@ class SeoSettings extends Page
                         ->helperText('Se muestra al compartir en redes sociales. Recomendado: 1200×630 px.')
                         ->columnSpanFull(),
                 ]),
+
+                Forms\Components\Section::make('Analítica y verificación')->schema([
+                    Forms\Components\TextInput::make('ga4_id')
+                        ->label('Google Analytics 4 — Measurement ID')
+                        ->placeholder('G-XXXXXXXXXX')
+                        ->helperText('ID de medición de tu propiedad GA4. Ej: G-QYJX1JS69D')
+                        ->maxLength(30),
+
+                    Forms\Components\TextInput::make('gsc_verification')
+                        ->label('Google Search Console — código de verificación')
+                        ->placeholder('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+                        ->helperText('Valor del meta tag google-site-verification.')
+                        ->maxLength(100),
+                ])->columns(1),
             ])
             ->statePath('data');
     }
