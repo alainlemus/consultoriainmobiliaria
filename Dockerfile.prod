@@ -57,6 +57,10 @@ RUN composer dump-autoload --optimize --no-scripts \
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R ug+rwx storage bootstrap/cache
 
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 8000
 
-CMD ["sh", "-c", "cd /var/www/html && php artisan config:clear && php artisan serve --host=0.0.0.0 --port=8000 || (echo 'ARTISAN FAILED, sleeping' && sleep 3600)"]
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
