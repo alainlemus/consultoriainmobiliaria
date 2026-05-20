@@ -29,14 +29,14 @@
 
 <script type="application/ld+json">
 {
-    "@context": "https://schema.org",
-    "@type": "HowTo",
+    "@@context": "https://schema.org",
+    "@@type": "HowTo",
     "name": "Cómo gestionar tu crédito hipotecario INFONAVIT o FOVISSSTE",
     "description": "Proceso paso a paso para obtener tu crédito hipotecario con asesoría especializada en Consultoría Inmobiliaria.",
     "step": [
         @foreach($procesos as $index => $paso)
         {
-            "@type": "HowToStep",
+            "@@type": "HowToStep",
             "position": {{ $paso->numero }},
             "name": "{{ addslashes($paso->titulo) }}",
             "text": "{{ addslashes($paso->descripcion) }}"
