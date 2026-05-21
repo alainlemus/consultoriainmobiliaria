@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
@@ -124,5 +125,19 @@ class AuthController extends Controller
             Storage::disk('local')->path($user->foto_perfil),
             ['Cache-Control' => 'private, max-age=3600']
         );
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json(['message' => 'Te enviamos un enlace para restablecer tu contraseña.']);
+        }
+
+        // No revelar si el correo existe o no (seguridad)
+        return response()->json(['message' => 'Si ese correo está registrado, recibirás un enlace en breve.']);
     }
 }

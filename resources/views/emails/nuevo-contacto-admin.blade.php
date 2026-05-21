@@ -30,10 +30,7 @@
 <body>
 <div class="wrapper">
 
-    <div class="header">
-        <h1>Panel de Administración</h1>
-        <p>{{ setting('site_name', config('app.name')) }}</p>
-    </div>
+    @include('emails.partials.header')
 
     <div class="alert-bar">
         <p>📬 Nuevo mensaje de contacto recibido</p>
@@ -67,19 +64,27 @@
                 @if($contacto->servicio)
                 <tr>
                     <td>Servicio:</td>
-                    <td>{{ ucfirst($contacto->servicio) }}</td>
+                    <td>{{ ucfirst(strtolower($contacto->servicio)) }}</td>
+                </tr>
+                @endif
+                @if($contacto->curp)
+                <tr>
+                    <td>CURP:</td>
+                    <td style="font-family:monospace; letter-spacing:2px; color:#8B1A1A; font-weight:bold;">{{ $contacto->curp }}</td>
                 </tr>
                 @endif
                 <tr>
                     <td>Fecha:</td>
                     <td>{{ $contacto->created_at->format('d/m/Y H:i') }}</td>
                 </tr>
+                @if($contacto->mensaje)
                 <tr>
                     <td>Mensaje:</td>
                     <td>
                         <div class="mensaje-box">{{ $contacto->mensaje }}</div>
                     </td>
                 </tr>
+                @endif
             </table>
         </div>
 
