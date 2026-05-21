@@ -115,6 +115,13 @@ class AdminPanelProvider extends PanelProvider
         }
 
         $panel->renderHook(
+            PanelsRenderHook::BODY_END,
+            fn (): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(
+                Blade::render('<x-env-ribbon />')
+            )
+        );
+
+        $panel->renderHook(
             PanelsRenderHook::TOPBAR_END,
             fn (): string => Blade::render('
                 @php
