@@ -142,5 +142,6 @@
     }
     </script>
 
+<x-env-ribbon />
 </body>
 </html>
