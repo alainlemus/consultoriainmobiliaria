@@ -21,6 +21,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use DiogoGPinto\AuthUIEnhancer\AuthUIEnhancerPlugin;
 use App\Models\Configuracion;
 use Filament\Navigation\NavigationItem;
 
@@ -41,6 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->passwordReset()
+            ->theme(asset('css/filament/admin/theme.css'))
             ->colors([
                 'primary' => Color::hex('#B8960C'),
             ])
@@ -69,6 +71,14 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
+                AuthUIEnhancerPlugin::make()
+                    ->formPanelPosition('right')
+                    ->formPanelWidth('45%')
+                    ->formPanelBackgroundColor(Color::hex('#1a1a1a'))
+                    ->emptyPanelBackgroundImageUrl(asset('storage/propiedades/01KRT2GJHH8ZH3HMWG4866BAGE.jpeg'))
+                    ->emptyPanelBackgroundImageOpacity('60%')
+                    ->emptyPanelBackgroundColor(Color::hex('#0d0d0d'))
+                    ->showEmptyPanelOnMobile(false),
             ])
             ->homeUrl(fn () => auth()->user()?->hasRole('asesor')
                 ? '/admin/dashboard-asesor'
