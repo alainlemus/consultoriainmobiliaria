@@ -10,6 +10,8 @@ use App\Observers\ContactoObserver;
 use App\Observers\ExpedienteObserver;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use DiogoGPinto\AuthUIEnhancer\Pages\Auth\AuthUiEnhancerLogin;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
         if (app()->environment('production')) {
             URL::forceScheme('https');
         }
+
+        Livewire::component(
+            'diogo-g-pinto.auth-u-i-enhancer.pages.auth.auth-ui-enhancer-login',
+            AuthUiEnhancerLogin::class
+        );
 
         Expediente::observe(ExpedienteObserver::class);
         Comision::observe(ComisionObserver::class);
