@@ -29,7 +29,7 @@ class GeneralSettings extends Page
     public function mount(): void
     {
         $claves = [
-            'logo', 'favicon',
+            'logo', 'favicon', 'login_image',
             'telefono_1', 'telefono_2',
             'whatsapp_1', 'whatsapp_2',
             'oficina_principal', 'correo_contacto',
@@ -61,6 +61,15 @@ class GeneralSettings extends Page
                         ->disk('public')
                         ->directory('site')
                         ->helperText('Formatos: ICO, PNG. Tamaño recomendado: 32×32 px.'),
+
+                    Forms\Components\FileUpload::make('login_image')
+                        ->label('Imagen de fondo del login')
+                        ->image()
+                        ->imagePreviewHeight('120')
+                        ->disk('public')
+                        ->directory('site')
+                        ->columnSpanFull()
+                        ->helperText('Imagen que aparece en el panel lateral del login. Recomendado: relación 3:4 o 9:16, mínimo 800px de alto.'),
                 ])->columns(2),
 
                 Forms\Components\Section::make('Contacto')->schema([

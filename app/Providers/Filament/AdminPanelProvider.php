@@ -30,10 +30,11 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         try {
-            $logo    = Configuracion::get('logo');
-            $favicon = Configuracion::get('favicon');
+            $logo        = Configuracion::get('logo');
+            $favicon     = Configuracion::get('favicon');
+            $loginImage  = Configuracion::get('login_image');
         } catch (\Throwable) {
-            $logo = $favicon = null;
+            $logo = $favicon = $loginImage = null;
         }
 
         $panel = $panel
@@ -75,7 +76,11 @@ class AdminPanelProvider extends PanelProvider
                     ->formPanelPosition('right')
                     ->formPanelWidth('45%')
                     ->formPanelBackgroundColor(Color::hex('#1a1a1a'))
-                    ->emptyPanelBackgroundImageUrl(asset('storage/propiedades/01KRT2GJHH8ZH3HMWG4866BAGE.jpeg'))
+                    ->emptyPanelBackgroundImageUrl(
+                        $loginImage
+                            ? asset('storage/' . $loginImage)
+                            : asset('storage/propiedades/01KRT2GJHH8ZH3HMWG4866BAGE.jpeg')
+                    )
                     ->emptyPanelBackgroundImageOpacity('60%')
                     ->emptyPanelBackgroundColor(Color::hex('#0d0d0d'))
                     ->showEmptyPanelOnMobile(false),
