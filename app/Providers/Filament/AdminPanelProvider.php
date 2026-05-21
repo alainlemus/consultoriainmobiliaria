@@ -100,7 +100,7 @@ class AdminPanelProvider extends PanelProvider
 
         if ($logo) {
             $panel->brandLogo(asset('storage/' . $logo))
-                  ->brandLogoHeight('12rem');
+                  ->brandLogoHeight('2.5rem');
         }
 
         if ($favicon) {
