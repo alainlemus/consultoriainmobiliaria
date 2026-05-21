@@ -4,7 +4,6 @@ namespace App\Providers\Filament;
 
 use App\Http\Middleware\RedirectAsesorToExpedientes;
 use Filament\Http\Middleware\Authenticate;
-use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
@@ -76,12 +75,7 @@ class AdminPanelProvider extends PanelProvider
                     ->formPanelPosition('right')
                     ->formPanelWidth('45%')
                     ->formPanelBackgroundColor(Color::hex('#1a1a1a'))
-                    ->emptyPanelBackgroundImageUrl(
-                        $loginImage
-                            ? asset('storage/' . $loginImage)
-                            : asset('storage/propiedades/01KRT2GJHH8ZH3HMWG4866BAGE.jpeg')
-                    )
-                    ->emptyPanelBackgroundImageOpacity('60%')
+                    ->emptyPanelView('filament.auth.login-panel')
                     ->emptyPanelBackgroundColor(Color::hex('#0d0d0d'))
                     ->showEmptyPanelOnMobile(false),
             ])
@@ -93,7 +87,6 @@ class AdminPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
-                AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
                 SubstituteBindings::class,
@@ -107,12 +100,35 @@ class AdminPanelProvider extends PanelProvider
 
         if ($logo) {
             $panel->brandLogo(asset('storage/' . $logo))
-                  ->brandLogoHeight('2.5rem');
+                  ->brandLogoHeight('12rem');
         }
 
         if ($favicon) {
             $panel->favicon(asset('storage/' . $favicon));
         }
+
+        $panel->renderHook(
+            PanelsRenderHook::AUTH_LOGIN_FORM_BEFORE,
+            fn (): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(
+                Blade::render(
+                    '<div class="text-center mb-4 leading-tight">
+                        <span class="block text-xl font-semibold tracking-widest uppercase" style="color: #9ca3af;">Consultoría</span>
+                        <span class="block text-xl font-bold tracking-wider uppercase" style="color: #B8960C;">Inmobiliaria</span>
+                    </div>',
+                    []
+                )
+            )
+        );
+
+        $panel->renderHook(
+            PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
+            fn (): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(
+                Blade::render(
+                    '<p class="text-center text-xs mt-6" style="color: #6b7280;">v{{ $version }}</p>',
+                    ['version' => config('app.version', '1.0.0')]
+                )
+            )
+        );
 
         $panel->renderHook(
             PanelsRenderHook::BODY_END,
