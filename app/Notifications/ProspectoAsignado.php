@@ -2,24 +2,24 @@
 
 namespace App\Notifications;
 
+use App\Channels\PushChannel;
 use App\Models\Contacto;
+use App\Notifications\Concerns\SendsPushNotification;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
-/**
- * Notifica al asesor cuando se le asigna un nuevo prospecto.
- */
 class ProspectoAsignado extends Notification
 {
     use Queueable;
+    use SendsPushNotification;
 
     public function __construct(public Contacto $contacto) {}
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return array_filter(['database', $this->viaPush() ? PushChannel::class : null]);
     }
 
     public function toDatabase(object $notifiable): array
@@ -40,5 +40,22 @@ class ProspectoAsignado extends Notification
                     ->markAsRead(),
             ])
             ->getDatabaseMessage();
+    }
+
+    protected function pushTitle(): string
+    {
+        return '👤 Nuevo prospecto asignado';
+    }
+
+    protected function pushBody(): string
+    {
+        $nombre   = $this->contacto->nombre;
+        $servicio = ucfirst($this->contacto->servicio ?? 'No especificado');
+        return "{$nombre} — {$servicio}";
+    }
+
+    protected function pushData(): array
+    {
+        return ['screen' => 'prospectos', 'id' => (string) $this->contacto->id];
     }
 }

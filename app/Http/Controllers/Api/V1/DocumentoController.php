@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentoExpediente;
 use App\Models\Expediente;
+use App\Models\User;
+use App\Notifications\DocumentoSubido;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -98,7 +100,20 @@ class DocumentoController extends Controller
             ]
         );
 
+        $this->notificarDocumentoSubido($doc, $exp);
+
         return response()->json(['data' => $this->serialize($doc)], 201);
+    }
+
+    /**
+     * Notifica a todos los super_admin que se subió un documento.
+     */
+    private function notificarDocumentoSubido(DocumentoExpediente $doc, Expediente $exp): void
+    {
+        $admins = User::role('super_admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new DocumentoSubido($doc, $exp));
+        }
     }
 
     /**
