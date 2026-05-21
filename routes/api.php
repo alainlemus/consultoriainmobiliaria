@@ -41,7 +41,8 @@ Route::get(
 Route::prefix('v1')->group(function () {
 
     // ── Públicas (sin token) ──────────────────────────────────────────────
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/login',           [AuthController::class, 'login']);
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
 
     // ── Protegidas (requieren Bearer token Sanctum) ───────────────────────
     Route::middleware('auth:sanctum')->group(function () {

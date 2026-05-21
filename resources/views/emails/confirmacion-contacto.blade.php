@@ -27,10 +27,7 @@
 <body>
 <div class="wrapper">
 
-    <div class="header">
-        <h1>Consultoría Inmobiliaria</h1>
-        <p>{{ setting('site_name', config('app.name')) }}</p>
-    </div>
+    @include('emails.partials.header')
 
     <div class="body">
         <h2>Hola, {{ $contacto->nombre }}.</h2>
@@ -56,13 +53,21 @@
                 @if($contacto->servicio)
                 <tr>
                     <td>Servicio:</td>
-                    <td>{{ ucfirst($contacto->servicio) }}</td>
+                    <td>{{ ucfirst(strtolower($contacto->servicio)) }}</td>
                 </tr>
                 @endif
+                @if($contacto->curp)
+                <tr>
+                    <td>CURP:</td>
+                    <td style="font-family:monospace; letter-spacing:2px;">{{ $contacto->curp }}</td>
+                </tr>
+                @endif
+                @if($contacto->mensaje)
                 <tr>
                     <td>Mensaje:</td>
                     <td>{{ $contacto->mensaje }}</td>
                 </tr>
+                @endif
             </table>
         </div>
 

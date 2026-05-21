@@ -13,8 +13,13 @@ use App\Models\UbicacionFoto;
 use Illuminate\Support\Facades\Storage;
 
 // Alias para que el middleware 'auth' de Laravel redirija al login de Filament
-// (Se usa una ruta distinta a /admin/login para no interferir con Filament)
 Route::redirect('/login', '/admin/login', 302)->name('login');
+
+// Ruta requerida por Password::sendResetLink() — redirige al reset de Filament con el token
+Route::get('/admin/password-reset/reset/{token}', function (string $token) {
+    $email = request('email');
+    return redirect("/admin/password-reset/reset?token={$token}&email={$email}");
+})->name('password.reset');
 
 // Página principal
 Route::get('/', [HomeController::class, 'index'])->name('home');
