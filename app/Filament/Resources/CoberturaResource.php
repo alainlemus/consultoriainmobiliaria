@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\CoberturaResource\Pages;
 use App\Models\Cobertura;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -19,17 +19,17 @@ class CoberturaResource extends Resource
 
 
     protected static ?string $model = Cobertura::class;
-    protected static ?string $navigationIcon  = 'heroicon-o-map-pin';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-map-pin';
     protected static ?string $navigationLabel = 'Cobertura';
     protected static ?string $modelLabel      = 'Zona de cobertura';
     protected static ?string $pluralModelLabel = 'Cobertura';
-    protected static ?string $navigationGroup = 'Configuración del sitio';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración del sitio';
     protected static ?int    $navigationSort  = 3;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Zona de cobertura')->schema([
+        return $schema->schema([
+            \Filament\Schemas\Components\Section::make('Zona de cobertura')->schema([
                 Forms\Components\TextInput::make('nombre')
                     ->label('Estado / Nombre')
                     ->required()
@@ -58,7 +58,7 @@ class CoberturaResource extends Resource
                     ]),
             ])->columns(2),
 
-            Forms\Components\Section::make('Visibilidad')->schema([
+            \Filament\Schemas\Components\Section::make('Visibilidad')->schema([
                 Forms\Components\Toggle::make('activo')
                     ->label('Visible en el sitio')
                     ->default(true),
@@ -100,12 +100,12 @@ class CoberturaResource extends Resource
                     ->boolean(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->label('Editar'),
-                Tables\Actions\DeleteAction::make()->label('Eliminar'),
+                \Filament\Actions\EditAction::make()->label('Editar'),
+                \Filament\Actions\DeleteAction::make()->label('Eliminar'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()->label('Eliminar seleccionados'),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make()->label('Eliminar seleccionados'),
                 ]),
             ])
             ->defaultSort('orden');

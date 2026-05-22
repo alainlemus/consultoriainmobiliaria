@@ -75,7 +75,7 @@ class AsesorExpedientesWidget extends BaseWidget
                     ->sortable(),
             ])
             ->actions([
-                Tables\Actions\Action::make('ver')
+                \Filament\Actions\Action::make('ver')
                     ->label('Ver')
                     ->icon('heroicon-o-eye')
                     ->url(fn (Expediente $record) => route('filament.admin.resources.expedientes.edit', $record))

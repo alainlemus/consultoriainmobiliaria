@@ -6,7 +6,7 @@ use App\Filament\Resources\PostResource\Pages;
 use App\Models\Categoria;
 use App\Models\Post;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -21,17 +21,17 @@ class PostResource extends Resource
 
 
     protected static ?string $model = Post::class;
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Blog';
-    protected static ?string $navigationGroup = 'Configuración del sitio';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración del sitio';
     protected static ?int $navigationSort = 4;
     protected static ?string $modelLabel = 'Artículo';
     protected static ?string $pluralModelLabel = 'Artículos';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Información del artículo')->schema([
+        return $schema->schema([
+            \Filament\Schemas\Components\Section::make('Información del artículo')->schema([
                 Forms\Components\TextInput::make('titulo')
                     ->label('Título')
                     ->required()
@@ -92,7 +92,7 @@ class PostResource extends Resource
                     ]),
             ])->columns(2),
 
-            Forms\Components\Section::make('Publicación')->schema([
+            \Filament\Schemas\Components\Section::make('Publicación')->schema([
                 Forms\Components\Select::make('estado')
                     ->label('Estado')
                     ->options([
@@ -120,7 +120,7 @@ class PostResource extends Resource
                     ->required()
                     ->native(false)
                     ->displayFormat('d/m/Y H:i')
-                    ->visible(fn (Forms\Get $get) => $get('estado') !== Post::ESTADO_BORRADOR)
+                    ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $get('estado') !== Post::ESTADO_BORRADOR)
                     ->validationMessages([
                         'required' => 'La fecha de publicación es obligatoria para artículos programados o publicados.',
                     ]),
@@ -180,12 +180,12 @@ class PostResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('published_at', 'desc');

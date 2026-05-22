@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Expediente;
 use App\Models\User;
 use Filament\Notifications\Notification;
-use Filament\Notifications\Actions\Action as NotifAction;
+use Filament\Actions\Action as NotifAction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 

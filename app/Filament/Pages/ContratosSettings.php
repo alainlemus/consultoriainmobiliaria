@@ -4,7 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Configuracion;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
@@ -16,12 +16,12 @@ class ContratosSettings extends Page
         return auth()->check() && auth()->user()->hasRole('super_admin');
     }
 
-    protected static ?string $navigationIcon  = 'heroicon-o-document-text';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Contratos para clientes';
     protected static ?string $title           = 'Contratos para clientes';
-    protected static ?string $navigationGroup = 'CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'CRM';
     protected static ?int    $navigationSort  = 90;
-    protected static string  $view            = 'filament.pages.contratos-settings';
+    protected string $view = 'filament.pages.contratos-settings';
 
     public ?array $data = [];
 
@@ -45,16 +45,16 @@ class ContratosSettings extends Page
         );
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
         $hint = fn (string $text) => $text;
 
         $placeholders = '**Placeholders disponibles:** `{ciudad}` `{fecha}` `{domicilio}` `{acreditado}` `{dom_acreditado}` `{tipo_tramite}` `{curp}` `{rfc}` `{nss}` `{folio}` `{monto_credito}` `{pct_honorarios}` `{monto_honorarios}`';
 
-        return $form
+        return $schema
             ->schema([
                 // ── FIRMAS ────────────────────────────────────────────────────
-                Forms\Components\Section::make('Firmas')
+                \Filament\Schemas\Components\Section::make('Firmas')
                     ->description('Nombres que aparecen en el bloque de firmas de ambos documentos.')
                     ->icon('heroicon-o-pencil-square')
                     ->columns(2)
@@ -79,7 +79,7 @@ class ContratosSettings extends Page
                     ]),
 
                 // ── CONTRATO DE PRESTACIÓN DE SERVICIOS ───────────────────────
-                Forms\Components\Section::make('Contrato de Prestación de Servicios')
+                \Filament\Schemas\Components\Section::make('Contrato de Prestación de Servicios')
                     ->icon('heroicon-o-document-text')
                     ->description($placeholders)
                     ->collapsible()
@@ -109,7 +109,7 @@ class ContratosSettings extends Page
                     ]),
 
                 // ── CONVENIO DE HONORARIOS ────────────────────────────────────
-                Forms\Components\Section::make('Convenio de Honorarios')
+                \Filament\Schemas\Components\Section::make('Convenio de Honorarios')
                     ->icon('heroicon-o-lock-closed')
                     ->description($placeholders)
                     ->collapsible()

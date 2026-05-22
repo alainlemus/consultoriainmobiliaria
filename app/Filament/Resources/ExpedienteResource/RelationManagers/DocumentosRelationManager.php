@@ -4,7 +4,7 @@ namespace App\Filament\Resources\ExpedienteResource\RelationManagers;
 
 use App\Models\DocumentoExpediente;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -23,9 +23,9 @@ class DocumentosRelationManager extends RelationManager
     public function canDelete(Model $record): bool   { return Auth::user()?->hasRole('super_admin') ?? false; }
     public function canDeleteAny(): bool             { return Auth::user()?->hasRole('super_admin') ?? false; }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             Forms\Components\TextInput::make('nombre')
                 ->label('Documento')
                 ->required()
@@ -100,7 +100,7 @@ class DocumentosRelationManager extends RelationManager
             ->headerActions([])
             ->actions([
                 // Acciones rápidas de estado (un clic, sin modal)
-                Tables\Actions\Action::make('marcar_recibido')
+                \Filament\Actions\Action::make('marcar_recibido')
                     ->label('Recibido')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -108,7 +108,7 @@ class DocumentosRelationManager extends RelationManager
                     ->action(fn ($record) => $record->update(['estado' => 'recibido']))
                     ->requiresConfirmation(false),
 
-                Tables\Actions\Action::make('marcar_no_aplica')
+                \Filament\Actions\Action::make('marcar_no_aplica')
                     ->label('No aplica')
                     ->icon('heroicon-o-x-circle')
                     ->color('gray')
@@ -116,7 +116,7 @@ class DocumentosRelationManager extends RelationManager
                     ->action(fn ($record) => $record->update(['estado' => 'no_aplica']))
                     ->requiresConfirmation(false),
 
-                Tables\Actions\Action::make('marcar_pendiente')
+                \Filament\Actions\Action::make('marcar_pendiente')
                     ->label('Pendiente')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('danger')
@@ -125,7 +125,7 @@ class DocumentosRelationManager extends RelationManager
                     ->requiresConfirmation(false),
 
                 // Ver comprobante en modal
-                Tables\Actions\Action::make('ver_archivo')
+                \Filament\Actions\Action::make('ver_archivo')
                     ->label('Ver')
                     ->icon('heroicon-o-eye')
                     ->color('primary')
@@ -153,7 +153,7 @@ class DocumentosRelationManager extends RelationManager
                     }),
 
                 // Editar notas y subir/reemplazar archivo
-                Tables\Actions\EditAction::make()
+                \Filament\Actions\EditAction::make()
                     ->label('Editar / Subir')
                     ->icon('heroicon-o-paper-clip')
                     ->mutateRecordDataUsing(fn (array $data) => $data)

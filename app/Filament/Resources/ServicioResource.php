@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ServicioResource\Pages;
 use App\Models\Servicio;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -19,17 +19,17 @@ class ServicioResource extends Resource
 
 
     protected static ?string $model = Servicio::class;
-    protected static ?string $navigationIcon  = 'heroicon-o-briefcase';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-briefcase';
     protected static ?string $navigationLabel = 'Servicios';
     protected static ?string $modelLabel      = 'Servicio';
     protected static ?string $pluralModelLabel = 'Servicios';
-    protected static ?string $navigationGroup = 'Configuración del sitio';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración del sitio';
     protected static ?int    $navigationSort  = 1;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Información del servicio')->schema([
+        return $schema->schema([
+            \Filament\Schemas\Components\Section::make('Información del servicio')->schema([
                 Forms\Components\TextInput::make('titulo')
                     ->label('Título')
                     ->required()
@@ -62,7 +62,7 @@ class ServicioResource extends Resource
                     ]),
             ]),
 
-            Forms\Components\Section::make('Beneficios / Lista de ítems')->schema([
+            \Filament\Schemas\Components\Section::make('Beneficios / Lista de ítems')->schema([
                 Forms\Components\Repeater::make('items')
                     ->label('Ítems')
                     ->simple(
@@ -77,7 +77,7 @@ class ServicioResource extends Resource
                     ->columnSpanFull(),
             ]),
 
-            Forms\Components\Section::make('Visibilidad')->schema([
+            \Filament\Schemas\Components\Section::make('Visibilidad')->schema([
                 Forms\Components\Toggle::make('activo')
                     ->label('Visible en el sitio')
                     ->default(true),
@@ -120,12 +120,12 @@ class ServicioResource extends Resource
                     ->boolean(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->label('Editar'),
-                Tables\Actions\DeleteAction::make()->label('Eliminar'),
+                \Filament\Actions\EditAction::make()->label('Editar'),
+                \Filament\Actions\DeleteAction::make()->label('Eliminar'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()->label('Eliminar seleccionados'),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make()->label('Eliminar seleccionados'),
                 ]),
             ])
             ->defaultSort('orden');

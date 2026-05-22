@@ -4,7 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Configuracion;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
@@ -16,12 +16,12 @@ class AvisoPrivacidadSettings extends Page
         return auth()->check() && auth()->user()->hasRole('super_admin');
     }
 
-    protected static ?string $navigationIcon  = 'heroicon-o-shield-check';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-shield-check';
     protected static ?string $navigationLabel = 'Aviso de Privacidad';
-    protected static ?string $navigationGroup = 'Configuración del sitio';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración del sitio';
     protected static ?string $title           = 'Aviso de Privacidad';
     protected static ?int    $navigationSort  = 12;
-    protected static string  $view            = 'filament.pages.aviso-privacidad-settings';
+    protected string $view = 'filament.pages.aviso-privacidad-settings';
 
     public ?array $data = [];
 
@@ -32,11 +32,11 @@ class AvisoPrivacidadSettings extends Page
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('Aviso de Privacidad')
+                \Filament\Schemas\Components\Section::make('Aviso de Privacidad')
                     ->description('Este contenido se mostrará en la página pública /aviso-de-privacidad.')
                     ->schema([
                         Forms\Components\RichEditor::make('aviso_privacidad')

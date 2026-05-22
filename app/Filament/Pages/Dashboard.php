@@ -36,7 +36,7 @@ class Dashboard extends BaseDashboard
         return auth()->check() && auth()->user()->hasRole('super_admin');
     }
 
-    protected static ?string $navigationIcon  = 'heroicon-o-chart-bar';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-chart-bar';
     protected static ?string $navigationLabel = 'KPIs';
     protected static ?string $title           = 'KPIs';
     protected static ?int    $navigationSort  = -2;
@@ -55,7 +55,7 @@ class Dashboard extends BaseDashboard
         ];
     }
 
-    public function getColumns(): int | string | array
+    public function getColumns(): int | array
     {
         return 2;
     }

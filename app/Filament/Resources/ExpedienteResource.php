@@ -10,7 +10,7 @@ use App\Models\Expediente;
 use App\Models\TipoTramite;
 use App\Models\User;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -21,11 +21,11 @@ use Illuminate\Support\Facades\Auth;
 class ExpedienteResource extends Resource
 {
     protected static ?string $model = Expediente::class;
-    protected static ?string $navigationIcon = 'heroicon-o-folder-open';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-folder-open';
     protected static ?string $navigationLabel = 'Expedientes';
     protected static ?string $modelLabel = 'Expediente';
     protected static ?string $pluralModelLabel = 'Expedientes';
-    protected static ?string $navigationGroup = 'CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'CRM';
     protected static ?int $navigationSort = 2;
     protected static ?string $recordTitleAttribute = 'folio';
 
@@ -90,9 +90,9 @@ class ExpedienteResource extends Resource
         return 'primary';
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             Forms\Components\Tabs::make('Expediente')
                 ->tabs([
 
@@ -116,13 +116,13 @@ class ExpedienteResource extends Resource
                                 ->options(TipoTramite::where('activo', true)->orderBy('orden')->pluck('nombre', 'id'))
                                 ->required()
                                 ->live()
-                                ->afterStateUpdated(fn (Forms\Set $set) => $set('etapa_tramite_id', null))
+                                ->afterStateUpdated(fn (\Filament\Schemas\Components\Utilities\Set $set) => $set('etapa_tramite_id', null))
                                 ->validationMessages([
                                     'required' => 'Debes seleccionar el tipo de trámite.',
                                 ]),
                             Forms\Components\Select::make('etapa_tramite_id')
                                 ->label('Etapa actual')
-                                ->options(fn (Forms\Get $get) =>
+                                ->options(fn (\Filament\Schemas\Components\Utilities\Get $get) =>
                                     EtapaTramite::where('tipo_tramite_id', $get('tipo_tramite_id'))
                                         ->orderBy('orden')
                                         ->pluck('nombre', 'id')
@@ -302,7 +302,7 @@ class ExpedienteResource extends Resource
                             Forms\Components\Placeholder::make('acceso_simulador_exp')
                                 ->label('Consultar crédito disponible')
                                 ->columnSpanFull()
-                                ->content(function (Forms\Get $get): \Illuminate\Support\HtmlString {
+                                ->content(function (\Filament\Schemas\Components\Utilities\Get $get): \Illuminate\Support\HtmlString {
                                     $curp = strtoupper(trim($get('acreditado_curp') ?? ''));
                                     $hint = $curp
                                         ? "<span class='text-xs text-gray-500 ml-2'>CURP: <strong>{$curp}</strong></span>"
@@ -503,7 +503,7 @@ class ExpedienteResource extends Resource
                     Forms\Components\Tabs\Tab::make('Financiero')
                         ->icon('heroicon-o-banknotes')
                         ->schema([
-                            Forms\Components\Section::make('Montos del crédito')
+                            \Filament\Schemas\Components\Section::make('Montos del crédito')
                                 ->description('Al marcar "Honorarios cobrados" y cambiar el estado a "Cerrado", el sistema generará automáticamente la comisión del asesor.')
                                 ->schema([
                                     Forms\Components\TextInput::make('monto_credito')
@@ -543,7 +543,7 @@ class ExpedienteResource extends Resource
                                         ->disabled()
                                         ->hint('Calculado automáticamente'),
                                 ])->columns(2),
-                            Forms\Components\Section::make('Honorarios')
+                            \Filament\Schemas\Components\Section::make('Honorarios')
                                 ->visible(fn () => Auth::user()?->hasRole('super_admin'))
                                 ->schema([
                                     Forms\Components\TextInput::make('honorarios_porcentaje')
@@ -570,7 +570,7 @@ class ExpedienteResource extends Resource
                                         ->disabled()
                                         ->dehydrated()
                                         ->placeholder('Se calcula automáticamente')
-                                        ->hint(fn (Forms\Get $get) => ($get('honorarios_porcentaje') && $get('monto_total_estimado'))
+                                        ->hint(fn (\Filament\Schemas\Components\Utilities\Get $get) => ($get('honorarios_porcentaje') && $get('monto_total_estimado'))
                                             ? number_format(floatval($get('monto_total_estimado')) * floatval($get('honorarios_porcentaje')) / 100, 2) . ' MXN'
                                             : 'Captura el % y el monto total estimado'
                                         ),
@@ -591,7 +591,7 @@ class ExpedienteResource extends Resource
                                             'before_or_equal' => 'La fecha de cierre no puede ser futura.',
                                         ]),
                                 ])->columns(2),
-                            Forms\Components\Section::make('Notas internas')
+                            \Filament\Schemas\Components\Section::make('Notas internas')
                                 ->description('Visible solo para el equipo admin.')
                                 ->schema([
                                     Forms\Components\Textarea::make('notas_internas')
@@ -731,15 +731,15 @@ public static function canDelete(Model $record): bool
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                \Filament\Actions\EditAction::make()
                     ->hidden(fn ($record) => Auth::user()?->hasRole('asesor')
                         && $record->etapa && $record->etapa->orden >= 5),
-                Tables\Actions\DeleteAction::make()
+                \Filament\Actions\DeleteAction::make()
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make()
                         ->visible(fn () => Auth::user()?->hasRole('super_admin')),
                 ]),
             ])

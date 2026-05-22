@@ -6,7 +6,7 @@ use App\Filament\Resources\ComisionResource\Pages;
 use App\Models\Comision;
 use App\Models\User;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -38,11 +38,11 @@ class ComisionResource extends Resource
 
 
     protected static ?string $model = Comision::class;
-    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-banknotes';
     protected static ?string $navigationLabel = 'Comisiones';
     protected static ?string $modelLabel = 'Comisión';
     protected static ?string $pluralModelLabel = 'Comisiones';
-    protected static ?string $navigationGroup = 'CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'CRM';
     protected static ?int $navigationSort = 5;
 
     public static function getGloballySearchableAttributes(): array
@@ -100,10 +100,10 @@ class ComisionResource extends Resource
         return 'warning';
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Información de la Comisión')
+        return $schema->schema([
+            \Filament\Schemas\Components\Section::make('Información de la Comisión')
                 ->description('Las comisiones se generan automáticamente al cerrar un expediente. Los campos deshabilitados son de solo lectura. Solo el administrador puede cambiar el estado y aprobar el pago.')
                 ->columns(2)
                 ->schema([
@@ -200,7 +200,7 @@ class ComisionResource extends Resource
                         ->hint('Administrador que autorizó el pago'),
                 ]),
 
-            Forms\Components\Section::make('Cuenta bancaria del asesor')
+            \Filament\Schemas\Components\Section::make('Cuenta bancaria del asesor')
                 ->description('Datos de la cuenta a la que se realizará la transferencia. Se obtienen del perfil del asesor.')
                 ->columns(2)
                 ->schema([
@@ -219,7 +219,7 @@ class ComisionResource extends Resource
                         ),
                 ]),
 
-            Forms\Components\Section::make('Notas')
+            \Filament\Schemas\Components\Section::make('Notas')
                 ->description('Observaciones sobre el pago: método de pago, referencia de transferencia, etc.')
                 ->schema([
                     Forms\Components\Textarea::make('notas')
@@ -319,7 +319,7 @@ class ComisionResource extends Resource
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->actions([
-                Tables\Actions\Action::make('aprobar')
+                \Filament\Actions\Action::make('aprobar')
                     ->label('Aprobar')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -333,7 +333,7 @@ class ComisionResource extends Resource
                         ]);
                     }),
 
-                Tables\Actions\Action::make('marcar_pagada')
+                \Filament\Actions\Action::make('marcar_pagada')
                     ->label('Marcar Pagada')
                     ->icon('heroicon-o-currency-dollar')
                     ->color('primary')
@@ -346,10 +346,10 @@ class ComisionResource extends Resource
                         ]);
                     }),
 
-                Tables\Actions\EditAction::make()
+                \Filament\Actions\EditAction::make()
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
 
-                Tables\Actions\ViewAction::make()
+                \Filament\Actions\ViewAction::make()
                     ->visible(fn () => Auth::user()?->hasRole('asesor')),
             ])
             ->bulkActions([])

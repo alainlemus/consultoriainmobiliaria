@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\FotoClienteResource\Pages;
 use App\Models\FotoCliente;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -18,17 +18,17 @@ class FotoClienteResource extends Resource
     }
 
     protected static ?string $model = FotoCliente::class;
-    protected static ?string $navigationIcon = 'heroicon-o-photo';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-photo';
     protected static ?string $navigationLabel = 'Fotos de Clientes';
-    protected static ?string $navigationGroup = 'Configuración del sitio';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración del sitio';
     protected static ?int $navigationSort = 6;
     protected static ?string $modelLabel = 'Foto de cliente';
     protected static ?string $pluralModelLabel = 'Fotos de Clientes';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Foto del cliente')
+        return $schema->schema([
+            \Filament\Schemas\Components\Section::make('Foto del cliente')
                 ->description('Sube la foto del cliente con su crédito aprobado. Se mostrará como imagen cuadrada en el slider de la landing.')
                 ->schema([
                     Forms\Components\FileUpload::make('foto')
@@ -135,12 +135,12 @@ class FotoClienteResource extends Resource
             ])
             ->reorderable('orden')
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

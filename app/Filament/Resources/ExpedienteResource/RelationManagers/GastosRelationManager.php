@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\ExpedienteResource\RelationManagers;
 
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -15,9 +15,9 @@ class GastosRelationManager extends RelationManager
     protected static ?string $modelLabel = 'Gasto';
     protected static ?string $pluralModelLabel = 'Gastos';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             Forms\Components\TextInput::make('concepto')
                 ->label('Concepto')
                 ->required()
@@ -116,7 +116,7 @@ class GastosRelationManager extends RelationManager
                     ]),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                \Filament\Actions\CreateAction::make()
                     ->after(function () {
                         // Recalcular total_gastos_financiados en el expediente
                         $expediente = $this->getOwnerRecord();
@@ -125,7 +125,7 @@ class GastosRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                Tables\Actions\Action::make('ver_comprobante')
+                \Filament\Actions\Action::make('ver_comprobante')
                     ->label('Ver')
                     ->icon('heroicon-o-eye')
                     ->color('gray')
@@ -148,13 +148,13 @@ class GastosRelationManager extends RelationManager
                         return new \Illuminate\Support\HtmlString($html);
                     }),
 
-                Tables\Actions\EditAction::make()
+                \Filament\Actions\EditAction::make()
                     ->after(function () {
                         $expediente = $this->getOwnerRecord();
                         $total = $expediente->gastos()->where('estado', '!=', 'cancelado')->sum('monto');
                         $expediente->update(['total_gastos_financiados' => $total]);
                     }),
-                Tables\Actions\DeleteAction::make()
+                \Filament\Actions\DeleteAction::make()
                     ->after(function () {
                         $expediente = $this->getOwnerRecord();
                         $total = $expediente->gastos()->where('estado', '!=', 'cancelado')->sum('monto');

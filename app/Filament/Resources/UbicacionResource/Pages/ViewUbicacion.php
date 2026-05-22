@@ -10,7 +10,7 @@ class ViewUbicacion extends ViewRecord
 {
     protected static string $resource = UbicacionResource::class;
 
-    protected static string $view = 'filament.resources.ubicacion.view-ubicacion';
+    protected string $view = 'filament.resources.ubicacion.view-ubicacion';
 
     public function getTitle(): string
     {

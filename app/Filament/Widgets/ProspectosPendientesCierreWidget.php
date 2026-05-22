@@ -91,7 +91,7 @@ class ProspectosPendientesCierreWidget extends BaseWidget
                     ->wrap(),
             ])
             ->actions([
-                Tables\Actions\Action::make('ver')
+                \Filament\Actions\Action::make('ver')
                     ->label('Ver')
                     ->icon('heroicon-o-eye')
                     ->url(fn (Contacto $record) => \App\Filament\Resources\ContactoResource::getUrl('edit', ['record' => $record]))

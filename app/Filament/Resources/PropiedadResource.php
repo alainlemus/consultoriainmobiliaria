@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PropiedadResource\Pages;
 use App\Models\Propiedad;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -19,18 +19,18 @@ class PropiedadResource extends Resource
     }
 
     protected static ?string $model = Propiedad::class;
-    protected static ?string $navigationIcon  = 'heroicon-o-home-modern';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-home-modern';
     protected static ?string $navigationLabel = 'Propiedades';
-    protected static ?string $navigationGroup = 'Configuración del sitio';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración del sitio';
     protected static ?int    $navigationSort  = 6;
     protected static ?string $modelLabel      = 'Propiedad';
     protected static ?string $pluralModelLabel = 'Propiedades';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
 
-            Forms\Components\Section::make('Información general')->schema([
+            \Filament\Schemas\Components\Section::make('Información general')->schema([
                 Forms\Components\TextInput::make('titulo')
                     ->label('Título')
                     ->required()
@@ -74,7 +74,7 @@ class PropiedadResource extends Resource
                     ->columnSpanFull(),
             ])->columns(2),
 
-            Forms\Components\Section::make('Ubicación')->schema([
+            \Filament\Schemas\Components\Section::make('Ubicación')->schema([
                 Forms\Components\TextInput::make('estado')
                     ->label('Estado')
                     ->required()
@@ -126,7 +126,7 @@ class PropiedadResource extends Resource
                     ])->columns(2)->columnSpanFull(),
             ])->columns(2),
 
-            Forms\Components\Section::make('Características')->schema([
+            \Filament\Schemas\Components\Section::make('Características')->schema([
                 Forms\Components\TextInput::make('precio')
                     ->label('Precio ($)')
                     ->numeric()
@@ -172,7 +172,7 @@ class PropiedadResource extends Resource
                     ->reactive(),
             ])->columns(3),
 
-            Forms\Components\Section::make('Imágenes')->schema([
+            \Filament\Schemas\Components\Section::make('Imágenes')->schema([
                 Forms\Components\FileUpload::make('imagenes')
                     ->label('Galería de imágenes')
                     ->multiple()
@@ -183,7 +183,7 @@ class PropiedadResource extends Resource
                     ->columnSpanFull(),
             ]),
 
-            Forms\Components\Section::make('Opciones')->schema([
+            \Filament\Schemas\Components\Section::make('Opciones')->schema([
                 Forms\Components\Toggle::make('destacada')
                     ->label('Destacar en la página de inicio')
                     ->helperText('Las propiedades destacadas aparecen en la sección de la landing.'),
@@ -264,12 +264,12 @@ class PropiedadResource extends Resource
                     ->label('Acepta FOVISSSTE'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

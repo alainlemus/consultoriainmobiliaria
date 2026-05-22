@@ -4,7 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Configuracion;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
@@ -16,12 +16,12 @@ class SeoSettings extends Page
         return auth()->check() && auth()->user()->hasRole('super_admin');
     }
 
-    protected static ?string $navigationIcon  = 'heroicon-o-magnifying-glass';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-magnifying-glass';
     protected static ?string $navigationLabel = 'SEO';
     protected static ?string $title           = 'SEO';
-    protected static ?string $navigationGroup = 'Configuración del sitio';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración del sitio';
     protected static ?int    $navigationSort  = 11;
-    protected static string  $view            = 'filament.pages.seo-settings';
+    protected string $view = 'filament.pages.seo-settings';
 
     public ?array $data = [];
 
@@ -38,11 +38,11 @@ class SeoSettings extends Page
         );
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('Etiquetas meta básicas')->schema([
+                \Filament\Schemas\Components\Section::make('Etiquetas meta básicas')->schema([
                     Forms\Components\TextInput::make('seo_titulo')
                         ->label('Título de la página (meta title)')
                         ->required()
@@ -97,7 +97,7 @@ class SeoSettings extends Page
                         ]),
                 ])->columns(2),
 
-                Forms\Components\Section::make('Open Graph / Redes sociales')->schema([
+                \Filament\Schemas\Components\Section::make('Open Graph / Redes sociales')->schema([
                     Forms\Components\FileUpload::make('seo_og_imagen')
                         ->label('Imagen OG (Open Graph)')
                         ->image()
@@ -108,7 +108,7 @@ class SeoSettings extends Page
                         ->columnSpanFull(),
                 ]),
 
-                Forms\Components\Section::make('Analítica y verificación')->schema([
+                \Filament\Schemas\Components\Section::make('Analítica y verificación')->schema([
                     Forms\Components\TextInput::make('ga4_id')
                         ->label('Google Analytics 4 — Measurement ID')
                         ->placeholder('G-XXXXXXXXXX')
