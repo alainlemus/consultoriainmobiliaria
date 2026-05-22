@@ -79,9 +79,9 @@ class EnviarReporteGestion extends Command
 
     /**
      * Devuelve [desde, hasta, etiqueta] según el tipo.
-     * - diario:  ayer 00:00 → ayer 23:59:59
-     * - semanal: lunes pasado → domingo pasado
-     * - mensual: primer día del mes anterior → último día del mes anterior
+     * - diario:  hoy 00:00 → hoy 23:59:59  (se envía a las 8 PM del mismo día)
+     * - semanal: lunes pasado → viernes pasado  (se envía el sábado en la mañana)
+     * - mensual: primer día del mes actual → hoy  (se envía el último día del mes a las 8 PM)
      *
      * @return array{Carbon, Carbon, string}
      */
@@ -89,21 +89,21 @@ class EnviarReporteGestion extends Command
     {
         return match($tipo) {
             'diario' => [
-                Carbon::yesterday()->startOfDay(),
-                Carbon::yesterday()->endOfDay(),
-                Carbon::yesterday()->isoFormat('dddd D [de] MMMM, YYYY'),
+                Carbon::today()->startOfDay(),
+                Carbon::today()->endOfDay(),
+                Carbon::today()->isoFormat('dddd D [de] MMMM, YYYY'),
             ],
             'semanal' => [
                 Carbon::now()->subWeek()->startOfWeek(Carbon::MONDAY),
-                Carbon::now()->subWeek()->endOfWeek(Carbon::SUNDAY),
-                Carbon::now()->subWeek()->startOfWeek()->isoFormat('D MMM')
+                Carbon::now()->subWeek()->endOfWeek(Carbon::FRIDAY),
+                Carbon::now()->subWeek()->startOfWeek(Carbon::MONDAY)->isoFormat('D MMM')
                     . ' – '
-                    . Carbon::now()->subWeek()->endOfWeek()->isoFormat('D MMM YYYY'),
+                    . Carbon::now()->subWeek()->endOfWeek(Carbon::FRIDAY)->isoFormat('D MMM YYYY'),
             ],
             'mensual' => [
-                Carbon::now()->subMonth()->startOfMonth(),
-                Carbon::now()->subMonth()->endOfMonth(),
-                Carbon::now()->subMonth()->isoFormat('MMMM YYYY'),
+                Carbon::now()->startOfMonth(),
+                Carbon::now()->endOfDay(),
+                Carbon::now()->isoFormat('MMMM YYYY'),
             ],
         };
     }
