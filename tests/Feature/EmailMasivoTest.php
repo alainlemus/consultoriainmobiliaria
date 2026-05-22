@@ -85,7 +85,8 @@ class EmailMasivoTest extends TestCase
             cuerpo:   'Tu servicio de interés es: {servicio}.',
         );
 
-        $mailable->assertSeeInHtml('Fovissste');
+        // {servicio} se reemplaza con el valor del campo (en mayúsculas tal como está en BD)
+        $mailable->assertSeeInHtml('FOVISSSTE');
     }
 
     public function test_mailable_tiene_asunto_correcto(): void
