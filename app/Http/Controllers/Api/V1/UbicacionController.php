@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Ubicacion;
 use App\Models\UbicacionFoto;
+use App\Models\User;
+use App\Notifications\VisitaRegistrada;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -44,6 +46,12 @@ class UbicacionController extends Controller
                 $data['estado']    ?? null
             ),
         ]);
+
+        // Notificar a super_admin
+        $ubicacion->loadMissing(['user', 'contacto']);
+        User::role('super_admin')->get()->each(
+            fn ($admin) => $admin->notify(new VisitaRegistrada($ubicacion))
+        );
 
         return response()->json(['data' => $ubicacion], 201);
     }

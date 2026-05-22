@@ -2,18 +2,18 @@
 
 namespace App\Notifications;
 
+use App\Channels\PushChannel;
 use App\Models\Expediente;
+use App\Notifications\Concerns\SendsPushNotification;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
-/**
- * Notifica al asesor cuando la etapa de su expediente cambia.
- */
 class EtapaExpedienteCambiada extends Notification
 {
     use Queueable;
+    use SendsPushNotification;
 
     public function __construct(
         public Expediente $expediente,
@@ -23,7 +23,7 @@ class EtapaExpedienteCambiada extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return array_filter(['database', $this->viaPush() ? PushChannel::class : null]);
     }
 
     public function toDatabase(object $notifiable): array
@@ -43,5 +43,22 @@ class EtapaExpedienteCambiada extends Notification
                     ->markAsRead(),
             ])
             ->getDatabaseMessage();
+    }
+
+    protected function pushTitle(): string
+    {
+        $folio = $this->expediente->folio ?? "#{$this->expediente->id}";
+        return "📋 Expediente {$folio} actualizado";
+    }
+
+    protected function pushBody(): string
+    {
+        $cliente = $this->expediente->acreditado_nombre;
+        return "{$cliente}: {$this->etapaAnterior} → {$this->etapaNueva}";
+    }
+
+    protected function pushData(): array
+    {
+        return ['screen' => 'expedientes', 'id' => (string) $this->expediente->id];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Channels\PushChannel;
+use App\Models\DocumentoExpediente;
 use App\Models\Expediente;
 use App\Notifications\Concerns\SendsPushNotification;
 use Filament\Notifications\Actions\Action;
@@ -10,12 +11,18 @@ use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
-class ExpedienteCerrado extends Notification
+/**
+ * Notifica al super_admin cuando un asesor sube un documento desde la app.
+ */
+class DocumentoSubido extends Notification
 {
     use Queueable;
     use SendsPushNotification;
 
-    public function __construct(public Expediente $expediente) {}
+    public function __construct(
+        public DocumentoExpediente $documento,
+        public Expediente $expediente,
+    ) {}
 
     public function via(object $notifiable): array
     {
@@ -26,20 +33,13 @@ class ExpedienteCerrado extends Notification
     {
         $folio   = $this->expediente->folio ?? "#{$this->expediente->id}";
         $cliente = $this->expediente->acreditado_nombre;
-        $monto   = $this->expediente->honorarios_monto
-            ? '$ ' . number_format($this->expediente->honorarios_monto, 2)
-            : null;
-
-        $body = "Expediente **{$folio}** — {$cliente} ha sido cerrado exitosamente.";
-        if ($monto) {
-            $body .= " Honorarios: {$monto}.";
-        }
+        $tipo    = $this->documento->tipo;
 
         return FilamentNotification::make()
-            ->title('✅ Expediente cerrado')
-            ->body($body)
-            ->success()
-            ->icon('heroicon-o-check-badge')
+            ->title('📄 Documento recibido')
+            ->body("El asesor subió **{$tipo}** para el expediente {$folio} ({$cliente}).")
+            ->info()
+            ->icon('heroicon-o-paper-clip')
             ->actions([
                 Action::make('ver')
                     ->label('Ver expediente')
@@ -52,20 +52,21 @@ class ExpedienteCerrado extends Notification
     protected function pushTitle(): string
     {
         $folio = $this->expediente->folio ?? "#{$this->expediente->id}";
-        return "✅ Expediente {$folio} cerrado";
+        return "📄 Documento recibido — {$folio}";
     }
 
     protected function pushBody(): string
     {
         $cliente = $this->expediente->acreditado_nombre;
-        $monto   = $this->expediente->honorarios_monto
-            ? ' — Honorarios: $ ' . number_format($this->expediente->honorarios_monto, 2)
-            : '';
-        return "{$cliente}{$monto}";
+        $tipo    = $this->documento->tipo;
+        return "{$cliente}: {$tipo}";
     }
 
     protected function pushData(): array
     {
-        return ['screen' => 'expedientes', 'id' => (string) $this->expediente->id];
+        return [
+            'screen'        => 'expedientes',
+            'expediente_id' => (string) $this->expediente->id,
+        ];
     }
 }
