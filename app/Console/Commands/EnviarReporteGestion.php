@@ -49,9 +49,13 @@ class EnviarReporteGestion extends Command
 
         $enviados = 0;
         foreach ($admins as $admin) {
-            if (! $admin->email) continue;
+            // Usar el correo configurado en Ajustes Generales como destino principal.
+            // Si no está configurado, caer al email del usuario super_admin en BD.
+            $correoDestino = setting('correo_contacto') ?: $admin->email;
 
-            Mail::to($admin->email)
+            if (! $correoDestino) continue;
+
+            Mail::to($correoDestino)
                 ->queue(new ReporteGestion(
                     datos:   $datos,
                     tipo:    $tipo,
