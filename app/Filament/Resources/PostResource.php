@@ -6,6 +6,8 @@ use App\Filament\Resources\PostResource\Pages;
 use App\Models\Categoria;
 use App\Models\Post;
 use Filament\Forms;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -37,7 +39,7 @@ class PostResource extends Resource
                     ->required()
                     ->maxLength(255)
                     ->live(onBlur: true)
-                    ->afterStateUpdated(fn ($state, Forms\Set $set) =>
+                    ->afterStateUpdated(fn ($state, Set $set) =>
                         $set('slug', Str::slug($state))
                     )
                     ->validationMessages([

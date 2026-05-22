@@ -10,6 +10,8 @@ use App\Models\Expediente;
 use App\Models\TipoTramite;
 use App\Models\User;
 use Filament\Forms;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -102,7 +104,7 @@ class ExpedienteResource extends Resource
                         ->schema([
                             // ── Stepper de progreso ───────────────────────
                             Forms\Components\View::make('filament.components.expediente-stepper')
-                                ->viewData(fn (Forms\Get $get, $record) => ['record' => $record])
+                                ->viewData(fn (Get $get, $record) => ['record' => $record])
                                 ->columnSpanFull()
                                 ->visible(fn ($record) => $record !== null),
 
@@ -529,7 +531,7 @@ class ExpedienteResource extends Resource
                                             'min' => 'El monto total estimado no puede ser negativo.',
                                         ])
                                         ->live(onBlur: true)
-                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
+                                        ->afterStateUpdated(function (Get $get, Set $set, $state) {
                                             $total = floatval($state);
                                             $pct   = floatval($get('honorarios_porcentaje') ?? 0);
                                             $set('honorarios_monto', $total > 0 && $pct > 0
@@ -555,7 +557,7 @@ class ExpedienteResource extends Resource
                                             'max' => 'El porcentaje no puede superar 100%.',
                                         ])
                                         ->live(onBlur: true)
-                                        ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
+                                        ->afterStateUpdated(function (Get $get, Set $set, $state) {
                                             $pct   = floatval($state);
                                             $total = floatval($get('monto_total_estimado') ?? 0);
                                             $set('honorarios_monto', $total > 0 && $pct > 0

@@ -34,7 +34,7 @@ class ContactoTest extends TestCase
         $this->otroAsesor->assignRole('asesor');
 
         $permisos = [
-            'view_any_contacto', 'view_contacto', 'create_contacto', 'update_contacto',
+            'ViewAny:Contacto', 'View:Contacto', 'Create:Contacto', 'Update:Contacto',
         ];
         foreach ($permisos as $p) {
             Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
@@ -146,8 +146,8 @@ class ContactoTest extends TestCase
         ]);
 
         // Verificar que el asesor no tiene el permiso de eliminar
-        $this->assertFalse($this->asesor->can('delete_contacto'));
-        $this->assertFalse($this->asesor->can('delete_any_contacto'));
+        $this->assertFalse($this->asesor->can('Delete:Contacto'));
+        $this->assertFalse($this->asesor->can('DeleteAny:Contacto'));
     }
 
     /** @test */

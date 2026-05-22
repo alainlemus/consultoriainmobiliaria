@@ -5,6 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\TipoTramiteResource\Pages;
 use App\Models\TipoTramite;
 use Filament\Forms;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -44,7 +46,7 @@ class TipoTramiteResource extends Resource
                         'unique'   => 'Ya existe un tipo de trámite con ese nombre.',
                     ])
                     ->live(onBlur: true)
-                    ->afterStateUpdated(fn ($state, Forms\Set $set) =>
+                    ->afterStateUpdated(fn ($state, Set $set) =>
                         $set('slug', Str::slug($state))
                     )
                     ->hint('Ej: FOVISSSTE, INFONAVIT, Avalúo, Escrituras'),

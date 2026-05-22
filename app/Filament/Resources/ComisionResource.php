@@ -6,6 +6,8 @@ use App\Filament\Resources\ComisionResource\Pages;
 use App\Models\Comision;
 use App\Models\User;
 use Filament\Forms;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -157,7 +159,7 @@ class ComisionResource extends Resource
                         ->validationMessages([
                             'required' => 'El estado de la comisión es obligatorio.',
                         ])
-                        ->afterStateUpdated(function ($state, Forms\Set $set) {
+                        ->afterStateUpdated(function ($state, Set $set) {
                             if ($state === 'aprobada') {
                                 $set('fecha_aprobacion', now()->toDateString());
                                 $set('aprobado_por', Auth::id());

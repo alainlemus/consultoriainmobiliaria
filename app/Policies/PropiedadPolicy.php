@@ -1,108 +1,75 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
-use App\Models\User;
+use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Propiedad;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class PropiedadPolicy
 {
     use HandlesAuthorization;
-
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
+    
+    public function viewAny(AuthUser $authUser): bool
     {
-        return $user->can('view_any_propiedad');
+        return $authUser->can('ViewAny:Propiedad');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, Propiedad $propiedad): bool
+    public function view(AuthUser $authUser, Propiedad $propiedad): bool
     {
-        return $user->can('view_propiedad');
+        return $authUser->can('View:Propiedad');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
+    public function create(AuthUser $authUser): bool
     {
-        return $user->can('create_propiedad');
+        return $authUser->can('Create:Propiedad');
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, Propiedad $propiedad): bool
+    public function update(AuthUser $authUser, Propiedad $propiedad): bool
     {
-        return $user->can('update_propiedad');
+        return $authUser->can('Update:Propiedad');
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, Propiedad $propiedad): bool
+    public function delete(AuthUser $authUser, Propiedad $propiedad): bool
     {
-        return $user->can('delete_propiedad');
+        return $authUser->can('Delete:Propiedad');
     }
 
-    /**
-     * Determine whether the user can bulk delete.
-     */
-    public function deleteAny(User $user): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
-        return $user->can('delete_any_propiedad');
+        return $authUser->can('DeleteAny:Propiedad');
     }
 
-    /**
-     * Determine whether the user can permanently delete.
-     */
-    public function forceDelete(User $user, Propiedad $propiedad): bool
+    public function restore(AuthUser $authUser, Propiedad $propiedad): bool
     {
-        return $user->can('force_delete_propiedad');
+        return $authUser->can('Restore:Propiedad');
     }
 
-    /**
-     * Determine whether the user can permanently bulk delete.
-     */
-    public function forceDeleteAny(User $user): bool
+    public function forceDelete(AuthUser $authUser, Propiedad $propiedad): bool
     {
-        return $user->can('force_delete_any_propiedad');
+        return $authUser->can('ForceDelete:Propiedad');
     }
 
-    /**
-     * Determine whether the user can restore.
-     */
-    public function restore(User $user, Propiedad $propiedad): bool
+    public function forceDeleteAny(AuthUser $authUser): bool
     {
-        return $user->can('restore_propiedad');
+        return $authUser->can('ForceDeleteAny:Propiedad');
     }
 
-    /**
-     * Determine whether the user can bulk restore.
-     */
-    public function restoreAny(User $user): bool
+    public function restoreAny(AuthUser $authUser): bool
     {
-        return $user->can('restore_any_propiedad');
+        return $authUser->can('RestoreAny:Propiedad');
     }
 
-    /**
-     * Determine whether the user can replicate.
-     */
-    public function replicate(User $user, Propiedad $propiedad): bool
+    public function replicate(AuthUser $authUser, Propiedad $propiedad): bool
     {
-        return $user->can('replicate_propiedad');
+        return $authUser->can('Replicate:Propiedad');
     }
 
-    /**
-     * Determine whether the user can reorder.
-     */
-    public function reorder(User $user): bool
+    public function reorder(AuthUser $authUser): bool
     {
-        return $user->can('reorder_propiedad');
+        return $authUser->can('Reorder:Propiedad');
     }
+
 }
