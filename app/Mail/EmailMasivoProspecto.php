@@ -38,7 +38,7 @@ class EmailMasivoProspecto extends Mailable
         );
 
         return new Content(
-            markdown: 'emails.email-masivo-prospecto',
+            view: 'emails.email-masivo-prospecto',
             with: [
                 'cuerpoHtml'  => $cuerpoPersonalizado,
                 'nombreContacto' => $this->contacto->nombre,

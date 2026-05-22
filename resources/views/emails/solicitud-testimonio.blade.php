@@ -1,26 +1,35 @@
-<x-mail::message>
-# Hola, {{ $nombreCliente }}
+@extends('emails.layouts.base')
+@section('title', '¿Cómo fue tu experiencia?')
+@section('alert', '⭐ Cuéntanos tu experiencia')
+@section('alert-class', 'gold')
+@php $preheader = 'Tu opinión nos ayuda a seguir mejorando. Solo toma un momento.'; @endphp
 
-Gracias por confiar en **{{ $nombreEmpresa }}** para gestionar tu trámite inmobiliario.
+@section('content')
+    <h2>Hola, {{ $nombreCliente }}.</h2>
+    <p>
+        Gracias por confiar en <strong>{{ $nombreEmpresa }}</strong> para gestionar tu trámite inmobiliario.
+    </p>
+    <p>
+        Tu opinión es muy valiosa para nosotros y ayuda a que otras familias conozcan nuestro servicio.
+        ¿Nos regalas un momento para contarnos cómo fue tu experiencia?
+    </p>
 
-Tu opinión es muy valiosa para nosotros y ayuda a que otras familias conozcan nuestro servicio. ¿Nos regalas un momento para contarnos cómo fue tu experiencia?
+    <div class="cta">
+        <a href="{{ $link }}">Dejar mi testimonio</a>
+    </div>
 
-<x-mail::button :url="$link" color="primary">
-Dejar mi testimonio
-</x-mail::button>
+    <div class="notice">
+        Este enlace es <strong>personal e intransferible</strong>, solo funciona una vez y estará
+        disponible durante <strong>{{ $expiraDias }} días</strong>.
+    </div>
 
-Este enlace es **personal e intransferible**, solo funciona una vez y estará disponible durante **{{ $expiraDias }} días**.
+    <hr class="divider">
 
----
+    <p class="small">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+    <p style="font-size:13px; word-break:break-all; background:#f5f0e8; padding:10px 14px; border-radius:2px; font-family:monospace;">{{ $link }}</p>
 
-Si el botón no funciona, copia y pega este enlace en tu navegador:
-
-`{{ $link }}`
-
-Gracias por tu tiempo,<br>
-**El equipo de {{ $nombreEmpresa }}**
-
-<x-mail::subcopy>
-Si no realizaste ningún trámite con nosotros o crees que este correo es un error, puedes ignorarlo con total seguridad.
-</x-mail::subcopy>
-</x-mail::message>
+    <p class="small center">
+        Si no realizaste ningún trámite con nosotros o crees que este correo es un error,
+        puedes ignorarlo con total seguridad.
+    </p>
+@endsection

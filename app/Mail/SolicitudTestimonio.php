@@ -34,7 +34,7 @@ class SolicitudTestimonio extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.solicitud-testimonio',
+            view: 'emails.solicitud-testimonio',
             with: [
                 'link'          => $this->link,
                 'nombreCliente' => $this->nombreCliente,

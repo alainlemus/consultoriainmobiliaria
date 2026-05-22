@@ -1,46 +1,123 @@
-@component('mail::message')
-# Reporte {{ ucfirst($tipo) }} de Gestión
+@extends('emails.layouts.base')
+@section('title', 'Reporte ' . ucfirst($tipo) . ' de Gestión')
+@section('alert', '📊 Reporte ' . ucfirst($tipo) . ' de Gestión')
+@section('alert-class', 'blue')
+@php $preheader = 'Resumen de actividad del período: ' . $periodo; @endphp
 
-**Período:** {{ $periodo }}
+@section('content')
+    <h2>Reporte {{ ucfirst($tipo) }}</h2>
+    <p>
+        <span class="badge">{{ $periodo }}</span>
+    </p>
+    <p>
+        A continuación encontrarás el resumen de actividad del período.
+        El reporte completo con todos los detalles se encuentra adjunto en PDF.
+    </p>
 
-Adjunto encontrarás el reporte completo en PDF con el resumen de actividad del período.
+    {{-- Expedientes --}}
+    <h3>📁 Expedientes</h3>
+    <table class="metrics-table">
+        <tr>
+            <th>Métrica</th>
+            <th>Valor</th>
+        </tr>
+        <tr>
+            <td>Abiertos en el período</td>
+            <td>{{ $datos['expedientes']['abiertos_periodo'] }}</td>
+        </tr>
+        <tr>
+            <td>Cerrados en el período</td>
+            <td>{{ $datos['expedientes']['cerrados_periodo'] }}</td>
+        </tr>
+        <tr>
+            <td>Activos en total</td>
+            <td>{{ $datos['expedientes']['activos_total'] }}</td>
+        </tr>
+    </table>
 
----
+    {{-- Prospectos --}}
+    <h3>👤 Prospectos</h3>
+    <table class="metrics-table">
+        <tr>
+            <th>Métrica</th>
+            <th>Valor</th>
+        </tr>
+        <tr>
+            <td>Nuevos en el período</td>
+            <td>{{ $datos['prospectos']['nuevos_periodo'] }}</td>
+        </tr>
+        <tr>
+            <td>Convertidos a expediente</td>
+            <td>{{ $datos['prospectos']['convertidos_periodo'] }}</td>
+        </tr>
+        <tr>
+            <td>Pendientes de cierre</td>
+            <td>{{ $datos['prospectos']['pendientes_cierre'] }}</td>
+        </tr>
+    </table>
 
-## Resumen rápido
+    {{-- Comisiones --}}
+    <h3>💰 Comisiones</h3>
+    <table class="metrics-table">
+        <tr>
+            <th>Métrica</th>
+            <th>Monto</th>
+        </tr>
+        <tr>
+            <td>Generadas en el período</td>
+            <td>$ {{ number_format($datos['comisiones']['generadas_monto'], 2) }}</td>
+        </tr>
+        <tr>
+            <td>Pagadas en el período</td>
+            <td>$ {{ number_format($datos['comisiones']['pagadas_monto'], 2) }}</td>
+        </tr>
+        <tr>
+            <td>Pendientes de pago</td>
+            <td>$ {{ number_format($datos['comisiones']['pendientes_monto'], 2) }}</td>
+        </tr>
+    </table>
 
-@component('mail::table')
-| Métrica | Valor |
-|:---|---:|
-| Expedientes abiertos en el período | {{ $datos['expedientes']['abiertos_periodo'] }} |
-| Expedientes cerrados en el período | {{ $datos['expedientes']['cerrados_periodo'] }} |
-| Expedientes activos (total) | {{ $datos['expedientes']['activos_total'] }} |
-| Prospectos nuevos | {{ $datos['prospectos']['nuevos_periodo'] }} |
-| Prospectos convertidos | {{ $datos['prospectos']['convertidos_periodo'] }} |
-| Prospectos pendientes de cierre | {{ $datos['prospectos']['pendientes_cierre'] }} |
-| Comisiones generadas | $ {{ number_format($datos['comisiones']['generadas_monto'], 2) }} |
-| Comisiones pagadas | $ {{ number_format($datos['comisiones']['pagadas_monto'], 2) }} |
-| Comisiones pendientes de pago | $ {{ number_format($datos['comisiones']['pendientes_monto'], 2) }} |
-| Seguimientos registrados | {{ $datos['seguimientos']['total_periodo'] }} |
-| Expedientes sin movimiento (+{{ $datos['sin_movimiento']['umbral_dias'] }} días) | {{ $datos['sin_movimiento']['total'] }} |
-| Expedientes con documentos pendientes | {{ $datos['documentos']['expedientes_con_pendientes'] }} |
-@endcomponent
+    {{-- Actividad --}}
+    <h3>📋 Actividad</h3>
+    <table class="metrics-table">
+        <tr>
+            <th>Métrica</th>
+            <th>Valor</th>
+        </tr>
+        <tr>
+            <td>Seguimientos registrados</td>
+            <td>{{ $datos['seguimientos']['total_periodo'] }}</td>
+        </tr>
+        <tr>
+            <td>Expedientes sin movimiento (+{{ $datos['sin_movimiento']['umbral_dias'] }} días)</td>
+            <td>{{ $datos['sin_movimiento']['total'] }}</td>
+        </tr>
+        <tr>
+            <td>Expedientes con documentos pendientes</td>
+            <td>{{ $datos['documentos']['expedientes_con_pendientes'] }}</td>
+        </tr>
+    </table>
 
----
+    <hr class="divider">
 
-@if($datos['sin_movimiento']['total'] > 0)
-> ⚠️ **Atención:** Hay **{{ $datos['sin_movimiento']['total'] }}** expediente(s) sin movimiento en los últimos {{ $datos['sin_movimiento']['umbral_dias'] }} días. Consulta el PDF para el detalle.
-@else
-> ✅ Todos los expedientes activos tienen seguimiento reciente.
-@endif
+    {{-- Alerta expedientes sin movimiento --}}
+    @if($datos['sin_movimiento']['total'] > 0)
+    <div class="notice warning">
+        ⚠️ <strong>Atención:</strong> Hay <strong>{{ $datos['sin_movimiento']['total'] }}</strong>
+        expediente(s) sin movimiento en los últimos {{ $datos['sin_movimiento']['umbral_dias'] }} días.
+        Consulta el PDF adjunto para el detalle.
+    </div>
+    @else
+    <div class="notice success">
+        ✅ Todos los expedientes activos tienen seguimiento reciente.
+    </div>
+    @endif
 
-@component('mail::button', ['url' => config('app.url') . '/admin', 'color' => 'green'])
-Ver panel de administración
-@endcomponent
+    <div class="cta">
+        <a href="{{ config('app.url') }}/admin">Ver panel de administración</a>
+    </div>
 
-_El reporte completo con todas las secciones y detalles se encuentra adjunto en PDF._
-
-Saludos,
-**{{ config('app.name') }}**
-
-@endcomponent
+    <p class="small center">
+        El reporte completo con todas las secciones y detalles se encuentra adjunto en PDF.
+    </p>
+@endsection

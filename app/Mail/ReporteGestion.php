@@ -37,7 +37,7 @@ class ReporteGestion extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.reporte-gestion',
+            view: 'emails.reporte-gestion',
             with: [
                 'tipo'    => $this->tipo,
                 'periodo' => $this->periodo,
