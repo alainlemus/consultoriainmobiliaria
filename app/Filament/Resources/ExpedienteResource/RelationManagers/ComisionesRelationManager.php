@@ -4,7 +4,9 @@ namespace App\Filament\Resources\ExpedienteResource\RelationManagers;
 
 use App\Models\Comision;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -17,9 +19,9 @@ class ComisionesRelationManager extends RelationManager
     protected static ?string $label = 'Comisión';
     protected static ?string $pluralLabel = 'Comisiones';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             Forms\Components\Select::make('estado')
                 ->label('Estado')
                 ->options([
@@ -32,7 +34,7 @@ class ComisionesRelationManager extends RelationManager
                 ->validationMessages([
                     'required' => 'El estado de la comisión es obligatorio.',
                 ])
-                ->afterStateUpdated(function ($state, Forms\Set $set) {
+                ->afterStateUpdated(function ($state, Set $set) {
                     if ($state === 'aprobada') {
                         $set('fecha_aprobacion', now()->toDateString());
                         $set('aprobado_por', Auth::id());
@@ -107,7 +109,7 @@ class ComisionesRelationManager extends RelationManager
             ->headerActions([
             ])
             ->actions([
-                Tables\Actions\Action::make('aprobar')
+                \Filament\Actions\Action::make('aprobar')
                     ->label('Aprobar')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -119,7 +121,7 @@ class ComisionesRelationManager extends RelationManager
                         'aprobado_por'     => Auth::id(),
                     ])),
 
-                Tables\Actions\Action::make('marcar_pagada')
+                \Filament\Actions\Action::make('marcar_pagada')
                     ->label('Pagada')
                     ->icon('heroicon-o-currency-dollar')
                     ->color('primary')
@@ -130,7 +132,7 @@ class ComisionesRelationManager extends RelationManager
                         'fecha_pago' => now()->toDateString(),
                     ])),
 
-                Tables\Actions\EditAction::make()
+                \Filament\Actions\EditAction::make()
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ]);
     }

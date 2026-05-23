@@ -105,7 +105,7 @@
         @endif
 
         {{-- Contenido --}}
-        <div class="richtext">
+        <div class="richtext richtext--dark">
             {!! $post->contenido !!}
         </div>
 

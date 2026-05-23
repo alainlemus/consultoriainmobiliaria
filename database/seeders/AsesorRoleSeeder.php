@@ -6,35 +6,41 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
+/**
+ * Configura el rol `asesor` con permisos formato Shield v4 (PascalCase con separador :).
+ * Ejecutar después de `php artisan shield:generate --all --panel=admin --no-interaction`.
+ */
 class AsesorRoleSeeder extends Seeder
 {
     public function run(): void
     {
         $asesor = Role::firstOrCreate(['name' => 'asesor', 'guard_name' => 'web']);
 
+        // Shield v4 usa formato PascalCase: "Accion:Modelo"
         $permisos = [
-            // Dashboard y páginas del asesor (Shield los bloquea sin estos permisos)
-            'page_DashboardAsesor',
-            'page_MiPerfil',
-            'page_SimuladorPrecalificacion',
+            // Dashboard y páginas del asesor
+            'View:DashboardAsesor',
+            'View:MiPerfil',
+            'View:SimuladorPrecalificacion',
 
             // Contactos (prospectos): ver y editar solo los suyos — sin eliminar
-            'view_any_contacto', 'view_contacto',
-            'create_contacto',   'update_contacto',
+            'ViewAny:Contacto', 'View:Contacto',
+            'Create:Contacto',  'Update:Contacto',
 
             // Expedientes: crear desde prospecto + ver y editar los asignados
-            'view_any_expediente', 'view_expediente',
-            'create_expediente',   'update_expediente',
+            'ViewAny:Expediente', 'View:Expediente',
+            'Create:Expediente',  'Update:Expediente',
 
             // Comisiones: solo lectura
-            'view_any_comision', 'view_comision',
+            'ViewAny:Comision', 'View:Comision',
 
             // Documentos del expediente: ver y subir archivos
-            'view_any_documento::requerido', 'view_documento::requerido',
-            'update_documento::requerido',   'create_documento::requerido',
+            'ViewAny:DocumentoRequerido', 'View:DocumentoRequerido',
+            'Create:DocumentoRequerido',  'Update:DocumentoRequerido',
         ];
 
         // Asegurar que todos los permisos existan antes de asignar
+        // (shield:generate debería haberlos creado; esto es un fallback)
         foreach ($permisos as $p) {
             Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
         }

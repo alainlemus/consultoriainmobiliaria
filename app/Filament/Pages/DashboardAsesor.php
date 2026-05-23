@@ -11,7 +11,7 @@ use Filament\Pages\Dashboard as BaseDashboard;
 class DashboardAsesor extends BaseDashboard
 {
     protected static string  $routePath       = '/dashboard-asesor';
-    protected static ?string $navigationIcon  = 'heroicon-o-chart-bar';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-chart-bar';
     protected static ?string $navigationLabel = 'Mi Dashboard';
     protected static ?string $title           = 'Mi Dashboard';
     protected static ?int    $navigationSort  = -3;
@@ -36,7 +36,7 @@ class DashboardAsesor extends BaseDashboard
         ];
     }
 
-    public function getColumns(): int | string | array
+    public function getColumns(): int | array
     {
         return 2;
     }

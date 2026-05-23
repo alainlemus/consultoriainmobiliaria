@@ -6,7 +6,7 @@ use App\Channels\PushChannel;
 use App\Models\DocumentoExpediente;
 use App\Models\Expediente;
 use App\Notifications\Concerns\SendsPushNotification;
-use Filament\Notifications\Actions\Action;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;

@@ -6,19 +6,19 @@ use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Infolists\Contracts\HasInfolists;
-use Filament\Infolists\Infolist;
+use Filament\Schemas\Schema;
 use Filament\Pages\Page;
 
 class AyudaTutorial extends Page implements HasInfolists
 {
     use InteractsWithInfolists;
 
-    protected static ?string $navigationIcon  = 'heroicon-o-question-mark-circle';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-question-mark-circle';
     protected static ?string $navigationLabel = 'Ayuda y Tutorial';
     protected static ?string $title           = 'Ayuda y Tutorial';
     protected static ?int    $navigationSort  = 99;
     protected static ?string $slug            = 'ayuda';
-    protected static string  $view            = 'filament.pages.ayuda-tutorial';
+    protected string $view = 'filament.pages.ayuda-tutorial';
 
     public static function canAccess(): bool
     {
@@ -34,7 +34,7 @@ class AyudaTutorial extends Page implements HasInfolists
 
     public function adminInfolist(Infolist $infolist): Infolist
     {
-        return $infolist
+        return $schema
             ->state([])
             ->schema([
 
@@ -212,7 +212,7 @@ class AyudaTutorial extends Page implements HasInfolists
 
     public function asesorInfolist(Infolist $infolist): Infolist
     {
-        return $infolist
+        return $schema
             ->state([])
             ->schema([
 

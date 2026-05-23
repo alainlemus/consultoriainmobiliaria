@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ProcesoResource\Pages;
 use App\Models\Proceso;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -19,17 +19,17 @@ class ProcesoResource extends Resource
 
 
     protected static ?string $model = Proceso::class;
-    protected static ?string $navigationIcon  = 'heroicon-o-arrow-path';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-arrow-path';
     protected static ?string $navigationLabel = 'Proceso';
     protected static ?string $modelLabel      = 'Paso del proceso';
     protected static ?string $pluralModelLabel = 'Proceso (pasos)';
-    protected static ?string $navigationGroup = 'Configuración del sitio';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración del sitio';
     protected static ?int    $navigationSort  = 2;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Paso del proceso')->schema([
+        return $schema->schema([
+            \Filament\Schemas\Components\Section::make('Paso del proceso')->schema([
                 Forms\Components\TextInput::make('numero')
                     ->label('Número (ej. 01, 02…)')
                     ->required()
@@ -58,7 +58,7 @@ class ProcesoResource extends Resource
                     ]),
             ])->columns(2),
 
-            Forms\Components\Section::make('Visibilidad')->schema([
+            \Filament\Schemas\Components\Section::make('Visibilidad')->schema([
                 Forms\Components\Toggle::make('activo')
                     ->label('Visible en el sitio')
                     ->default(true),
@@ -96,12 +96,12 @@ class ProcesoResource extends Resource
                     ->boolean(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->label('Editar'),
-                Tables\Actions\DeleteAction::make()->label('Eliminar'),
+                \Filament\Actions\EditAction::make()->label('Editar'),
+                \Filament\Actions\DeleteAction::make()->label('Eliminar'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()->label('Eliminar seleccionados'),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make()->label('Eliminar seleccionados'),
                 ]),
             ])
             ->defaultSort('orden');

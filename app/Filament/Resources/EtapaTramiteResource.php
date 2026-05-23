@@ -6,7 +6,7 @@ use App\Filament\Resources\EtapaTramiteResource\Pages;
 use App\Models\EtapaTramite;
 use App\Models\TipoTramite;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -20,17 +20,17 @@ class EtapaTramiteResource extends Resource
 
 
     protected static ?string $model = EtapaTramite::class;
-    protected static ?string $navigationIcon = 'heroicon-o-queue-list';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-queue-list';
     protected static ?string $navigationLabel = 'Etapas del Pipeline';
     protected static ?string $modelLabel = 'Etapa';
     protected static ?string $pluralModelLabel = 'Etapas del Pipeline';
-    protected static ?string $navigationGroup = 'Configuración CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración CRM';
     protected static ?int $navigationSort = 11;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Etapa del Pipeline')
+        return $schema->schema([
+            \Filament\Schemas\Components\Section::make('Etapa del Pipeline')
                 ->description('Las etapas definen el flujo de trabajo de cada tipo de trámite. Se muestran en orden en el expediente y en la gráfica del funnel del Dashboard.')
                 ->columns(2)
                 ->schema([
@@ -125,12 +125,12 @@ class EtapaTramiteResource extends Resource
             ->reorderable('orden')
             ->groups(['tipoTramite.nombre'])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

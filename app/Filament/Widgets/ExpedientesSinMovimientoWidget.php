@@ -62,7 +62,7 @@ class ExpedientesSinMovimientoWidget extends BaseWidget
                     ->color('danger'),
             ])
             ->actions([
-                Tables\Actions\Action::make('ver')
+                \Filament\Actions\Action::make('ver')
                     ->label('Ver')
                     ->icon('heroicon-m-arrow-top-right-on-square')
                     ->url(fn ($record) => url("/admin/expedientes/{$record->id}/edit")),

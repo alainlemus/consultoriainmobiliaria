@@ -93,24 +93,41 @@
     }
 
     /* Contenido generado por RichEditor de Filament */
-    .richtext { @apply leading-relaxed text-base; color: #ffffff !important; }
-    .richtext h1 { @apply text-2xl font-bold mt-8 mb-4; color: #ffffff !important; }
-    .richtext h2 { @apply text-xl font-bold mt-8 mb-3; color: #ffffff !important; }
-    .richtext h3 { @apply text-lg font-semibold mt-6 mb-2; color: #f5f0e8 !important; }
-    .richtext h4 { @apply text-base font-semibold mt-4 mb-2; color: #f5f0e8 !important; }
-    .richtext p  { @apply mb-4; color: #ffffff !important; }
+    /* Base: colores oscuros (para fondos blancos/claros, ej. aviso de privacidad) */
+    .richtext { @apply leading-relaxed text-base; color: #1a1a1a !important; }
+    .richtext h1 { @apply text-2xl font-bold mt-8 mb-4; color: #111111 !important; }
+    .richtext h2 { @apply text-xl font-bold mt-8 mb-3; color: #111111 !important; }
+    .richtext h3 { @apply text-lg font-semibold mt-6 mb-2; color: #1a1a1a !important; }
+    .richtext h4 { @apply text-base font-semibold mt-4 mb-2; color: #1a1a1a !important; }
+    .richtext p  { @apply mb-4; color: #1a1a1a !important; }
     .richtext ul { @apply list-disc pl-6 mb-4 space-y-1; }
     .richtext ol { @apply list-decimal pl-6 mb-4 space-y-1; }
-    .richtext li { color: #ffffff !important; }
-    .richtext strong { @apply font-semibold; color: #ffffff !important; }
+    .richtext li { color: #1a1a1a !important; }
+    .richtext strong { @apply font-semibold; color: #111111 !important; }
     .richtext em { @apply italic; }
-    .richtext a  { @apply underline; color: var(--color-gold-400) !important; }
-    .richtext a:hover { color: var(--color-gold-300) !important; }
-    .richtext blockquote { @apply border-l-4 border-gold-400 pl-4 italic my-4; color: #e0d8c8 !important; }
-    .richtext hr { @apply border-dark-600 my-6; }
+    .richtext a  { @apply underline; color: var(--color-gold-600) !important; }
+    .richtext a:hover { color: var(--color-gold-700) !important; }
+    .richtext blockquote { @apply border-l-4 border-gold-400 pl-4 italic my-4; color: #3a3a3a !important; }
+    .richtext hr { @apply border-gray-200 my-6; }
     .richtext img { @apply max-w-full rounded-sm my-4; }
-    .richtext pre { @apply bg-dark-800 rounded-sm p-4 overflow-x-auto text-xs my-4; color: #f5f0e8 !important; }
-    .richtext code { @apply bg-dark-700 px-1 rounded text-xs; color: var(--color-gold-400) !important; }
+    .richtext pre { @apply bg-gray-100 rounded-sm p-4 overflow-x-auto text-xs my-4; color: #1a1a1a !important; }
+    .richtext code { @apply bg-gray-100 px-1 rounded text-xs; color: var(--color-gold-700) !important; }
+
+    /* Variante oscura: para fondos dark (ej. blog) */
+    .richtext--dark { color: #ffffff !important; }
+    .richtext--dark h1 { color: #ffffff !important; }
+    .richtext--dark h2 { color: #ffffff !important; }
+    .richtext--dark h3 { color: #f5f0e8 !important; }
+    .richtext--dark h4 { color: #f5f0e8 !important; }
+    .richtext--dark p  { color: #ffffff !important; }
+    .richtext--dark li { color: #ffffff !important; }
+    .richtext--dark strong { color: #ffffff !important; }
+    .richtext--dark a  { color: var(--color-gold-400) !important; }
+    .richtext--dark a:hover { color: var(--color-gold-300) !important; }
+    .richtext--dark blockquote { color: #e0d8c8 !important; }
+    .richtext--dark hr { @apply border-dark-600; }
+    .richtext--dark pre { @apply bg-dark-800; color: #f5f0e8 !important; }
+    .richtext--dark code { @apply bg-dark-700; color: var(--color-gold-400) !important; }
 }
 
 /* =====================================================

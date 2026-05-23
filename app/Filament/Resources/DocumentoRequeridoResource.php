@@ -6,7 +6,7 @@ use App\Filament\Resources\DocumentoRequeridoResource\Pages;
 use App\Models\DocumentoRequerido;
 use App\Models\TipoTramite;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -20,17 +20,17 @@ class DocumentoRequeridoResource extends Resource
 
 
     protected static ?string $model = DocumentoRequerido::class;
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-list';
     protected static ?string $navigationLabel = 'Documentos Requeridos';
     protected static ?string $modelLabel = 'Documento Requerido';
     protected static ?string $pluralModelLabel = 'Documentos Requeridos';
-    protected static ?string $navigationGroup = 'Configuración CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración CRM';
     protected static ?int $navigationSort = 12;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Documento Requerido')
+        return $schema->schema([
+            \Filament\Schemas\Components\Section::make('Documento Requerido')
                 ->description('Define qué documentos debe entregar el cliente o el vendedor para cada tipo de trámite. Estos documentos se muestran como checklist en el expediente.')
                 ->columns(2)
                 ->schema([
@@ -122,12 +122,12 @@ class DocumentoRequeridoResource extends Resource
             ->reorderable('orden')
             ->groups(['tipoTramite.nombre', 'seccion'])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

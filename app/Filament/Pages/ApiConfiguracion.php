@@ -5,7 +5,7 @@ namespace App\Filament\Pages;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Artisan;
@@ -15,14 +15,14 @@ class ApiConfiguracion extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon  = 'heroicon-o-cog-6-tooth';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'Configuración API';
     protected static ?string $title           = 'Configuración de la API Móvil';
-    protected static ?string $navigationGroup = 'API Móvil';
+    protected static string | \UnitEnum | null $navigationGroup = 'API Móvil';
     protected static ?int    $navigationSort  = 1;
     protected static ?string $slug            = 'api-configuracion';
 
-    protected static string $view = 'filament.pages.api-configuracion';
+    protected string $view = 'filament.pages.api-configuracion';
 
     public ?array $data = [];
 
@@ -47,11 +47,11 @@ class ApiConfiguracion extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('General')
+                \Filament\Schemas\Components\Section::make('General')
                     ->icon('heroicon-o-globe-alt')
                     ->columns(2)
                     ->schema([
@@ -74,7 +74,7 @@ class ApiConfiguracion extends Page implements HasForms
                             ->helperText('Días de validez del token Sanctum para la app'),
                     ]),
 
-                Forms\Components\Section::make('Push Notifications — Firebase (FCM)')
+                \Filament\Schemas\Components\Section::make('Push Notifications — Firebase (FCM)')
                     ->icon('heroicon-o-bell')
                     ->description('Configuración para notificaciones push en Android y iOS')
                     ->columns(2)
@@ -95,7 +95,7 @@ class ApiConfiguracion extends Page implements HasForms
                             ),
                     ]),
 
-                Forms\Components\Section::make('Push Notifications — Apple (APNs)')
+                \Filament\Schemas\Components\Section::make('Push Notifications — Apple (APNs)')
                     ->icon('heroicon-o-device-phone-mobile')
                     ->description('Requerido para notificaciones en iOS')
                     ->columns(2)
@@ -109,7 +109,7 @@ class ApiConfiguracion extends Page implements HasForms
                             ->helperText('10 caracteres — en Apple Developer → Membership'),
                     ]),
 
-                Forms\Components\Section::make('Funcionalidades móviles')
+                \Filament\Schemas\Components\Section::make('Funcionalidades móviles')
                     ->icon('heroicon-o-device-phone-mobile')
                     ->columns(3)
                     ->schema([
@@ -141,7 +141,7 @@ class ApiConfiguracion extends Page implements HasForms
                             ->columnSpanFull(),
                     ]),
 
-                Forms\Components\Section::make('Tokens Sanctum activos')
+                \Filament\Schemas\Components\Section::make('Tokens Sanctum activos')
                     ->icon('heroicon-o-key')
                     ->description('Tokens de acceso activos de la app móvil')
                     ->schema([

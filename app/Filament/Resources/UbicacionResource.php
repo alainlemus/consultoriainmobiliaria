@@ -5,8 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UbicacionResource\Pages;
 use App\Models\Ubicacion;
 use App\Models\User;
-use Filament\Forms\Form;
-use Filament\Infolists\Infolist;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -19,9 +18,9 @@ class UbicacionResource extends Resource
 {
     protected static ?string $model = Ubicacion::class;
 
-    protected static ?string $navigationIcon  = 'heroicon-o-map-pin';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-map-pin';
     protected static ?string $navigationLabel = 'Visitas / Propiedades';
-    protected static ?string $navigationGroup = 'CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'CRM';
     protected static ?string $modelLabel      = 'Visita';
     protected static ?string $pluralModelLabel = 'Visitas y Propiedades';
     protected static ?int    $navigationSort  = 11;
@@ -37,15 +36,15 @@ class UbicacionResource extends Resource
     public static function canEdit($record): bool { return false; }
     public static function canDelete($record): bool { return false; }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([]);
+        return $schema->schema([]);
     }
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function infolist(Schema $schema): Schema
     {
         // El detalle se maneja en la página ViewUbicacion con blade propio
-        return $infolist->schema([]);
+        return $schema->schema([]);
     }
 
     public static function table(Table $table): Table
@@ -140,7 +139,7 @@ class UbicacionResource extends Resource
                     ->query(fn (Builder $query) => $query->whereHas('fotos')),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()->label('Ver detalle'),
+                \Filament\Actions\ViewAction::make()->label('Ver detalle'),
             ])
             ->bulkActions([]);
     }

@@ -1,108 +1,75 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
-use App\Models\User;
+use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Contacto;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class ContactoPolicy
 {
     use HandlesAuthorization;
-
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
+    
+    public function viewAny(AuthUser $authUser): bool
     {
-        return $user->can('view_any_contacto');
+        return $authUser->can('ViewAny:Contacto');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, Contacto $contacto): bool
+    public function view(AuthUser $authUser, Contacto $contacto): bool
     {
-        return $user->can('view_contacto');
+        return $authUser->can('View:Contacto');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
+    public function create(AuthUser $authUser): bool
     {
-        return $user->can('create_contacto');
+        return $authUser->can('Create:Contacto');
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, Contacto $contacto): bool
+    public function update(AuthUser $authUser, Contacto $contacto): bool
     {
-        return $user->can('update_contacto');
+        return $authUser->can('Update:Contacto');
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, Contacto $contacto): bool
+    public function delete(AuthUser $authUser, Contacto $contacto): bool
     {
-        return $user->can('delete_contacto');
+        return $authUser->can('Delete:Contacto');
     }
 
-    /**
-     * Determine whether the user can bulk delete.
-     */
-    public function deleteAny(User $user): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
-        return $user->can('delete_any_contacto');
+        return $authUser->can('DeleteAny:Contacto');
     }
 
-    /**
-     * Determine whether the user can permanently delete.
-     */
-    public function forceDelete(User $user, Contacto $contacto): bool
+    public function restore(AuthUser $authUser, Contacto $contacto): bool
     {
-        return $user->can('force_delete_contacto');
+        return $authUser->can('Restore:Contacto');
     }
 
-    /**
-     * Determine whether the user can permanently bulk delete.
-     */
-    public function forceDeleteAny(User $user): bool
+    public function forceDelete(AuthUser $authUser, Contacto $contacto): bool
     {
-        return $user->can('force_delete_any_contacto');
+        return $authUser->can('ForceDelete:Contacto');
     }
 
-    /**
-     * Determine whether the user can restore.
-     */
-    public function restore(User $user, Contacto $contacto): bool
+    public function forceDeleteAny(AuthUser $authUser): bool
     {
-        return $user->can('restore_contacto');
+        return $authUser->can('ForceDeleteAny:Contacto');
     }
 
-    /**
-     * Determine whether the user can bulk restore.
-     */
-    public function restoreAny(User $user): bool
+    public function restoreAny(AuthUser $authUser): bool
     {
-        return $user->can('restore_any_contacto');
+        return $authUser->can('RestoreAny:Contacto');
     }
 
-    /**
-     * Determine whether the user can replicate.
-     */
-    public function replicate(User $user, Contacto $contacto): bool
+    public function replicate(AuthUser $authUser, Contacto $contacto): bool
     {
-        return $user->can('replicate_contacto');
+        return $authUser->can('Replicate:Contacto');
     }
 
-    /**
-     * Determine whether the user can reorder.
-     */
-    public function reorder(User $user): bool
+    public function reorder(AuthUser $authUser): bool
     {
-        return $user->can('reorder_contacto');
+        return $authUser->can('Reorder:Contacto');
     }
+
 }

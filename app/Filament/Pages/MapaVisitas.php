@@ -9,14 +9,14 @@ use Illuminate\Support\Collection;
 
 class MapaVisitas extends Page
 {
-    protected static ?string $navigationIcon  = 'heroicon-o-map';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-map';
     protected static ?string $navigationLabel = 'Mapa de Visitas';
     protected static ?string $title           = 'Mapa de Visitas y Alcance';
-    protected static ?string $navigationGroup = 'CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'CRM';
     protected static ?int    $navigationSort  = 9;
     protected static ?string $slug            = 'mapa-visitas';
 
-    protected static string $view = 'filament.pages.mapa-visitas';
+    protected string $view = 'filament.pages.mapa-visitas';
 
     public static function canAccess(): bool
     {

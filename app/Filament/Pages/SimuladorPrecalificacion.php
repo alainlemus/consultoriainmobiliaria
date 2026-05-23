@@ -5,7 +5,7 @@ namespace App\Filament\Pages;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Pages\Page;
 
 /**
@@ -25,14 +25,14 @@ class SimuladorPrecalificacion extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon  = 'heroicon-o-calculator';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-calculator';
     protected static ?string $navigationLabel = 'Simulador';
     protected static ?string $title           = 'Simulador de Precalificación';
-    protected static ?string $navigationGroup = 'CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'CRM';
     protected static ?int    $navigationSort  = 2;
     protected static ?string $slug            = 'simulador';
 
-    protected static string $view = 'filament.pages.simulador-precalificacion';
+    protected string $view = 'filament.pages.simulador-precalificacion';
 
     // ── Constantes vigentes 2024 ──────────────────────────────────────────
     const VSM_MENSUAL        = 3300.54;  // UMA diaria $108.57 × 30.4
@@ -66,11 +66,11 @@ class SimuladorPrecalificacion extends Page implements HasForms
         $this->form->fill();
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('Datos del acreditado')
+                \Filament\Schemas\Components\Section::make('Datos del acreditado')
                     ->columns(3)
                     ->schema([
                         Forms\Components\Select::make('tipo_credito')
@@ -126,7 +126,7 @@ class SimuladorPrecalificacion extends Page implements HasForms
                             ->label('Sueldo mensual cónyuge ($)')
                             ->numeric()->prefix('$')->minValue(0)->default(0)
                             ->live(onBlur: true)
-                            ->visible(fn (Forms\Get $get) => $get('tipo_credito') === 'conyugal')
+                            ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $get('tipo_credito') === 'conyugal')
                             ->helperText('Sueldo neto del cónyuge — se suma para el crédito conyugal'),
 
                         // Solo visible para Pensionados
@@ -134,7 +134,7 @@ class SimuladorPrecalificacion extends Page implements HasForms
                             ->label('Monto de pensión mensual ($)')
                             ->numeric()->prefix('$')->minValue(0)->default(0)
                             ->live(onBlur: true)
-                            ->visible(fn (Forms\Get $get) => $get('tipo_credito') === 'pensionados')
+                            ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $get('tipo_credito') === 'pensionados')
                             ->helperText('Mínimo requerido: $32,200.60 para monto máximo'),
 
                         // Solo visible para FOVISSSTE-INFONAVIT Individual
@@ -142,7 +142,7 @@ class SimuladorPrecalificacion extends Page implements HasForms
                             ->label('Subcuenta INFONAVIT ($)')
                             ->numeric()->prefix('$')->default(0)->minValue(0)
                             ->live(onBlur: true)
-                            ->visible(fn (Forms\Get $get) => $get('tipo_credito') === 'infonavit')
+                            ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $get('tipo_credito') === 'infonavit')
                             ->helperText('Saldo acumulado en subcuenta INFONAVIT — se aplica como primer pago al crédito'),
                     ]),
             ])

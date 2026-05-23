@@ -7,14 +7,14 @@ use Illuminate\Support\Facades\DB;
 
 class ApiMonitor extends Page
 {
-    protected static ?string $navigationIcon  = 'heroicon-o-signal';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-signal';
     protected static ?string $navigationLabel = 'Monitor API';
     protected static ?string $title           = 'Monitor de la API Móvil';
-    protected static ?string $navigationGroup = 'API Móvil';
+    protected static string | \UnitEnum | null $navigationGroup = 'API Móvil';
     protected static ?int    $navigationSort  = 3;
     protected static ?string $slug            = 'api-monitor';
 
-    protected static string $view = 'filament.pages.api-monitor';
+    protected string $view = 'filament.pages.api-monitor';
 
     public static function canAccess(): bool
     {

@@ -5,7 +5,7 @@ namespace App\Filament\Pages;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
@@ -14,14 +14,14 @@ class MiPerfil extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon  = 'heroicon-o-user-circle';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-user-circle';
     protected static ?string $navigationLabel = 'Mi Perfil';
     protected static ?string $title           = 'Mi Perfil';
-    protected static ?string $navigationGroup = 'CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'CRM';
     protected static ?int    $navigationSort  = 99;
     protected static ?string $slug            = 'mi-perfil';
 
-    protected static string $view = 'filament.pages.mi-perfil';
+    protected string $view = 'filament.pages.mi-perfil';
 
     public ?array $data = [];
 
@@ -48,11 +48,11 @@ class MiPerfil extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('Datos personales')
+                \Filament\Schemas\Components\Section::make('Datos personales')
                     ->icon('heroicon-o-user')
                     ->columns(2)
                     ->schema([
@@ -83,7 +83,7 @@ class MiPerfil extends Page implements HasForms
                             ]),
                     ]),
 
-                Forms\Components\Section::make('Datos bancarios')
+                \Filament\Schemas\Components\Section::make('Datos bancarios')
                     ->description('Estos datos se usan para el pago de tus comisiones.')
                     ->icon('heroicon-o-banknotes')
                     ->columns(2)
