@@ -76,7 +76,7 @@ class AsesorProspectosWidget extends BaseWidget
                     ->sortable(),
             ])
             ->actions([
-                Tables\Actions\Action::make('ver')
+                \Filament\Actions\Action::make('ver')
                     ->label('Ver')
                     ->icon('heroicon-o-eye')
                     ->url(fn (Contacto $record) => route('filament.admin.resources.contactos.edit', $record))

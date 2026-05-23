@@ -8,9 +8,9 @@ use App\Models\Contacto;
 use App\Models\Expediente;
 use App\Models\User;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Notifications\Notification;
-use Filament\Notifications\Actions\Action as NotifAction;
+use Filament\Actions\Action as NotifAction;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -29,9 +29,9 @@ class ContactoResource extends Resource
     }
 
     protected static ?string $model = Contacto::class;
-    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationLabel = 'Prospectos';
-    protected static ?string $navigationGroup = 'CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'CRM';
     protected static ?int $navigationSort = 1;
     protected static ?string $modelLabel = 'Prospecto';
     protected static ?string $pluralModelLabel = 'Prospectos';
@@ -100,10 +100,10 @@ class ContactoResource extends Resource
 
     /* ──────────────────────────────────────────────────────────── FORM ── */
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Datos de contacto')
+        return $schema->schema([
+            \Filament\Schemas\Components\Section::make('Datos de contacto')
                 ->description('Información básica del prospecto.')
                 ->schema([
                     Forms\Components\TextInput::make('nombre')
@@ -141,7 +141,7 @@ class ContactoResource extends Resource
                         ->hint('Mensaje original del sitio web o nota inicial'),
                 ])->columns(2),
 
-            Forms\Components\Section::make('Gestión del Prospecto')
+            \Filament\Schemas\Components\Section::make('Gestión del Prospecto')
                 ->description('Controla el avance del prospecto.')
                 ->schema([
                     Forms\Components\Select::make('estado_prospecto')
@@ -193,9 +193,9 @@ class ContactoResource extends Resource
                 ])->columns(2),
 
             // ── Sección visible solo cuando está pendiente de cierre ──────
-            Forms\Components\Section::make('Cierre con el gestor')
+            \Filament\Schemas\Components\Section::make('Cierre con el gestor')
                 ->description('Indica cómo el gestor debe contactar o reunirse con el prospecto para cerrar.')
-                ->visible(fn (Forms\Get $get) => in_array($get('estado_prospecto'), ['pendiente_cierre', 'contrato_firmado', 'convertido']))
+                ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => in_array($get('estado_prospecto'), ['pendiente_cierre', 'contrato_firmado', 'convertido']))
                 ->schema([
                     Forms\Components\Select::make('modalidad_cierre')
                         ->label('Modalidad de cierre')
@@ -205,7 +205,7 @@ class ContactoResource extends Resource
                             'visita_domicilio'=> 'Visita a domicilio',
                             'whatsapp'        => 'WhatsApp',
                         ])
-                        ->required(fn (Forms\Get $get) => $get('estado_prospecto') === 'pendiente_cierre')
+                        ->required(fn (\Filament\Schemas\Components\Utilities\Get $get) => $get('estado_prospecto') === 'pendiente_cierre')
                         ->validationMessages([
                             'required' => 'La modalidad de cierre es obligatoria cuando el estado es "Pendiente de cierre".',
                         ]),
@@ -218,7 +218,7 @@ class ContactoResource extends Resource
                         ->hint('Ej: vive en col. Magisterio, disponible de 6pm en adelante, ya revisó su crédito FOVISSSTE'),
                 ])->columns(2)->collapsible(),
 
-            Forms\Components\Section::make('Precalificación')
+            \Filament\Schemas\Components\Section::make('Precalificación')
                 ->description('Datos del simulador FOVISSSTE / portal INFONAVIT.')
                 ->schema([
                     Forms\Components\TextInput::make('curp')
@@ -269,7 +269,7 @@ class ContactoResource extends Resource
 
                     Forms\Components\Placeholder::make('acceso_simulador')
                         ->label('Simuladores oficiales')->columnSpanFull()
-                        ->content(function (Forms\Get $get): \Illuminate\Support\HtmlString {
+                        ->content(function (\Filament\Schemas\Components\Utilities\Get $get): \Illuminate\Support\HtmlString {
                             $curp = strtoupper(trim($get('curp') ?? ''));
                             $hint = $curp
                                 ? "<span class='text-xs text-gray-500 ml-2'>CURP: <strong>{$curp}</strong></span>"
@@ -386,7 +386,7 @@ class ContactoResource extends Resource
             ])
             ->actions([
                 // ── Acción principal del asesor: iniciar gestión ──────────
-                Tables\Actions\Action::make('enviar_dueno')
+                \Filament\Actions\Action::make('enviar_dueno')
                     ->label('Iniciar expediente')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('warning')
@@ -453,7 +453,7 @@ class ContactoResource extends Resource
                     }),
 
                 // Botones solo para super_admin
-                Tables\Actions\Action::make('iniciar_expediente')
+                \Filament\Actions\Action::make('iniciar_expediente')
                     ->label('Iniciar Expediente')
                     ->icon('heroicon-o-document-plus')
                     ->color('success')
@@ -489,7 +489,7 @@ class ContactoResource extends Resource
                     ->visible(fn (Contacto $record) => Auth::user()?->hasRole('super_admin')
                         && ! in_array($record->estado_prospecto, ['convertido', 'descartado'])),
 
-                Tables\Actions\Action::make('descartar')
+                \Filament\Actions\Action::make('descartar')
                     ->label('No cerró')
                     ->icon('heroicon-o-x-circle')
                     ->color('warning')
@@ -499,18 +499,18 @@ class ContactoResource extends Resource
                     ->action(fn (Contacto $record) => $record->update(['estado_prospecto' => 'descartado']))
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
 
-                Tables\Actions\EditAction::make()
+                \Filament\Actions\EditAction::make()
                     ->visible(fn (Contacto $record) =>
                         Auth::user()?->hasRole('super_admin') ||
                         ! in_array($record->estado_prospecto, ['pendiente_cierre', 'contrato_firmado', 'convertido'])
                     ),
-                Tables\Actions\DeleteAction::make()
+                \Filament\Actions\DeleteAction::make()
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
+                \Filament\Actions\BulkActionGroup::make([
                     EnviarEmailMasivoBulkAction::make(),
-                    Tables\Actions\DeleteBulkAction::make()
+                    \Filament\Actions\DeleteBulkAction::make()
                         ->visible(fn () => Auth::user()?->hasRole('super_admin')),
                 ]),
             ])

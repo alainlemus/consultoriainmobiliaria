@@ -5,7 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Cobertura;
 use App\Models\Configuracion;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
@@ -17,12 +17,12 @@ class GeneralSettings extends Page
         return auth()->check() && auth()->user()->hasRole('super_admin');
     }
 
-    protected static ?string $navigationIcon  = 'heroicon-o-cog-6-tooth';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'General';
     protected static ?string $title           = 'Configuración General';
-    protected static ?string $navigationGroup = 'Configuración del sitio';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración del sitio';
     protected static ?int    $navigationSort  = 10;
-    protected static string  $view            = 'filament.pages.general-settings';
+    protected string $view = 'filament.pages.general-settings';
 
     public ?array $data = [];
 
@@ -41,11 +41,11 @@ class GeneralSettings extends Page
         );
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('Identidad visual')->schema([
+                \Filament\Schemas\Components\Section::make('Identidad visual')->schema([
                     Forms\Components\FileUpload::make('logo')
                         ->label('Logo del sitio')
                         ->image()
@@ -72,7 +72,7 @@ class GeneralSettings extends Page
                         ->helperText('Imagen que aparece en el panel lateral del login. Recomendado: relación 3:4 o 9:16, mínimo 800px de alto.'),
                 ])->columns(2),
 
-                Forms\Components\Section::make('Contacto')->schema([
+                \Filament\Schemas\Components\Section::make('Contacto')->schema([
                     Forms\Components\TextInput::make('telefono_1')
                         ->label('Teléfono 1')
                         ->tel()
@@ -122,7 +122,7 @@ class GeneralSettings extends Page
                         ]),
                 ])->columns(2),
 
-                Forms\Components\Section::make('Oficina principal')->schema([
+                \Filament\Schemas\Components\Section::make('Oficina principal')->schema([
                     Forms\Components\Select::make('oficina_principal')
                         ->label('Sede / Oficina principal')
                         ->options(Cobertura::activos()->pluck('nombre', 'id'))
@@ -131,7 +131,7 @@ class GeneralSettings extends Page
                         ->helperText('Se usará para mostrar la dirección principal en el sitio.'),
                 ]),
 
-                Forms\Components\Section::make('Redes sociales')->schema([
+                \Filament\Schemas\Components\Section::make('Redes sociales')->schema([
                     Forms\Components\TextInput::make('facebook_url')
                         ->label('Facebook')
                         ->url()

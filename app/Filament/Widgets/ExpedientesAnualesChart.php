@@ -18,7 +18,7 @@ class ExpedientesAnualesChart extends Widget
     protected int | string | array $columnSpan = 'full';
     protected static bool $isLazy = false;
 
-    protected static string $view = 'filament.widgets.expedientes-anuales-chart';
+    protected string $view = 'filament.widgets.expedientes-anuales-chart';
 
     protected function getViewData(): array
     {

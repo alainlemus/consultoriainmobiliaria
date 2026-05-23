@@ -5,7 +5,9 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\TipoTramiteResource\Pages;
 use App\Models\TipoTramite;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -20,17 +22,17 @@ class TipoTramiteResource extends Resource
 
 
     protected static ?string $model = TipoTramite::class;
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Tipos de Trámite';
     protected static ?string $modelLabel = 'Tipo de Trámite';
     protected static ?string $pluralModelLabel = 'Tipos de Trámite';
-    protected static ?string $navigationGroup = 'Configuración CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'Configuración CRM';
     protected static ?int $navigationSort = 10;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Información General')
+        return $schema->schema([
+            \Filament\Schemas\Components\Section::make('Información General')
                 ->description('Define los tipos de trámite que ofrece la consultoría. Cada tipo tiene su propio flujo de etapas y documentos requeridos.')
                 ->schema([
                 Forms\Components\TextInput::make('nombre')
@@ -44,7 +46,7 @@ class TipoTramiteResource extends Resource
                         'unique'   => 'Ya existe un tipo de trámite con ese nombre.',
                     ])
                     ->live(onBlur: true)
-                    ->afterStateUpdated(fn ($state, Forms\Set $set) =>
+                    ->afterStateUpdated(fn ($state, Set $set) =>
                         $set('slug', Str::slug($state))
                     )
                     ->hint('Ej: FOVISSSTE, INFONAVIT, Avalúo, Escrituras'),
@@ -66,7 +68,7 @@ class TipoTramiteResource extends Resource
                     ->hint('Descripción interna para el equipo'),
             ])->columns(2),
 
-            Forms\Components\Section::make('Configuración')
+            \Filament\Schemas\Components\Section::make('Configuración')
                 ->description('El porcentaje de honorarios es el valor por defecto que se aplica al crear un expediente de este tipo. Puede ajustarse por expediente.')
                 ->schema([
                 Forms\Components\TextInput::make('porcentaje_honorarios')
@@ -134,12 +136,12 @@ class TipoTramiteResource extends Resource
                 Tables\Filters\TernaryFilter::make('activo')->label('Activo'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

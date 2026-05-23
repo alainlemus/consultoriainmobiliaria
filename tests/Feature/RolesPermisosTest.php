@@ -27,10 +27,10 @@ class RolesPermisosTest extends TestCase
 
         // Super admin necesita permisos explícitos (define_via_gate está desactivado)
         $permisosAdmin = [
-            'view_any_expediente', 'view_expediente', 'create_expediente', 'update_expediente',
-            'view_any_contacto',   'view_contacto',   'create_contacto',   'update_contacto',
-            'view_any_comision',   'view_comision',   'create_comision',   'update_comision',
-            'view_any_user',       'view_user',       'create_user',       'update_user',
+            'ViewAny:Expediente', 'View:Expediente', 'Create:Expediente', 'Update:Expediente',
+            'ViewAny:Contacto',   'View:Contacto',   'Create:Contacto',   'Update:Contacto',
+            'ViewAny:Comision',   'View:Comision',   'Create:Comision',   'Update:Comision',
+            'ViewAny:User',       'View:User',       'Create:User',       'Update:User',
         ];
         foreach ($permisosAdmin as $p) {
             Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
@@ -40,12 +40,12 @@ class RolesPermisosTest extends TestCase
         $this->asesor = User::factory()->create(['activo' => true]);
         $this->asesor->assignRole('asesor');
 
-        // Permisos mínimos del asesor
+        // Permisos mínimos del asesor (formato Shield v4: PascalCase con separador :)
         $permisos = [
-            'page_DashboardAsesor', 'page_MiPerfil',
-            'view_any_contacto', 'view_contacto', 'create_contacto', 'update_contacto',
-            'view_any_expediente', 'view_expediente', 'create_expediente', 'update_expediente',
-            'view_any_comision', 'view_comision',
+            'View:DashboardAsesor', 'View:MiPerfil',
+            'ViewAny:Contacto', 'View:Contacto', 'Create:Contacto', 'Update:Contacto',
+            'ViewAny:Expediente', 'View:Expediente', 'Create:Expediente', 'Update:Expediente',
+            'ViewAny:Comision', 'View:Comision',
         ];
         foreach ($permisos as $p) {
             Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
@@ -56,15 +56,15 @@ class RolesPermisosTest extends TestCase
     /** @test */
     public function asesor_no_tiene_permiso_delete_contacto(): void
     {
-        $this->assertFalse($this->asesor->can('delete_contacto'));
-        $this->assertFalse($this->asesor->can('delete_any_contacto'));
+        $this->assertFalse($this->asesor->can('Delete:Contacto'));
+        $this->assertFalse($this->asesor->can('DeleteAny:Contacto'));
     }
 
     /** @test */
     public function asesor_no_tiene_permiso_delete_expediente(): void
     {
-        $this->assertFalse($this->asesor->can('delete_expediente'));
-        $this->assertFalse($this->asesor->can('delete_any_expediente'));
+        $this->assertFalse($this->asesor->can('Delete:Expediente'));
+        $this->assertFalse($this->asesor->can('DeleteAny:Expediente'));
     }
 
     /** @test */
@@ -116,9 +116,9 @@ class RolesPermisosTest extends TestCase
     /** @test */
     public function asesor_no_puede_editar_comisiones(): void
     {
-        $this->assertFalse($this->asesor->can('update_comision'));
-        $this->assertFalse($this->asesor->can('create_comision'));
-        $this->assertFalse($this->asesor->can('delete_comision'));
+        $this->assertFalse($this->asesor->can('Update:Comision'));
+        $this->assertFalse($this->asesor->can('Create:Comision'));
+        $this->assertFalse($this->asesor->can('Delete:Comision'));
     }
 
     /** @test */

@@ -1,10 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-@tailwind variants;
-@import '../../../../vendor/filament/filament/resources/css/base.css';
+@import 'tailwindcss' source(none);
+@import '../../../../vendor/filament/filament/resources/css/index.css';
 
-@config 'tailwind.config.js';
+@source '../../../../app/Filament/**/*.php';
+@source '../../../../resources/views/filament/**/*.blade.php';
+@source '../../../../vendor/filament/**/*.blade.php';
+@source '../../../../vendor/diogogpinto/filament-auth-ui-enhancer/resources/**/*.blade.php';
+
+/* Forzar colores oscuros en el login — sobreescribe lo que AuthUIEnhancer calcula */
+:root {
+    --form-panel-background-color: #1a1a1a !important;
+    --empty-panel-background-color: #0d0d0d !important;
+}
 
 /* Logo grande solo en páginas de autenticación (login, password reset) */
 .custom-auth-form-panel .fi-logo,

@@ -22,7 +22,8 @@ class AdminUserSeeder extends Seeder
 
         // Crear usuario admin
         $user = User::firstOrCreate(
-            ['email' => 'antonio@consultoriainmobiliaria.com.mx'],
+            ['email' => 'as.consultoria.inmobiliaria@gmail.com'],
+            //['email' => 'antonio@consultoriainmobiliaria.com.mx'],
             [
                 'name'     => 'Jose Antonio Solis Santuario',
                 'password' => Hash::make('password'),

@@ -74,9 +74,9 @@ class AdminPanelProvider extends PanelProvider
                 AuthUIEnhancerPlugin::make()
                     ->formPanelPosition('right')
                     ->formPanelWidth('45%')
-                    ->formPanelBackgroundColor(Color::hex('#1a1a1a'))
+                    ->formPanelBackgroundColor(Color::hex('#1a1a1a'), 950)
                     ->emptyPanelView('filament.auth.login-panel')
-                    ->emptyPanelBackgroundColor(Color::hex('#0d0d0d'))
+                    ->emptyPanelBackgroundColor(Color::hex('#0d0d0d'), 950)
                     ->showEmptyPanelOnMobile(false),
             ])
             ->homeUrl(fn () => auth()->user()?->hasRole('asesor')

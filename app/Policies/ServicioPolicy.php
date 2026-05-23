@@ -1,108 +1,75 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
-use App\Models\User;
+use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Servicio;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class ServicioPolicy
 {
     use HandlesAuthorization;
-
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
+    
+    public function viewAny(AuthUser $authUser): bool
     {
-        return $user->can('view_any_servicio');
+        return $authUser->can('ViewAny:Servicio');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, Servicio $servicio): bool
+    public function view(AuthUser $authUser, Servicio $servicio): bool
     {
-        return $user->can('view_servicio');
+        return $authUser->can('View:Servicio');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
+    public function create(AuthUser $authUser): bool
     {
-        return $user->can('create_servicio');
+        return $authUser->can('Create:Servicio');
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, Servicio $servicio): bool
+    public function update(AuthUser $authUser, Servicio $servicio): bool
     {
-        return $user->can('update_servicio');
+        return $authUser->can('Update:Servicio');
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, Servicio $servicio): bool
+    public function delete(AuthUser $authUser, Servicio $servicio): bool
     {
-        return $user->can('delete_servicio');
+        return $authUser->can('Delete:Servicio');
     }
 
-    /**
-     * Determine whether the user can bulk delete.
-     */
-    public function deleteAny(User $user): bool
+    public function deleteAny(AuthUser $authUser): bool
     {
-        return $user->can('delete_any_servicio');
+        return $authUser->can('DeleteAny:Servicio');
     }
 
-    /**
-     * Determine whether the user can permanently delete.
-     */
-    public function forceDelete(User $user, Servicio $servicio): bool
+    public function restore(AuthUser $authUser, Servicio $servicio): bool
     {
-        return $user->can('force_delete_servicio');
+        return $authUser->can('Restore:Servicio');
     }
 
-    /**
-     * Determine whether the user can permanently bulk delete.
-     */
-    public function forceDeleteAny(User $user): bool
+    public function forceDelete(AuthUser $authUser, Servicio $servicio): bool
     {
-        return $user->can('force_delete_any_servicio');
+        return $authUser->can('ForceDelete:Servicio');
     }
 
-    /**
-     * Determine whether the user can restore.
-     */
-    public function restore(User $user, Servicio $servicio): bool
+    public function forceDeleteAny(AuthUser $authUser): bool
     {
-        return $user->can('restore_servicio');
+        return $authUser->can('ForceDeleteAny:Servicio');
     }
 
-    /**
-     * Determine whether the user can bulk restore.
-     */
-    public function restoreAny(User $user): bool
+    public function restoreAny(AuthUser $authUser): bool
     {
-        return $user->can('restore_any_servicio');
+        return $authUser->can('RestoreAny:Servicio');
     }
 
-    /**
-     * Determine whether the user can replicate.
-     */
-    public function replicate(User $user, Servicio $servicio): bool
+    public function replicate(AuthUser $authUser, Servicio $servicio): bool
     {
-        return $user->can('replicate_servicio');
+        return $authUser->can('Replicate:Servicio');
     }
 
-    /**
-     * Determine whether the user can reorder.
-     */
-    public function reorder(User $user): bool
+    public function reorder(AuthUser $authUser): bool
     {
-        return $user->can('reorder_servicio');
+        return $authUser->can('Reorder:Servicio');
     }
+
 }

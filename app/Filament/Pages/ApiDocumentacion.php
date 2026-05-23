@@ -6,14 +6,14 @@ use Filament\Pages\Page;
 
 class ApiDocumentacion extends Page
 {
-    protected static ?string $navigationIcon  = 'heroicon-o-book-open';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-book-open';
     protected static ?string $navigationLabel = 'Documentación';
     protected static ?string $title           = 'Documentación de la API Móvil';
-    protected static ?string $navigationGroup = 'API Móvil';
+    protected static string | \UnitEnum | null $navigationGroup = 'API Móvil';
     protected static ?int    $navigationSort  = 2;
     protected static ?string $slug            = 'api-documentacion';
 
-    protected static string $view = 'filament.pages.api-documentacion';
+    protected string $view = 'filament.pages.api-documentacion';
 
     public static function canAccess(): bool
     {

@@ -16,11 +16,11 @@ class PanelAsesores extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon  = 'heroicon-o-user-group';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-user-group';
     protected static ?string $navigationLabel = 'Panel de Asesores';
-    protected static ?string $navigationGroup = 'CRM';
+    protected static string | \UnitEnum | null $navigationGroup = 'CRM';
     protected static ?int    $navigationSort  = 20;
-    protected static string  $view            = 'filament.pages.panel-asesores';
+    protected string $view = 'filament.pages.panel-asesores';
 
     public static function canAccess(): bool
     {
@@ -100,7 +100,7 @@ class PanelAsesores extends Page implements HasTable
     protected function getTableActions(): array
     {
         return [
-            Tables\Actions\Action::make('ver_expedientes')
+            \Filament\Actions\Action::make('ver_expedientes')
                 ->label('Ver expedientes')
                 ->icon('heroicon-o-folder-open')
                 ->color('primary')

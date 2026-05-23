@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -25,7 +25,7 @@ class UserResource extends Resource
 
 
     protected static ?string $model = User::class;
-    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationLabel = 'Usuarios';
     protected static ?string $modelLabel = 'Usuario';
     protected static ?string $pluralModelLabel = 'Usuarios';
@@ -61,10 +61,10 @@ class UserResource extends Resource
         return __('filament-shield::filament-shield.nav.group');
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Section::make('Foto de perfil')
+        return $schema->schema([
+            \Filament\Schemas\Components\Section::make('Foto de perfil')
                 ->description('Subida por el asesor desde la app móvil.')
                 ->schema([
                     Forms\Components\ViewField::make('foto_perfil_url')
@@ -75,7 +75,7 @@ class UserResource extends Resource
                 ])
                 ->visibleOn(['view', 'edit']),
 
-            Forms\Components\Section::make('Información personal')
+            \Filament\Schemas\Components\Section::make('Información personal')
                 ->description('Datos de acceso del usuario al sistema de administración.')
                 ->schema([
                 Forms\Components\TextInput::make('name')
@@ -103,7 +103,7 @@ class UserResource extends Resource
                     ]),
             ])->columns(2),
 
-            Forms\Components\Section::make('Contraseña')
+            \Filament\Schemas\Components\Section::make('Contraseña')
                 ->description('Mínimo 8 caracteres. En modo edición, deja en blanco para no cambiar la contraseña actual.')
                 ->schema([
                 Forms\Components\TextInput::make('password')
@@ -135,7 +135,7 @@ class UserResource extends Resource
                     ]),
             ])->columns(2),
 
-            Forms\Components\Section::make('Datos bancarios para comisiones')
+            \Filament\Schemas\Components\Section::make('Datos bancarios para comisiones')
                 ->description('CLABE y banco al que se transferirán las comisiones del asesor. Solo visible para el administrador.')
                 ->schema([
                     Forms\Components\TextInput::make('telefono')
@@ -170,7 +170,7 @@ class UserResource extends Resource
                         ->hint('18 dígitos — requerida para transferencia'),
                 ])->columns(2),
 
-            Forms\Components\Section::make('Rol en el sistema')
+            \Filament\Schemas\Components\Section::make('Rol en el sistema')
                 ->description('Define qué puede ver y hacer este usuario. "super_admin" tiene acceso total. "asesor" solo ve sus propios expedientes, prospectos y comisiones.')
                 ->schema([
                 Forms\Components\Select::make('roles')
@@ -261,8 +261,8 @@ class UserResource extends Resource
                     ->preload(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->label('Editar'),
-                Tables\Actions\Action::make('toggleActivo')
+                \Filament\Actions\EditAction::make()->label('Editar'),
+                \Filament\Actions\Action::make('toggleActivo')
                     ->label(fn ($record) => $record->activo ? 'Pausar' : 'Activar')
                     ->icon(fn ($record) => $record->activo ? 'heroicon-o-pause-circle' : 'heroicon-o-play-circle')
                     ->color(fn ($record) => $record->activo ? 'warning' : 'success')
@@ -273,13 +273,13 @@ class UserResource extends Resource
                         ? '¿Confirmas que deseas pausar a este usuario? No podrá ingresar al sistema.'
                         : '¿Confirmas que deseas activar a este usuario?')
                     ->action(fn ($record) => $record->update(['activo' => ! $record->activo])),
-                Tables\Actions\DeleteAction::make()
+                \Filament\Actions\DeleteAction::make()
                     ->label('Eliminar')
                     ->hidden(fn ($record) => $record->id === Auth::id()),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make()
                         ->label('Eliminar seleccionados')
                         ->action(function ($records) {
                             $records->except(Auth::id())->each->delete();

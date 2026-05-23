@@ -172,7 +172,7 @@ class EmailMasivoTest extends TestCase
                     'cuerpo' => 'Mensaje',
                 ]
             )
-            ->assertHasErrors(['mountedTableBulkActionData.asunto']);
+            ->assertHasTableBulkActionErrors(['asunto']);
 
         Mail::assertNothingQueued();
     }
@@ -193,7 +193,7 @@ class EmailMasivoTest extends TestCase
                     'cuerpo' => '',  // vacío
                 ]
             )
-            ->assertHasErrors(['mountedTableBulkActionData.cuerpo']);
+            ->assertHasTableBulkActionErrors(['cuerpo']);
 
         Mail::assertNothingQueued();
     }
