@@ -68,7 +68,11 @@ class ContactoController extends Controller
             $validated['curp'] = strtoupper($validated['curp']);
         }
 
-        $contacto = Contacto::create($validated);
+        $contacto = Contacto::create([
+            ...$validated,
+            'origen'               => 'sitio_web',
+            'fecha_primer_contacto' => now()->toDateString(),
+        ]);
 
         // 1. Correo de confirmación al cliente
         try {

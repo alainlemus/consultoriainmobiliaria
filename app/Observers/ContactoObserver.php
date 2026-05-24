@@ -26,14 +26,29 @@ class ContactoObserver
     }
 
     /**
-     * Al actualizar: si cambia el asesor_id, notificar al nuevo asesor.
+     * Al actualizar: sincronizar estado interno con estado_prospecto
+     * y notificar al asesor si cambia la asignación.
      */
     public function updated(Contacto $contacto): void
     {
-        if (
-            $contacto->wasChanged('asesor_id') &&
-            $contacto->asesor_id !== null
-        ) {
+        // Sincronizar estado interno con estado_prospecto
+        if ($contacto->wasChanged('estado_prospecto')) {
+            $map = [
+                'nuevo'             => 'nuevo',
+                'contactado'        => 'en_proceso',
+                'precalificado'     => 'en_proceso',
+                'pendiente_cierre'  => 'en_proceso',
+                'contrato_firmado'  => 'en_proceso',
+                'convertido'        => 'atendido',
+                'descartado'        => 'atendido',
+            ];
+            $nuevoEstado = $map[$contacto->estado_prospecto] ?? 'en_proceso';
+            // Actualizar sin disparar eventos para evitar loop
+            Contacto::withoutEvents(fn () => $contacto->updateQuietly(['estado' => $nuevoEstado]));
+        }
+
+        // Notificar al asesor si cambia la asignación
+        if ($contacto->wasChanged('asesor_id') && $contacto->asesor_id !== null) {
             $contacto->asesor?->notify(new ProspectoAsignado($contacto));
         }
     }

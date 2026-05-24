@@ -166,24 +166,48 @@ class ContactoResource extends Resource
                         ])
                         ->default('nuevo')
                         ->hidden(),
+                    // Origen — automático al crear, solo lectura al editar
                     Forms\Components\Select::make('origen')
                         ->label('Origen')
                         ->options([
                             'sitio_web' => 'Sitio web',
+                            'admin'     => 'Admin (super_admin)',
+                            'asesor'    => 'Asesor',
                             'campo'     => 'Campo / visita directa',
                             'referido'  => 'Referido',
                             'whatsapp'  => 'WhatsApp',
                             'app_movil' => 'App móvil',
                             'otro'      => 'Otro',
                         ])
-                        ->default('sitio_web'),
+                        ->default(function () {
+                            $user = Auth::user();
+                            if (! $user) return 'otro';
+                            return $user->hasRole('super_admin') ? 'admin' : 'asesor';
+                        })
+                        ->disabled(fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\EditRecord)
+                        ->dehydrated(fn ($livewire) => ! ($livewire instanceof \Filament\Resources\Pages\EditRecord))
+                        ->hint(fn ($livewire) => ($livewire instanceof \Filament\Resources\Pages\EditRecord)
+                            ? 'El origen no se puede cambiar una vez creado el prospecto.'
+                            : null
+                        ),
+
+                    // Asesor asignado — auto si es asesor, seleccionable si es super_admin
                     Forms\Components\Select::make('asesor_id')
                         ->label('Asesor asignado')
-                        ->options(User::where('activo', true)->pluck('name', 'id'))
-                        ->searchable()->nullable()
-                        ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+                        ->options(User::where('activo', true)->role('asesor')->pluck('name', 'id'))
+                        ->searchable()
+                        ->nullable()
+                        ->default(fn () => Auth::user()?->hasRole('asesor') ? Auth::id() : null)
+                        ->disabled(fn () => Auth::user()?->hasRole('asesor'))
+                        ->dehydrated(fn ($livewire) => ! (
+                            Auth::user()?->hasRole('asesor') &&
+                            $livewire instanceof \Filament\Resources\Pages\EditRecord
+                        ))
+                        ->visible(fn () => Auth::user()?->hasAnyRole(['super_admin', 'asesor'])),
+
                     Forms\Components\DatePicker::make('fecha_primer_contacto')
                         ->label('Fecha primer contacto')
+                        ->default(now())
                         ->beforeOrEqual('today')
                         ->validationMessages([
                             'before_or_equal' => 'La fecha de primer contacto no puede ser futura.',
