@@ -1,59 +1,171 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Consultoría Inmobiliaria
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Plataforma web y sistema de gestión para una consultoría inmobiliaria especializada en créditos INFONAVIT y FOVISSSTE, avalúos comerciales y fiscales, y gestión de escrituras en Hidalgo, Veracruz y San Luis Potosí.
 
-## About Laravel
+**Producción:** https://consultoriainmobiliaria.com.mx
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack tecnológico
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Capa | Tecnología |
+|---|---|
+| Backend | Laravel 12 + PHP 8.4 |
+| Panel admin | Filament v5 |
+| Permisos | Filament Shield v4 |
+| Frontend landing | Blade + Alpine.js + Tailwind CSS v4 |
+| Base de datos | MySQL |
+| Colas | Laravel Queue (`database` en prod, `sync` en local) |
+| Correo | Resend |
+| Push notifications | FCM HTTP v1 (OAuth2 + JWT manual) |
+| App móvil | React Native + Expo (carpeta `app-consultoriainmobiliaria/`) |
+| Deploy | Dokploy en VPS |
+| Local | Laravel Herd |
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Módulos del sistema
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Landing pública
 
-## Laravel Sponsors
+- **Home** — hero, servicios, testimonios, CTA WhatsApp dinámico
+- **Propiedades** — listado con filtros + detalle individual con JSON-LD `RealEstateListing`
+- **Blog** — posts con JSON-LD `Article`
+- **Aviso de privacidad**
+- **SEO completo** — meta tags, Open Graph, Twitter Card, JSON-LD `RealEstateAgent` global, sitemap XML, robots.txt
+- **GA4** — carga condicional tras consentimiento de cookies
+- **Banner de cookies** — consentimiento con `localStorage` + evento `cookies:accepted`
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Panel admin (`/admin`) — rol `super_admin`
 
-### Premium Partners
+- Dashboard con KPIs globales (expedientes, prospectos, comisiones)
+- Gestión de **Expedientes** (flujo completo: prospecto → trámite → cierre)
+- Gestión de **Prospectos**
+- Gestión de **Comisiones**
+- Gestión de **Asesores** (usuarios con rol `asesor`)
+- Gestión de **Propiedades** (CRUD + imágenes)
+- Gestión de **Blog** (posts con editor rich text)
+- **Contratos** y **Testimonios**
+- **Ajustes Generales** — configuración del sitio via settings cacheados
+- **Reportes** — enviados por correo automáticamente (diario lun–vie 20:00, semanal sáb 08:00, mensual último día 20:00)
+- **API Móvil** — endpoints para la app React Native
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Panel asesor (`/admin`) — rol `asesor`
 
-## Contributing
+- Solo ve sus propios expedientes, prospectos y visitas
+- Comisiones en modo solo lectura
+- No puede eliminar prospectos
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Configuración local
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Requisitos
 
-## Security Vulnerabilities
+- PHP 8.4 (Laravel Herd)
+- MySQL
+- Node.js + npm
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Instalación
 
-## License
+```bash
+git clone <repo>
+cd consultoriaInmobiliaria
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+composer install
+npm install --legacy-peer-deps
+
+cp .env.example .env
+php artisan key:generate
+
+# Configurar DB en .env, luego:
+php artisan migrate --seed
+
+npm run dev
+```
+
+### Variables de entorno relevantes
+
+```env
+APP_ENV=local
+APP_URL=http://consultoriainmobiliaria.test
+
+DB_DATABASE=consultoria_inmobiliaria
+
+QUEUE_CONNECTION=sync       # usar 'database' en producción
+
+RESEND_API_KEY=...
+RESEND_FROM_ADDRESS=...
+
+FIREBASE_PROJECT_ID=consultoria-inmobiliaria-51375
+FIREBASE_CLIENT_EMAIL=...
+FIREBASE_PRIVATE_KEY=...
+```
+
+---
+
+## Seeders
+
+```bash
+php artisan db:seed --class=SuperAdminRoleSeeder   # rol super_admin con todos los permisos
+php artisan db:seed --class=AsesorRoleSeeder        # rol asesor con 16 permisos restringidos
+```
+
+---
+
+## Tests
+
+```bash
+php artisan test
+# 170 passed, 1 skipped
+```
+
+Los tests usan prefijo `test_` en el nombre del método (PHPUnit 12, sin `@test`).
+
+---
+
+## Deploy a producción
+
+```bash
+git pull origin main
+composer install --no-dev --optimize-autoloader
+npm run build
+php artisan migrate --force
+php artisan optimize:clear    # obligatorio post-deploy (Shield cachea permisos)
+```
+
+> **Nota:** Si se cambia `correo_contacto` u otro setting en el admin, ejecutar `php artisan cache:clear` en el VPS — los settings usan `Cache::rememberForever`.
+
+### Cron (VPS)
+
+```cron
+* * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### Queue worker (supervisor en VPS)
+
+```bash
+php artisan queue:work --sleep=3 --tries=3
+```
+
+---
+
+## App móvil
+
+Directorio: `app-consultoriainmobiliaria/`
+
+- React Native + Expo
+- Autenticación con Laravel Sanctum
+- Push notifications via FCM
+- Biometría con `expo-local-authentication`
+- Build Android: `eas build --profile development --platform android`
+- Build iOS: pendiente de Apple Developer Account
+
+---
+
+## Notas importantes
+
+- `setting('clave')` usa `Cache::rememberForever` — limpiar caché si se cambia un valor desde el admin
+- Shield v4: `define_via_gate: false` — `super_admin` requiere permisos explícitos, no bypass automático
+- `APP_ENV=production` activa indexación en sitemap (sin `X-Robots-Tag: noindex`)
+- El dominio `consultoriainmobiliaria.com.mx` no tiene registros MX — no puede recibir correo, solo enviar

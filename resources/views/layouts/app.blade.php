@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-MX">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,7 +24,12 @@
     <meta property="og:description" content="@yield('og_description', setting('seo_descripcion', ''))">
     <meta property="og:type" content="@yield('og_type', 'website')">
     <meta property="og:url" content="@yield('og_url', url()->current())">
-    <meta property="og:image" content="@yield('og_image', setting('seo_og_imagen') ? asset('storage/' . setting('seo_og_imagen')) : '')">
+    @php $ogImage = trim(\Illuminate\Support\Facades\View::yieldContent('og_image') ?: (setting('seo_og_imagen') ? asset('storage/' . setting('seo_og_imagen')) : '')); @endphp
+    @if($ogImage)
+    <meta property="og:image" content="{{ $ogImage }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    @endif
     <meta property="og:locale" content="es_MX">
 
     {{-- Twitter Card --}}
@@ -35,7 +40,9 @@
     @endif
     <meta name="twitter:title" content="@yield('og_title', setting('seo_titulo', 'Consultoría Inmobiliaria'))">
     <meta name="twitter:description" content="@yield('og_description', setting('seo_descripcion', ''))">
-    <meta name="twitter:image" content="@yield('og_image', setting('seo_og_imagen') ? asset('storage/' . setting('seo_og_imagen')) : '')">
+    @if($ogImage)
+    <meta name="twitter:image" content="{{ $ogImage }}">
+    @endif
 
     {{-- Google Search Console verification --}}
     @if(setting('gsc_verification'))
@@ -100,14 +107,29 @@
         }
     </script>
 
-    {{-- Google Analytics 4 --}}
+    {{-- Google Analytics 4 — solo carga tras consentimiento de cookies --}}
     @if(setting('ga4_id'))
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ setting('ga4_id') }}"></script>
     <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', '{{ setting('ga4_id') }}');
+        window.__ga4Id = '{{ setting('ga4_id') }}';
+        function loadGA4() {
+            if (window.__ga4Loaded) return;
+            window.__ga4Loaded = true;
+            var s = document.createElement('script');
+            s.async = true;
+            s.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.__ga4Id;
+            document.head.appendChild(s);
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            window.gtag = gtag;
+            gtag('js', new Date());
+            gtag('config', window.__ga4Id);
+        }
+        // Si ya aceptó cookies previamente, carga inmediatamente
+        if (localStorage.getItem('cookies_accepted') === 'true') {
+            loadGA4();
+        }
+        // Escucha el evento de aceptación del banner
+        window.addEventListener('cookies:accepted', loadGA4);
     </script>
     @endif
 
@@ -115,6 +137,9 @@
     @include('partials.cookies-banner')
 
     {{-- JSON-LD RealEstateAgent (global) --}}
+    @php
+        $socialLinks = collect([setting('facebook_url'), setting('instagram_url')])->filter()->values();
+    @endphp
     <script type="application/ld+json">
     {
         "@@context": "https://schema.org",
@@ -124,6 +149,14 @@
         "logo": "{{ setting('logo') ? asset('storage/' . setting('logo')) : asset('favicon.ico') }}",
         "description": "{{ setting('seo_descripcion', 'Asesores expertos en crédito INFONAVIT, FOVISSSTE, avalúos y escrituras.') }}",
         "telephone": "+52{{ setting('whatsapp_1', '7711910395') }}",
+        "address": {
+            "@@type": "PostalAddress",
+            "streetAddress": "{{ setting('direccion_calle', 'Plaza Tecoluco, Av. Corona del Rosal') }}",
+            "addressLocality": "{{ setting('direccion_ciudad', 'Huejutla de Reyes') }}",
+            "addressRegion": "{{ setting('direccion_estado', 'Hidalgo') }}",
+            "postalCode": "{{ setting('direccion_cp', '43000') }}",
+            "addressCountry": "MX"
+        },
         "areaServed": [
             { "@@type": "State", "name": "Hidalgo", "sameAs": "https://www.wikidata.org/wiki/Q80074" },
             { "@@type": "State", "name": "Veracruz", "sameAs": "https://www.wikidata.org/wiki/Q80080" },
@@ -134,11 +167,10 @@
             "contactType": "customer service",
             "telephone": "+52{{ setting('whatsapp_1', '7711910395') }}",
             "availableLanguage": "Spanish"
-        },
-        "sameAs": [
-            "{{ setting('facebook_url') }}",
-            "{{ setting('instagram_url') }}"
-        ]
+        }
+        @if($socialLinks->isNotEmpty())
+        ,"sameAs": {!! $socialLinks->toJson() !!}
+        @endif
     }
     </script>
 

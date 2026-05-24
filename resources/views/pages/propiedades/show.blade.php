@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
-@section('title', $propiedad->titulo . ' — ' . setting('site_name', 'Consultoría Inmobiliaria'))
+@section('seo_title', $propiedad->titulo . ' — ' . setting('site_name', 'Consultoría Inmobiliaria'))
+@section('seo_description', $ogDescripcion)
 
 @php
     $ogDescripcion = collect([
@@ -18,7 +19,7 @@
 
 @section('og_title', $propiedad->titulo . ' — ' . setting('site_name', 'Consultoría Inmobiliaria'))
 @section('og_description', $ogDescripcion)
-@section('og_type', 'article')
+@section('og_type', 'website')
 @section('og_url', route('propiedades.show', $propiedad->slug))
 @section('og_image', $ogImagen)
 @section('canonical', route('propiedades.show', $propiedad->slug))
