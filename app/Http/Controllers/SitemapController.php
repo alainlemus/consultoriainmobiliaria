@@ -22,9 +22,12 @@ class SitemapController extends Controller
 
         $content = view('sitemap', compact('posts', 'propiedades'))->render();
 
-        return response($content, 200, [
-            'Content-Type' => 'application/xml',
-            'X-Robots-Tag' => 'noindex',
-        ]);
+        $headers = ['Content-Type' => 'application/xml'];
+
+        if (! app()->isProduction()) {
+            $headers['X-Robots-Tag'] = 'noindex';
+        }
+
+        return response($content, 200, $headers);
     }
 }

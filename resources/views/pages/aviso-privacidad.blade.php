@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Aviso de Privacidad — ' . setting('site_name', 'Consultoría Inmobiliaria'))
+@section('seo_title', 'Aviso de Privacidad — ' . setting('site_name', 'Consultoría Inmobiliaria'))
 
 @section('content')
     <section class="py-20 bg-cream-50 min-h-screen" style="padding-top: 140px;">

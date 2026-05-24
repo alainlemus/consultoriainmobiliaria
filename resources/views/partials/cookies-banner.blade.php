@@ -73,7 +73,7 @@ function cookieConsent() {
 
         init() {
             // Mostrar solo si no ha dado consentimiento aún
-            if (!getCookie(KEY) && !localStorage.getItem(KEY)) {
+            if (!getCookie(KEY) && localStorage.getItem('cookies_accepted') === null) {
                 // Pequeño delay para no aparecer de golpe
                 setTimeout(() => { this.visible = true; }, 800);
             }
@@ -81,13 +81,14 @@ function cookieConsent() {
 
         accept() {
             setCookie(KEY, 'accepted', EXPIRES);
-            localStorage.setItem(KEY, 'accepted');
+            localStorage.setItem('cookies_accepted', 'true');
             this.visible = false;
+            window.dispatchEvent(new Event('cookies:accepted'));
         },
 
         reject() {
             setCookie(KEY, 'essential', EXPIRES);
-            localStorage.setItem(KEY, 'essential');
+            localStorage.setItem('cookies_accepted', 'false');
             this.visible = false;
         },
     }

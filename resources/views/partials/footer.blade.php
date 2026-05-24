@@ -32,12 +32,12 @@
             <div>
                 <h4 class="text-gold-400 font-serif font-semibold text-base mb-4 uppercase tracking-wider">Servicios</h4>
                 <ul class="space-y-2 text-sm text-cream-300">
-                    <li><a href="#servicios" class="hover:text-gold-400 transition-colors">Crédito INFONAVIT</a></li>
-                    <li><a href="#servicios" class="hover:text-gold-400 transition-colors">Crédito FOVISSSTE</a></li>
-                    <li><a href="#servicios" class="hover:text-gold-400 transition-colors">Avalúos Inmobiliarios</a></li>
-                    <li><a href="#servicios" class="hover:text-gold-400 transition-colors">Avalúos Fiscales</a></li>
-                    <li><a href="#servicios" class="hover:text-gold-400 transition-colors">Gestión de Escrituras</a></li>
-                    <li><a href="#servicios" class="hover:text-gold-400 transition-colors">Asesoría Personalizada</a></li>
+                    <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Crédito INFONAVIT</a></li>
+                    <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Crédito FOVISSSTE</a></li>
+                    <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Avalúos Inmobiliarios</a></li>
+                    <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Avalúos Fiscales</a></li>
+                    <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Gestión de Escrituras</a></li>
+                    <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Asesoría Personalizada</a></li>
                 </ul>
             </div>
             <div>
