@@ -4,11 +4,11 @@
 
     <div class="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-44">
         <div class="max-w-3xl">
-            <p class="section-subtitle text-gold-400 mb-4">Bienes Raíces — Consultoría Especializada</p>
+            <p class="section-subtitle text-gold-400 mb-4">Consultoría Inmobiliaria en Huejutla de Reyes, Hidalgo</p>
             {{-- Badge rojo ladrillo — resalta INFONAVIT/FOVISSSTE como servicio principal --}}
             <div class="inline-flex items-center gap-2 bg-crimson-600 text-white text-xs uppercase tracking-widest px-3 py-1 mb-5 font-semibold">
                 <span class="w-1.5 h-1.5 rounded-full bg-gold-400 inline-block"></span>
-                Especialistas en Crédito Hipotecario
+                Especialistas en Crédito Hipotecario INFONAVIT y FOVISSSTE
             </div>
             <h1 class="font-serif text-5xl sm:text-6xl lg:text-7xl font-bold text-white leading-tight mb-6">
                 Tu <span class="text-gold-400">Patrimonio,</span><br>
@@ -16,7 +16,7 @@
             </h1>
             <div class="w-20 h-0.5 bg-gold-400 mb-6"></div>
             <p class="text-cream-200 text-lg sm:text-xl leading-relaxed mb-2 max-w-xl">
-                Expertos en créditos <strong class="text-gold-400">INFONAVIT</strong> y <strong class="text-gold-400">FOVISSSTE</strong>, avalúos y gestión inmobiliaria.
+                Tramitamos tu crédito <strong class="text-gold-400">INFONAVIT</strong> o <strong class="text-gold-400">FOVISSSTE</strong> en Hidalgo, Veracruz y San Luis Potosí. Avalúos, escrituras y gestoría inmobiliaria sin costo inicial.
             </p>
             <p class="font-script text-gold-400 text-xl mb-10">Confianza • Transparencia • Resultados</p>
             <div class="flex flex-col sm:flex-row gap-4">

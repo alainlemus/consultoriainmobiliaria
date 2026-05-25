@@ -82,6 +82,7 @@ class NotificacionesTest extends TestCase
         $exp = $this->crearExpediente([
             'honorarios_monto'      => 50000.00,
             'honorarios_porcentaje' => 8,
+            'honorarios_pagados'    => true,
         ]);
 
         $exp->update(['estado' => 'cerrado']);
@@ -105,7 +106,11 @@ class NotificacionesTest extends TestCase
     {
         Notification::fake();
 
-        $exp = $this->crearExpediente(['honorarios_monto' => 30000.00]);
+        $exp = $this->crearExpediente([
+            'honorarios_monto'      => 30000.00,
+            'honorarios_porcentaje' => 10,
+            'honorarios_pagados'    => true,
+        ]);
         $exp->update(['estado' => 'cerrado']); // primera vez → notifica
         Notification::assertSentTo($this->asesor, ExpedienteCerrado::class, 1);
 
@@ -163,6 +168,7 @@ class NotificacionesTest extends TestCase
         $exp = $this->crearExpediente([
             'honorarios_monto'      => 40000.00,
             'honorarios_porcentaje' => 8,
+            'honorarios_pagados'    => true,
         ]);
 
         $exp->update(['estado' => 'cerrado']);

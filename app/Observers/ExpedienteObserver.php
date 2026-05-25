@@ -20,11 +20,11 @@ class ExpedienteObserver
     {
         $this->sincronizarChecklist($expediente);
 
-        // El contacto ya no es un prospecto — está en trámite
+        // El contacto ya no es un prospecto — tiene expediente activo
         if ($expediente->contacto_id) {
             \App\Models\Contacto::where('id', $expediente->contacto_id)
-                ->whereNotIn('estado_prospecto', ['cerrado'])   // no pisar un cierre
-                ->update(['estado_prospecto' => 'en_tramite']);
+                ->whereNotIn('estado_prospecto', ['convertido', 'descartado'])
+                ->update(['estado_prospecto' => 'convertido']);
         }
 
         User::role('super_admin')
@@ -61,17 +61,25 @@ class ExpedienteObserver
             $expediente->wasChanged('estado') &&
             $expediente->estado === 'cerrado' &&
             $expediente->asesor_id &&
-            $expediente->honorarios_monto > 0
+            $expediente->honorarios_monto > 0 &&
+            $expediente->honorarios_pagados === true          // BUG-05: solo si ya se cobró
         ) {
             $existe = Comision::where('expediente_id', $expediente->id)->exists();
 
             if (! $existe) {
+                $porcentaje    = (float) ($expediente->honorarios_porcentaje ?? 0);
+                $montoBase     = (float) $expediente->honorarios_monto;
+                // BUG-04: aplicar porcentaje real, no el 100%
+                $montoComision = $porcentaje > 0
+                    ? round($montoBase * $porcentaje / 100, 2)
+                    : $montoBase;
+
                 Comision::create([
                     'expediente_id'       => $expediente->id,
                     'asesor_id'           => $expediente->asesor_id,
-                    'monto_base'          => $expediente->honorarios_monto,
-                    'porcentaje_comision' => $expediente->honorarios_porcentaje ?? 0,
-                    'monto_comision'      => $expediente->honorarios_monto,
+                    'monto_base'          => $montoBase,
+                    'porcentaje_comision' => $porcentaje,
+                    'monto_comision'      => $montoComision,
                     'estado'              => 'pendiente',
                     'fecha_generacion'    => now()->toDateString(),
                 ]);

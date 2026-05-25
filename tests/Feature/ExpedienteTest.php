@@ -142,7 +142,11 @@ class ExpedienteTest extends TestCase
     /** @test */
     public function al_cerrar_expediente_se_genera_comision(): void
     {
-        $exp = $this->makeExpediente(['honorarios_monto' => 50000]);
+        $exp = $this->makeExpediente([
+            'honorarios_monto'      => 50000,
+            'honorarios_porcentaje' => 10,
+            'honorarios_pagados'    => true,
+        ]);
 
         $exp->update(['estado' => 'cerrado']);
 
@@ -168,7 +172,11 @@ class ExpedienteTest extends TestCase
     /** @test */
     public function cerrar_expediente_dos_veces_no_duplica_comision(): void
     {
-        $exp = $this->makeExpediente(['honorarios_monto' => 50000]);
+        $exp = $this->makeExpediente([
+            'honorarios_monto'      => 50000,
+            'honorarios_porcentaje' => 10,
+            'honorarios_pagados'    => true,
+        ]);
 
         $exp->update(['estado' => 'cerrado']);
         // Simular re-guardado en estado cerrado
