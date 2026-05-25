@@ -615,7 +615,11 @@ public static function canDelete(Model $record): bool
 
     public static function canEdit(Model $record): bool
     {
-        return true;
+        $user = Auth::user();
+        if (! $user) return false;
+        if ($user->hasRole('super_admin')) return true;
+        // Asesor solo puede editar sus propios expedientes
+        return $user->hasRole('asesor') && $record->asesor_id === $user->id;
     }
 
     public static function table(Table $table): Table

@@ -20,7 +20,7 @@
             @endforeach
         </div>
         <div class="mt-12 text-center">
-            <a href="https://wa.me/527711910395?text=Quiero%20iniciar%20mi%20trámite" target="_blank" rel="noopener noreferrer" class="btn-gold">
+            <a href="https://wa.me/{{ setting('whatsapp_1', '527711910395') }}?text=Quiero%20iniciar%20mi%20trámite" target="_blank" rel="noopener noreferrer" class="btn-gold">
                 Iniciar mi trámite ahora
             </a>
         </div>

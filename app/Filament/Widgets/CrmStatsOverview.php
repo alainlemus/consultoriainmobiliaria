@@ -31,7 +31,7 @@ class CrmStatsOverview extends BaseWidget
 
         $prospectoNuevos = Contacto::where('estado_prospecto', 'nuevo')->count();
 
-        $comisionesPendientes = Comision::where('estado', 'pendiente')->sum('monto_comision');
+        $comisionesPendientes = Comision::where('estado', 'aprobada')->sum('monto_comision');
 
         return [
             Stat::make('Expedientes activos', $activos)

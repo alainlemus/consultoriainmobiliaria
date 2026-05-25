@@ -75,6 +75,7 @@ class PostResource extends Resource
                 Forms\Components\FileUpload::make('imagen')
                     ->label('Imagen destacada')
                     ->image()
+                    ->disk('public')
                     ->directory('posts')
                     ->columnSpanFull(),
 
