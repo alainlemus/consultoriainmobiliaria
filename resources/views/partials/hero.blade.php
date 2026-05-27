@@ -1,5 +1,10 @@
 <section class="relative min-h-screen flex items-center overflow-hidden">
-    <div class="absolute inset-0 z-0 bg-dark-800" style="background-image:url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1600&q=80');background-size:cover;background-position:center;"></div>
+    @php
+        $heroImage = setting('hero_image')
+            ? asset('storage/' . setting('hero_image'))
+            : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1600&q=80';
+    @endphp
+    <div class="absolute inset-0 z-0 bg-dark-800" style="background-image:url('{{ $heroImage }}');background-size:cover;background-position:center;"></div>
     <div class="absolute inset-0 bg-gradient-to-r from-dark-900 via-dark-900/85 to-dark-800/50 z-10"></div>
 
     <div class="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-44">

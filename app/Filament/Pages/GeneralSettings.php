@@ -29,7 +29,7 @@ class GeneralSettings extends Page
     public function mount(): void
     {
         $claves = [
-            'logo', 'favicon', 'login_image',
+            'logo', 'favicon', 'login_image', 'hero_image',
             'telefono_1', 'telefono_2',
             'whatsapp_1', 'whatsapp_2',
             'oficina_principal', 'correo_contacto',
@@ -70,6 +70,15 @@ class GeneralSettings extends Page
                         ->directory('site')
                         ->columnSpanFull()
                         ->helperText('Imagen que aparece en el panel lateral del login. Recomendado: relación 3:4 o 9:16, mínimo 800px de alto.'),
+
+                    Forms\Components\FileUpload::make('hero_image')
+                        ->label('Imagen de fondo del Hero (portada)')
+                        ->image()
+                        ->imagePreviewHeight('120')
+                        ->disk('public')
+                        ->directory('site')
+                        ->columnSpanFull()
+                        ->helperText('Imagen principal de la portada del sitio. Recomendado: WebP, 1280×720px, menos de 200 KB.'),
                 ])->columns(2),
 
                 \Filament\Schemas\Components\Section::make('Contacto')->schema([
