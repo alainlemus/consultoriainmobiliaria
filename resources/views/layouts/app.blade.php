@@ -174,6 +174,24 @@
     }
     </script>
 
+    {{-- JSON-LD WebSite (Sitelinks Search Box) --}}
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org",
+        "@@type": "WebSite",
+        "name": "{{ setting('site_name', 'Consultoría Inmobiliaria') }}",
+        "url": "{{ config('app.url') }}",
+        "potentialAction": {
+            "@@type": "SearchAction",
+            "target": {
+                "@@type": "EntryPoint",
+                "urlTemplate": "{{ config('app.url') }}/propiedades?buscar={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+
 <x-env-ribbon />
 </body>
 </html>
