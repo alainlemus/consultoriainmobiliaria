@@ -19,6 +19,7 @@
         "simplesoftwareio/simple-qrcode": "^4.2"
     },
     "require-dev": {
+        "barryvdh/laravel-debugbar": "^4.2",
         "fakerphp/faker": "^1.23",
         "filament/upgrade": "^5.0",
         "laravel-lang/common": "^6.8",

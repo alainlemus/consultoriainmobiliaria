@@ -100,7 +100,8 @@ class AdminPanelProvider extends PanelProvider
 
         if ($logo) {
             $panel->brandLogo(asset('storage/' . $logo))
-                  ->brandLogoHeight('2.5rem');
+                ->brandName('Consultoría Inmobiliaria')
+                ->brandLogoHeight('2.5rem');
         }
 
         if ($favicon) {
@@ -111,7 +112,7 @@ class AdminPanelProvider extends PanelProvider
             PanelsRenderHook::AUTH_LOGIN_FORM_BEFORE,
             fn (): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(
                 Blade::render(
-                    '<div class="text-center mb-4 leading-tight">
+                    '<div class="mb-4 leading-tight text-center">
                         <span class="block text-xl font-semibold tracking-widest uppercase" style="color: #9ca3af;">Consultoría</span>
                         <span class="block text-xl font-bold tracking-wider uppercase" style="color: #B8960C;">Inmobiliaria</span>
                     </div>',
@@ -124,7 +125,7 @@ class AdminPanelProvider extends PanelProvider
             PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
             fn (): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(
                 Blade::render(
-                    '<p class="text-center text-xs mt-6" style="color: #6b7280;">v{{ $version }}</p>',
+                    '<p class="mt-6 text-xs text-center" style="color: #6b7280;">v{{ $version }}</p>',
                     ['version' => config('app.version', '1.0.0')]
                 )
             )
