@@ -108,8 +108,8 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex justify-end gap-2">
-                                        {{-- Obtener QR --}}
-                                        @if(in_array($status, ['qr', 'STARTING', 'starting', 'scan_qr_code']))
+                                        {{-- Obtener QR: mostrar si NO está conectada --}}
+                                        @if(! in_array($status, ['ready', 'WORKING']))
                                             <x-filament::button
                                                 size="xs"
                                                 color="warning"
