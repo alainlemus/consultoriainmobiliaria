@@ -106,7 +106,10 @@ class ExpedienteResource extends Resource
                         ->schema([
                             // ── Stepper de progreso ───────────────────────
                             SchemaView::make('filament.components.expediente-stepper')
-                                ->viewData(fn ($livewire) => ['record' => $livewire->getRecord()])
+                                ->viewData(fn ($livewire) => [
+                                    'record'       => $livewire->getRecord(),
+                                    'etapaActivaId' => $livewire->data['etapa_tramite_id'] ?? $livewire->getRecord()?->etapa_tramite_id,
+                                ])
                                 ->columnSpanFull()
                                 ->visible(fn ($livewire) => $livewire->getRecord() !== null),
 
@@ -126,13 +129,19 @@ class ExpedienteResource extends Resource
                                 ]),
                             Forms\Components\Select::make('etapa_tramite_id')
                                 ->label('Etapa actual')
-                                ->options(fn (\Filament\Schemas\Components\Utilities\Get $get, $record) =>
-                                    EtapaTramite::where('tipo_tramite_id', $get('tipo_tramite_id') ?? $record?->tipo_tramite_id)
+                                ->options(function (\Filament\Schemas\Components\Utilities\Get $get, $livewire) {
+                                    $tipoId = $get('tipo_tramite_id')
+                                        ?? $livewire->getRecord()?->tipo_tramite_id;
+
+                                    if (! $tipoId) return [];
+
+                                    return EtapaTramite::where('tipo_tramite_id', $tipoId)
                                         ->orderBy('orden')
-                                        ->pluck('nombre', 'id')
-                                )
+                                        ->pluck('nombre', 'id');
+                                })
                                 ->required()
                                 ->searchable()
+                                ->live()
                                 ->disabled(fn () => ! auth()->user()?->hasRole('super_admin'))
                                 ->dehydrated(fn () => auth()->user()?->hasRole('super_admin'))
                                 ->validationMessages([
