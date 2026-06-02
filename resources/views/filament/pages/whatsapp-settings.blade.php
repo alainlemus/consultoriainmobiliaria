@@ -11,6 +11,16 @@
 
             <x-filament::button
                 type="button"
+                color="warning"
+                size="lg"
+                icon="heroicon-o-cpu-chip"
+                wire:click="detectarHostname"
+            >
+                Auto-detectar hostname
+            </x-filament::button>
+
+            <x-filament::button
+                type="button"
                 color="gray"
                 size="lg"
                 icon="heroicon-o-arrow-path"

@@ -72,13 +72,7 @@ class WhatsAppSettings extends Page
                             ->label('Hostname del contenedor')
                             ->placeholder('ej: eac0b6eeada9')
                             ->required()
-                            ->maxLength(100)
-                            ->suffixAction(
-                                Forms\Components\Actions\Action::make('detectar_hostname')
-                                    ->label('Auto-detectar')
-                                    ->icon('heroicon-o-cpu-chip')
-                                    ->action('detectarHostname')
-                            ),
+                            ->maxLength(100),
 
                         Forms\Components\TextInput::make('owa_webhook_port')
                             ->label('Puerto')
