@@ -38,7 +38,7 @@ class ExpedienteObserver
         if ($expediente->wasChanged('etapa_tramite_id') && $expediente->asesor) {
             $etapaAnterior  = $expediente->getOriginal('etapa_tramite_id');
             $nombreAnterior = \App\Models\EtapaTramite::find($etapaAnterior)?->nombre ?? 'Anterior';
-            $nombreNueva    = $expediente->etapa?->nombre ?? 'Nueva etapa';
+            $nombreNueva    = \App\Models\EtapaTramite::find($expediente->etapa_tramite_id)?->nombre ?? 'Nueva etapa';
 
             // Push notification al asesor
             $expediente->asesor->notify(new EtapaExpedienteCambiada(
