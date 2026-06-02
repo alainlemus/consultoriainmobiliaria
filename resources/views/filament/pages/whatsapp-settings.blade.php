@@ -108,20 +108,33 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex justify-end gap-2">
-                                        {{-- Obtener QR: mostrar si NO está conectada --}}
-                                        @if(! in_array($status, ['ready', 'WORKING']))
-                                            <x-filament::button
-                                                size="xs"
-                                                color="warning"
-                                                icon="heroicon-o-qr-code"
-                                                wire:click="obtenerQr('{{ $id }}')"
-                                            >
-                                                Ver QR
-                                            </x-filament::button>
-                                        @endif
+                                        {{-- Sesión activa: solo mostrar logout --}}
+                                        @if($esActiva)
+                                            <span class="inline-flex items-center text-xs text-gray-400 dark:text-gray-500 italic mr-2">Sesión en uso</span>
+                                            @if($status === 'ready' || $status === 'WORKING')
+                                                <x-filament::button
+                                                    size="xs"
+                                                    color="danger"
+                                                    icon="heroicon-o-arrow-right-on-rectangle"
+                                                    wire:click="desconectarSesion('{{ $id }}')"
+                                                    wire:confirm="¿Desconectar este número? El chatbot dejará de funcionar hasta que vincules otro."
+                                                >
+                                                    Desconectar
+                                                </x-filament::button>
+                                            @endif
+                                        @else
+                                            {{-- Sesiones no activas --}}
+                                            @if(! in_array($status, ['ready', 'WORKING']))
+                                                <x-filament::button
+                                                    size="xs"
+                                                    color="warning"
+                                                    icon="heroicon-o-qr-code"
+                                                    wire:click="obtenerQr('{{ $id }}')"
+                                                >
+                                                    Ver QR
+                                                </x-filament::button>
+                                            @endif
 
-                                        {{-- Usar esta sesión --}}
-                                        @if(! $esActiva)
                                             <x-filament::button
                                                 size="xs"
                                                 color="success"
@@ -130,10 +143,7 @@
                                             >
                                                 Usar
                                             </x-filament::button>
-                                        @endif
 
-                                        {{-- Eliminar --}}
-                                        @if(! $esActiva)
                                             <x-filament::button
                                                 size="xs"
                                                 color="danger"

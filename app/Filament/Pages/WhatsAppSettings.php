@@ -304,6 +304,23 @@ class WhatsAppSettings extends Page
     /**
      * Elimina una sesión de OpenWA.
      */
+    public function desconectarSesion(string $sesionId): void
+    {
+        try {
+            $apiKey  = config('services.openwa.api_key');
+            $baseUrl = config('services.openwa.url');
+
+            Http::withHeader('x-api-key', $apiKey)
+                ->timeout(5)
+                ->post("{$baseUrl}/api/sessions/{$sesionId}/stop");
+
+            $this->cargarSesiones();
+            Notification::make()->title('Sesión desconectada. Vincula un nuevo número con Ver QR.')->success()->send();
+        } catch (\Throwable $e) {
+            Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
+        }
+    }
+
     public function eliminarSesion(string $sesionId): void
     {
         // No permitir eliminar la sesión activa
