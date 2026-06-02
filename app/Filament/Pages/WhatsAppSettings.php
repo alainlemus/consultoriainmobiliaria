@@ -18,7 +18,7 @@ class WhatsAppSettings extends Page
     }
 
     protected static string|\BackedEnum|null $navigationIcon  = 'heroicon-o-chat-bubble-left-ellipsis';
-    protected static ?string $navigationLabel = 'WhatsApp';
+    protected static ?string $navigationLabel = 'WhatsApp Configuración';
     protected static ?string $title           = 'Configuración WhatsApp';
     protected static string|\UnitEnum|null $navigationGroup  = 'Configuración del sitio';
     protected static ?int $navigationSort     = 50;
