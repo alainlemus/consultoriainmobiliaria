@@ -3,18 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Contacto;
-use App\Models\User;
-use App\Services\WhatsAppService;
+use App\Services\WhatsappChatbotService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
 {
-    /**
-     * Recibe eventos de OpenWA vía webhook.
-     * Solo procesa mensajes entrantes de números desconocidos (nuevos prospectos).
-     */
+    public function __construct(
+        private WhatsappChatbotService $chatbot
+    ) {}
+
     public function handle(Request $request): \Illuminate\Http\JsonResponse
     {
         // Verificar secret si está configurado
@@ -31,8 +30,7 @@ class WhatsAppWebhookController extends Controller
         $event = $request->input('event');
         $data  = $request->input('data', []);
 
-        // Log completo para debugging de estructura del payload
-        Log::info("[WhatsApp Webhook] Payload completo: " . json_encode($request->all()));
+        Log::info("[WhatsApp Webhook] Evento: {$event}");
 
         if ($event === 'message.received') {
             $this->procesarMensajeEntrante($data);
@@ -49,50 +47,30 @@ class WhatsAppWebhookController extends Controller
         // Ignorar grupos
         if (str_contains($chatId, '@g.us')) return;
 
-        // Ignorar mensajes propios (enviados por nosotros)
+        // Ignorar mensajes propios
         if (($data['fromMe'] ?? false) === true) return;
 
-        // Si viene en formato @lid, resolver al @c.us real vía API de contactos
+        // Ignorar si no hay texto (stickers, imágenes, etc.)
+        $mensaje = trim($data['body'] ?? '');
+
+        // Si viene en formato @lid, resolver al @c.us real
+        $pushName = $data['notifyName'] ?? $data['pushName'] ?? null;
         if (str_contains($chatId, '@lid')) {
             $resolved = $this->resolverLidACus($chatId);
             if (! $resolved) return;
             $chatId   = $resolved['id'];
-            // Usar el nombre del contacto si no viene en el mensaje
-            if (! ($data['notifyName'] ?? null) && ! ($data['pushName'] ?? null)) {
-                $data['pushName'] = $resolved['pushName'] ?? $resolved['name'] ?? null;
+            if (! $pushName) {
+                $pushName = $resolved['pushName'] ?? $resolved['name'] ?? null;
             }
         }
 
         if (! str_contains($chatId, '@c.us')) return;
 
-        // Extraer teléfono limpio: "521XXXXXXXXXX@c.us" → "5531293712"
         $telefono = $this->extraerTelefono($chatId);
         if (! $telefono) return;
 
-        $pushName = $data['notifyName'] ?? $data['pushName'] ?? null;
-
-        // Verificar si ya existe un contacto con ese teléfono
-        $existe = Contacto::where('telefono', $telefono)->exists();
-
-        if ($existe) {
-            Log::info("[WhatsApp Webhook] Contacto ya existe para {$telefono}, ignorando.");
-            return;
-        }
-
-        // Crear nuevo prospecto
-        $nombre = $this->parsearNombre($pushName);
-
-        $contacto = Contacto::create([
-            'nombre'                => $nombre['nombre'],
-            'apellidos'             => $nombre['apellidos'],
-            'telefono'              => $telefono,
-            'origen'                => 'whatsapp',
-            'estado_prospecto'      => 'nuevo',
-            'fecha_primer_contacto' => now()->toDateString(),
-            'notas'                 => "Prospecto generado automáticamente desde WhatsApp.\nPrimer mensaje: " . ($data['body'] ?? '—'),
-        ]);
-
-        Log::info("[WhatsApp Webhook] Nuevo prospecto creado: {$contacto->id} — {$telefono}");
+        // Delegar al chatbot (maneja estado, flujo y creación del prospecto)
+        $this->chatbot->procesar($chatId, $telefono, $mensaje ?: null, $pushName);
     }
 
     private function resolverLidACus(string $lidChatId): ?array
@@ -102,15 +80,14 @@ class WhatsAppWebhookController extends Controller
             $apiKey    = config('services.openwa.api_key');
             $url       = config('services.openwa.url');
 
-            $response = \Illuminate\Support\Facades\Http::withHeader('x-api-key', $apiKey)
+            $response = Http::withHeader('x-api-key', $apiKey)
                 ->timeout(5)
                 ->get("{$url}/api/sessions/{$sessionId}/contacts/{$lidChatId}");
 
             if ($response->successful()) {
-                $contact = $response->json();
-                $contactId = $contact['id'] ?? null; // ej: "5217751557436@c.us"
+                $contact   = $response->json();
+                $contactId = $contact['id'] ?? null;
                 if ($contactId && str_contains($contactId, '@c.us')) {
-                    Log::info("[WhatsApp Webhook] @lid {$lidChatId} resuelto a {$contactId}");
                     return [
                         'id'       => $contactId,
                         'name'     => $contact['name'] ?? null,
@@ -127,34 +104,19 @@ class WhatsAppWebhookController extends Controller
 
     private function extraerTelefono(string $chatId): ?string
     {
-        // chatId formato: "521XXXXXXXXXX@c.us"
         $numero = explode('@', $chatId)[0] ?? null;
         if (! $numero || ! is_numeric($numero)) return null;
 
-        // Normalizar a 10 dígitos mexicanos
         if (strlen($numero) === 13 && str_starts_with($numero, '521')) {
-            return substr($numero, 3); // quitar 521
+            return substr($numero, 3);
         }
         if (strlen($numero) === 12 && str_starts_with($numero, '52')) {
-            return substr($numero, 2); // quitar 52
+            return substr($numero, 2);
         }
         if (strlen($numero) === 10) {
             return $numero;
         }
 
-        return $numero; // devolver tal cual si no es formato mexicano
-    }
-
-    private function parsearNombre(?string $pushName): array
-    {
-        if (! $pushName) {
-            return ['nombre' => 'Prospecto', 'apellidos' => 'WhatsApp'];
-        }
-
-        $partes = explode(' ', trim($pushName), 2);
-        return [
-            'nombre'    => $partes[0],
-            'apellidos' => $partes[1] ?? '',
-        ];
+        return $numero;
     }
 }
