@@ -262,13 +262,29 @@ class WhatsAppSettings extends Page
      */
     public function eliminarSesion(string $sesionId): void
     {
+        // No permitir eliminar la sesión activa
+        $sesionActiva = setting('owa_session_id', config('services.openwa.session'));
+        if ($sesionId === $sesionActiva) {
+            Notification::make()->title('No puedes eliminar la sesión activa.')->warning()->send();
+            return;
+        }
+
         try {
-            Http::withHeader('x-api-key', config('services.openwa.api_key'))
+            $response = Http::withHeader('x-api-key', config('services.openwa.api_key'))
                 ->timeout(5)
                 ->delete(config('services.openwa.url') . "/api/sessions/{$sesionId}");
 
-            $this->cargarSesiones();
-            Notification::make()->title('Sesión eliminada.')->success()->send();
+            // 204 No Content = éxito
+            if ($response->status() === 204 || $response->successful()) {
+                $this->cargarSesiones();
+                Notification::make()->title('Sesión eliminada correctamente.')->success()->send();
+            } else {
+                Notification::make()
+                    ->title('No se pudo eliminar la sesión.')
+                    ->body('Código: ' . $response->status() . ' — ' . $response->body())
+                    ->danger()
+                    ->send();
+            }
         } catch (\Throwable $e) {
             Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
         }

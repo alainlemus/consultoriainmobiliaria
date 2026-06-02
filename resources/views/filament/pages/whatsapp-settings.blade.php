@@ -79,7 +79,7 @@
                                 $id       = $sesion['id'] ?? '—';
                                 $nombre   = $sesion['name'] ?? $sesion['id'] ?? '—';
                                 $status   = $sesion['status'] ?? 'unknown';
-                                $telefono = $sesion['me']['id'] ?? $sesion['phoneNumber'] ?? '';
+                                $telefono = $sesion['phone'] ?? '';
                                 $esActiva = $id === setting('owa_session_id', config('services.openwa.session'));
 
                                 $colorStatus = match($status) {
