@@ -170,9 +170,11 @@ class TipoTramiteSeeder extends Seeder
             ['nombre' => 'Dispersión y cobro',           'descripcion' => 'FOVISSSTE libera el pago al vendedor. Cobro de honorarios.',    'orden' => 7],
         ];
 
-        // Tipos de crédito hipotecario nuevos que no tienen etapas aún
+        // Tipos de crédito hipotecario — todos los que usan el flujo estándar de 7 etapas
         $tiposNuevos = [
+            1  => 'fovissste-tradicional',
             2  => 'fovissste-pensionados',
+            3  => 'fovissste-conyugal',
             7  => 'fovissste-infonavit-individual',
             8  => 'fovissste-para-todos',
             9  => 'fovissste-construyes',
@@ -196,10 +198,8 @@ class TipoTramiteSeeder extends Seeder
                     ]));
                 }
             }
-        }
+         }
 
-        // Actualizar etapas del Crédito Conyugal (ID 3, antes "Combo FOVISSSTE+INFONAVIT")
-        // Sus etapas actuales son válidas, solo actualizamos el nombre del tipo en la relación
-        // (nada que cambiar en etapas, el tipo ya fue renombrado)
-    }
+         // Crédito Conyugal (ID 3) ahora se crea junto con los demás en $tiposNuevos arriba.
+     }
 }
