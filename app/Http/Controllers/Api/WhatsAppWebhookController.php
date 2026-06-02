@@ -76,7 +76,7 @@ class WhatsAppWebhookController extends Controller
     private function resolverLidACus(string $lidChatId): ?array
     {
         try {
-            $sessionId = config('services.openwa.session');
+            $sessionId = setting('owa_session_id') ?: config('services.openwa.session');
             $apiKey    = config('services.openwa.api_key');
             $url       = config('services.openwa.url');
 

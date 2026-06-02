@@ -19,7 +19,8 @@ class WhatsAppService
 
     private static function session(): string
     {
-        return config('services.openwa.session', '');
+        // BD tiene prioridad (configurable desde el panel) → fallback a .env
+        return setting('owa_session_id') ?: config('services.openwa.session', '');
     }
 
     /**
