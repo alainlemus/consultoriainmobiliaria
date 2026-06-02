@@ -333,14 +333,6 @@ class WhatsAppSettings extends Page
         return null;
     }
 
-            Log::warning("[WhatsApp Settings] Error al registrar webhook: " . $response->body());
-        } catch (\Throwable $e) {
-            Log::error("[WhatsApp Settings] Excepción: " . $e->getMessage());
-        }
-
-        return null;
-    }
-
     protected function getFormActions(): array
     {
         return [];
