@@ -9,18 +9,14 @@ use App\Models\User;
 use App\Notifications\ExpedienteCerrado;
 use App\Notifications\EtapaExpedienteCambiada;
 use App\Notifications\NuevoExpedienteCreado;
+use App\Services\WhatsAppService;
 
 class ExpedienteObserver
 {
-    /**
-     * Al crear un expediente: generar checklist de documentos,
-     * notificar a todos los super_admin y marcar el contacto como en_tramite.
-     */
     public function created(Expediente $expediente): void
     {
         $this->sincronizarChecklist($expediente);
 
-        // El contacto ya no es un prospecto — tiene expediente activo
         if ($expediente->contacto_id) {
             \App\Models\Contacto::where('id', $expediente->contacto_id)
                 ->whereNotIn('estado_prospecto', ['convertido', 'descartado'])
@@ -32,28 +28,30 @@ class ExpedienteObserver
             ->each(fn (User $admin) => $admin->notify(new NuevoExpedienteCreado($expediente)));
     }
 
-    /**
-     * Al actualizar: si cambia tipo_tramite_id o vivienda_tipo,
-     * re-sincronizar el checklist. También manejar cierre para comisión.
-     */
     public function updated(Expediente $expediente): void
     {
-        // Re-sincronizar checklist si cambian los campos que lo determinan
         if ($expediente->wasChanged(['tipo_tramite_id', 'vivienda_tipo'])) {
             $this->sincronizarChecklist($expediente);
         }
 
         // Notificar al asesor si la etapa cambia
         if ($expediente->wasChanged('etapa_tramite_id') && $expediente->asesor) {
-            $etapaAnterior = $expediente->getOriginal('etapa_tramite_id');
+            $etapaAnterior  = $expediente->getOriginal('etapa_tramite_id');
             $nombreAnterior = \App\Models\EtapaTramite::find($etapaAnterior)?->nombre ?? 'Anterior';
             $nombreNueva    = $expediente->etapa?->nombre ?? 'Nueva etapa';
 
+            // Push notification al asesor
             $expediente->asesor->notify(new EtapaExpedienteCambiada(
-                expediente:     $expediente,
-                etapaAnterior:  $nombreAnterior,
-                etapaNueva:     $nombreNueva,
+                expediente:    $expediente,
+                etapaAnterior: $nombreAnterior,
+                etapaNueva:    $nombreNueva,
             ));
+
+            // WhatsApp al asesor si tiene teléfono
+            $this->notificarAsesorWhatsApp($expediente, $nombreAnterior, $nombreNueva);
+
+            // WhatsApp al acreditado para informarle del avance
+            $this->notificarAcreditadoWhatsApp($expediente, $nombreNueva);
         }
 
         // Generar comisión al cerrar expediente y notificar al asesor
@@ -62,14 +60,13 @@ class ExpedienteObserver
             $expediente->estado === 'cerrado' &&
             $expediente->asesor_id &&
             $expediente->honorarios_monto > 0 &&
-            $expediente->honorarios_pagados === true          // BUG-05: solo si ya se cobró
+            $expediente->honorarios_pagados === true
         ) {
             $existe = Comision::where('expediente_id', $expediente->id)->exists();
 
             if (! $existe) {
                 $porcentaje    = (float) ($expediente->honorarios_porcentaje ?? 0);
                 $montoBase     = (float) $expediente->honorarios_monto;
-                // BUG-04: aplicar porcentaje real, no el 100%
                 $montoComision = $porcentaje > 0
                     ? round($montoBase * $porcentaje / 100, 2)
                     : $montoBase;
@@ -85,20 +82,61 @@ class ExpedienteObserver
                 ]);
             }
 
-            // Notificar al asesor que su expediente fue cerrado
             $expediente->asesor?->notify(new ExpedienteCerrado($expediente));
+
+            // WhatsApp de cierre al asesor
+            if ($expediente->asesor?->telefono) {
+                $folio   = $expediente->folio ?? "#{$expediente->id}";
+                $cliente = $expediente->acreditado_nombre;
+                WhatsAppService::sendText(
+                    $expediente->asesor->telefono,
+                    "🎉 *¡Expediente cerrado!*\n\n" .
+                    "Folio: *{$folio}*\n" .
+                    "Cliente: {$cliente}\n\n" .
+                    "La comisión ha sido generada. ¡Felicidades!"
+                );
+            }
         }
     }
 
-    /**
-     * Sincroniza (agrega los faltantes, no borra los existentes) el checklist
-     * de documentos según tipo de trámite y tipo de inmueble.
-     */
+    private function notificarAsesorWhatsApp(Expediente $expediente, string $etapaAnterior, string $etapaNueva): void
+    {
+        $telefono = $expediente->asesor?->telefono;
+        if (! $telefono) return;
+
+        $folio   = $expediente->folio ?? "#{$expediente->id}";
+        $cliente = $expediente->acreditado_nombre;
+
+        WhatsAppService::sendText(
+            $telefono,
+            "📋 *Expediente actualizado*\n\n" .
+            "Folio: *{$folio}*\n" .
+            "Cliente: {$cliente}\n\n" .
+            "Etapa anterior: {$etapaAnterior}\n" .
+            "Nueva etapa: *{$etapaNueva}*"
+        );
+    }
+
+    private function notificarAcreditadoWhatsApp(Expediente $expediente, string $etapaNueva): void
+    {
+        $telefono = $expediente->acreditado_telefono;
+        if (! $telefono) return;
+
+        $folio   = $expediente->folio ?? "#{$expediente->id}";
+        $cliente = $expediente->acreditado_nombre;
+
+        WhatsAppService::sendText(
+            $telefono,
+            "Hola *{$cliente}* 👋\n\n" .
+            "Tu trámite *{$folio}* ha avanzado a la etapa:\n" .
+            "➡️ *{$etapaNueva}*\n\n" .
+            "Si tienes dudas, comunícate con tu asesor."
+        );
+    }
+
     private function sincronizarChecklist(Expediente $expediente): void
     {
-        if (! $expediente->tipo_tramite_id) {
-            return;
-        }
+        if (! $expediente->tipo_tramite_id) return;
 
         $catalogo = DocumentoExpediente::catalogoPara(
             $expediente->tipo_tramite_id,

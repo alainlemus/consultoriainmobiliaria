@@ -6,6 +6,7 @@ use App\Models\Contacto;
 use App\Models\User;
 use App\Notifications\NuevoProspectoCreado;
 use App\Notifications\ProspectoAsignado;
+use App\Services\WhatsAppService;
 
 class ContactoObserver
 {
@@ -17,6 +18,9 @@ class ContactoObserver
         // 1. Notificar al asesor asignado
         if ($contacto->asesor_id) {
             $contacto->asesor?->notify(new ProspectoAsignado($contacto));
+
+            // WhatsApp al asesor con datos del nuevo prospecto
+            $this->notificarAsesorNuevoProspecto($contacto);
         }
 
         // 2. Notificar a todos los super_admin
@@ -50,6 +54,28 @@ class ContactoObserver
         // Notificar al asesor si cambia la asignación
         if ($contacto->wasChanged('asesor_id') && $contacto->asesor_id !== null) {
             $contacto->asesor?->notify(new ProspectoAsignado($contacto));
+
+            // WhatsApp al nuevo asesor asignado
+            $this->notificarAsesorNuevoProspecto($contacto);
         }
+    }
+
+    private function notificarAsesorNuevoProspecto(Contacto $contacto): void
+    {
+        $telefono = $contacto->asesor?->telefono;
+        if (! $telefono) return;
+
+        $nombre  = trim("{$contacto->nombre} {$contacto->apellidos}");
+        $celular = $contacto->celular ?? $contacto->telefono ?? '—';
+        $origen  = $contacto->origen ?? '—';
+
+        WhatsAppService::sendText(
+            $telefono,
+            "🏠 *Nuevo prospecto asignado*\n\n" .
+            "Nombre: *{$nombre}*\n" .
+            "Teléfono: {$celular}\n" .
+            "Origen: {$origen}\n\n" .
+            "Entra al CRM para ver todos los detalles."
+        );
     }
 }
