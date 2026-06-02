@@ -43,9 +43,9 @@ class WhatsAppWebhookController extends Controller
 
     private function procesarMensajeEntrante(array $data): void
     {
-        // Ignorar mensajes de grupos
+        // Solo procesar mensajes de contactos reales (@c.us), ignorar grupos (@g.us) y dispositivos vinculados (@lid)
         $chatId = $data['from'] ?? $data['chatId'] ?? null;
-        if (! $chatId || str_contains($chatId, '@g.us')) return;
+        if (! $chatId || ! str_contains($chatId, '@c.us')) return;
 
         // Ignorar mensajes propios (enviados por nosotros)
         if (($data['fromMe'] ?? false) === true) return;
