@@ -1,0 +1,116 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Contacto;
+use App\Models\User;
+use App\Services\WhatsAppService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class WhatsAppWebhookController extends Controller
+{
+    /**
+     * Recibe eventos de OpenWA vía webhook.
+     * Solo procesa mensajes entrantes de números desconocidos (nuevos prospectos).
+     */
+    public function handle(Request $request): \Illuminate\Http\JsonResponse
+    {
+        // Verificar secret si está configurado
+        $secret = config('services.openwa.webhook_secret');
+        if ($secret) {
+            $signature = $request->header('X-Webhook-Signature');
+            $expected  = hash_hmac('sha256', $request->getContent(), $secret);
+            if (! hash_equals($expected, (string) $signature)) {
+                Log::warning('[WhatsApp Webhook] Firma inválida');
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+        }
+
+        $event = $request->input('event');
+        $data  = $request->input('data', []);
+
+        Log::info("[WhatsApp Webhook] Evento: {$event}");
+
+        if ($event === 'message.received') {
+            $this->procesarMensajeEntrante($data);
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    private function procesarMensajeEntrante(array $data): void
+    {
+        // Ignorar mensajes de grupos
+        $chatId = $data['from'] ?? $data['chatId'] ?? null;
+        if (! $chatId || str_contains($chatId, '@g.us')) return;
+
+        // Ignorar mensajes propios (enviados por nosotros)
+        if (($data['fromMe'] ?? false) === true) return;
+
+        // Extraer teléfono limpio: "521XXXXXXXXXX@c.us" → "5531293712"
+        $telefono = $this->extraerTelefono($chatId);
+        if (! $telefono) return;
+
+        $pushName = $data['notifyName'] ?? $data['pushName'] ?? null;
+
+        // Verificar si ya existe un contacto con ese teléfono
+        $existe = Contacto::where('celular', $telefono)
+            ->orWhere('telefono', $telefono)
+            ->exists();
+
+        if ($existe) {
+            Log::info("[WhatsApp Webhook] Contacto ya existe para {$telefono}, ignorando.");
+            return;
+        }
+
+        // Crear nuevo prospecto
+        $nombre = $this->parsearNombre($pushName);
+
+        $contacto = Contacto::create([
+            'nombre'                => $nombre['nombre'],
+            'apellidos'             => $nombre['apellidos'],
+            'celular'               => $telefono,
+            'origen'                => 'whatsapp',
+            'estado_prospecto'      => 'nuevo',
+            'fecha_primer_contacto' => now()->toDateString(),
+            'notas'                 => "Prospecto generado automáticamente desde WhatsApp.\nPrimer mensaje: " . ($data['body'] ?? '—'),
+        ]);
+
+        Log::info("[WhatsApp Webhook] Nuevo prospecto creado: {$contacto->id} — {$telefono}");
+    }
+
+    private function extraerTelefono(string $chatId): ?string
+    {
+        // chatId formato: "521XXXXXXXXXX@c.us"
+        $numero = explode('@', $chatId)[0] ?? null;
+        if (! $numero || ! is_numeric($numero)) return null;
+
+        // Normalizar a 10 dígitos mexicanos
+        if (strlen($numero) === 13 && str_starts_with($numero, '521')) {
+            return substr($numero, 3); // quitar 521
+        }
+        if (strlen($numero) === 12 && str_starts_with($numero, '52')) {
+            return substr($numero, 2); // quitar 52
+        }
+        if (strlen($numero) === 10) {
+            return $numero;
+        }
+
+        return $numero; // devolver tal cual si no es formato mexicano
+    }
+
+    private function parsearNombre(?string $pushName): array
+    {
+        if (! $pushName) {
+            return ['nombre' => 'Prospecto', 'apellidos' => 'WhatsApp'];
+        }
+
+        $partes = explode(' ', trim($pushName), 2);
+        return [
+            'nombre'    => $partes[0],
+            'apellidos' => $partes[1] ?? '',
+        ];
+    }
+}
