@@ -31,7 +31,8 @@ class WhatsAppWebhookController extends Controller
         $event = $request->input('event');
         $data  = $request->input('data', []);
 
-        Log::info("[WhatsApp Webhook] Evento: {$event}");
+        // Log completo para debugging de estructura del payload
+        Log::info("[WhatsApp Webhook] Payload completo: " . json_encode($request->all()));
 
         if ($event === 'message.received') {
             $this->procesarMensajeEntrante($data);
