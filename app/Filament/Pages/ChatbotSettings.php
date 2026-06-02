@@ -3,10 +3,14 @@
 namespace App\Filament\Pages;
 
 use App\Models\ChatbotPaso;
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
-use Filament\Schemas\Schema;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -70,11 +74,11 @@ class ChatbotSettings extends Page implements HasTable
                     ->tooltip(fn ($record) => $record->mensaje),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->form($this->formPaso())
                     ->after(fn () => cache()->forget('chatbot_pasos_activos')),
 
-                Tables\Actions\Action::make('toggle')
+                Action::make('toggle')
                     ->label(fn ($record) => $record->activo ? 'Desactivar' : 'Activar')
                     ->icon(fn ($record) => $record->activo ? 'heroicon-o-eye-slash' : 'heroicon-o-eye')
                     ->color(fn ($record) => $record->activo ? 'warning' : 'success')
@@ -86,11 +90,11 @@ class ChatbotSettings extends Page implements HasTable
                             ->success()->send();
                     }),
 
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->after(fn () => cache()->forget('chatbot_pasos_activos')),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                CreateAction::make()
                     ->label('Agregar paso')
                     ->form($this->formPaso())
                     ->mutateFormDataUsing(function (array $data) {
@@ -108,7 +112,7 @@ class ChatbotSettings extends Page implements HasTable
     private function formPaso(): array
     {
         return [
-            Forms\Components\Grid::make(2)->schema([
+            Grid::make(2)->schema([
                 Forms\Components\TextInput::make('etiqueta')
                     ->label('Nombre del paso (visible solo en el panel)')
                     ->required()
