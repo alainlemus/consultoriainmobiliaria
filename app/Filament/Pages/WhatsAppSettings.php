@@ -191,7 +191,7 @@ class WhatsAppSettings extends Page
             $apiKey  = config('services.openwa.api_key');
             $baseUrl = config('services.openwa.url');
 
-            // Crear sesión
+            // 1. Crear sesión
             $resp = Http::withHeader('x-api-key', $apiKey)
                 ->timeout(10)
                 ->post("{$baseUrl}/api/sessions", ['name' => $nombre]);
@@ -203,19 +203,38 @@ class WhatsAppSettings extends Page
 
             $sesionId = $resp->json('id');
 
-            // Obtener QR
-            $qrResp = Http::withHeader('x-api-key', $apiKey)
+            // 2. Iniciar la sesión (necesario antes de pedir el QR)
+            Http::withHeader('x-api-key', $apiKey)
                 ->timeout(10)
-                ->get("{$baseUrl}/api/sessions/{$sesionId}/auth/qr");
+                ->post("{$baseUrl}/api/sessions/{$sesionId}/start");
 
-            if ($qrResp->successful()) {
-                $this->qrCodeData  = $qrResp->json('value') ?? $qrResp->json('qr');
-                $this->qrSesionId  = $sesionId;
-                $this->nuevaSesionNombre = '';
-                $this->cargarSesiones();
+            // 3. Esperar a que arranque y pedir el QR (reintentar hasta 3 veces)
+            $qrData = null;
+            for ($i = 0; $i < 3; $i++) {
+                sleep(3);
+                $qrResp = Http::withHeader('x-api-key', $apiKey)
+                    ->timeout(10)
+                    ->get("{$baseUrl}/api/sessions/{$sesionId}/auth/qr");
+
+                if ($qrResp->successful()) {
+                    $qrData = $qrResp->json('value') ?? $qrResp->json('qr') ?? $qrResp->json('data');
+                    if ($qrData) break;
+                }
+            }
+
+            $this->qrSesionId = $sesionId;
+            $this->nuevaSesionNombre = '';
+            $this->cargarSesiones();
+
+            if ($qrData) {
+                $this->qrCodeData = $qrData;
                 Notification::make()->title('Sesión creada. Escanea el QR con WhatsApp.')->success()->send();
             } else {
-                Notification::make()->title('Sesión creada pero no se obtuvo el QR. Recárgalo manualmente.')->warning()->send();
+                Notification::make()
+                    ->title('Sesión creada.')
+                    ->body('El QR está cargando. Presiona "Ver QR" en unos segundos.')
+                    ->warning()
+                    ->send();
             }
         } catch (\Throwable $e) {
             Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
@@ -228,15 +247,36 @@ class WhatsAppSettings extends Page
     public function obtenerQr(string $sesionId): void
     {
         try {
-            $response = Http::withHeader('x-api-key', config('services.openwa.api_key'))
+            $apiKey  = config('services.openwa.api_key');
+            $baseUrl = config('services.openwa.url');
+
+            // Verificar estado — si no está inicializada, arrancarla primero
+            $sesion = Http::withHeader('x-api-key', $apiKey)
+                ->timeout(5)
+                ->get("{$baseUrl}/api/sessions/{$sesionId}")
+                ->json();
+
+            $status = $sesion['status'] ?? '';
+            if (in_array($status, ['created', 'stopped', 'failed'])) {
+                Http::withHeader('x-api-key', $apiKey)
+                    ->timeout(10)
+                    ->post("{$baseUrl}/api/sessions/{$sesionId}/start");
+                sleep(3);
+            }
+
+            $response = Http::withHeader('x-api-key', $apiKey)
                 ->timeout(10)
-                ->get(config('services.openwa.url') . "/api/sessions/{$sesionId}/auth/qr");
+                ->get("{$baseUrl}/api/sessions/{$sesionId}/auth/qr");
 
             if ($response->successful()) {
-                $this->qrCodeData = $response->json('value') ?? $response->json('qr');
+                $this->qrCodeData = $response->json('value') ?? $response->json('qr') ?? $response->json('data');
                 $this->qrSesionId = $sesionId;
+
+                if (! $this->qrCodeData) {
+                    Notification::make()->title('Sesión iniciando, intenta de nuevo en unos segundos.')->warning()->send();
+                }
             } else {
-                Notification::make()->title('No se pudo obtener el QR.')->warning()->send();
+                Notification::make()->title('No se pudo obtener el QR: ' . $response->body())->danger()->send();
             }
         } catch (\Throwable $e) {
             Notification::make()->title('Error: ' . $e->getMessage())->danger()->send();
