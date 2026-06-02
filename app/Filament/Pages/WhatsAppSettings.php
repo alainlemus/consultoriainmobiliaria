@@ -217,10 +217,10 @@ class WhatsAppSettings extends Page
                 sleep(3);
                 $qrResp = Http::withHeader('x-api-key', $apiKey)
                     ->timeout(10)
-                    ->get("{$baseUrl}/api/sessions/{$sesionId}/auth/qr");
+                    ->get("{$baseUrl}/api/sessions/{$sesionId}/qr");
 
                 if ($qrResp->successful()) {
-                    $qrData = $qrResp->json('value') ?? $qrResp->json('qr') ?? $qrResp->json('data');
+                    $qrData = $qrResp->json('qrCode') ?? $qrResp->json('value') ?? $qrResp->json('qr');
                     if ($qrData) break;
                 }
             }
@@ -269,10 +269,10 @@ class WhatsAppSettings extends Page
 
             $response = Http::withHeader('x-api-key', $apiKey)
                 ->timeout(10)
-                ->get("{$baseUrl}/api/sessions/{$sesionId}/auth/qr");
+                ->get("{$baseUrl}/api/sessions/{$sesionId}/qr");
 
             if ($response->successful()) {
-                $this->qrCodeData = $response->json('value') ?? $response->json('qr') ?? $response->json('data');
+                $this->qrCodeData = $response->json('qrCode') ?? $response->json('value') ?? $response->json('qr');
                 $this->qrSesionId = $sesionId;
 
                 if (! $this->qrCodeData) {
