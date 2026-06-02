@@ -495,7 +495,7 @@ class ContactoResource extends Resource
                         }
                         Expediente::create([
                             'contacto_id'         => $record->id,
-                            'asesor_id'           => $record->asesor_id,
+                            'asesor_id'           => $record->asesor_id ?? Auth::id(),
                             'acreditado_nombre'   => $record->nombre,
                             'acreditado_telefono' => $record->telefono,
                             'acreditado_email'    => $record->email,

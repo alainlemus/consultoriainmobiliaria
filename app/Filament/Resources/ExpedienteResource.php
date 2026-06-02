@@ -106,9 +106,9 @@ class ExpedienteResource extends Resource
                         ->schema([
                             // ── Stepper de progreso ───────────────────────
                             SchemaView::make('filament.components.expediente-stepper')
-                                ->viewData(fn (Get $get, $record) => ['record' => $record])
+                                ->viewData(fn ($livewire) => ['record' => $livewire->getRecord()])
                                 ->columnSpanFull()
-                                ->visible(fn ($record) => $record !== null),
+                                ->visible(fn ($livewire) => $livewire->getRecord() !== null),
 
                             Forms\Components\TextInput::make('folio')
                                 ->label('Folio')
@@ -126,8 +126,8 @@ class ExpedienteResource extends Resource
                                 ]),
                             Forms\Components\Select::make('etapa_tramite_id')
                                 ->label('Etapa actual')
-                                ->options(fn (\Filament\Schemas\Components\Utilities\Get $get) =>
-                                    EtapaTramite::where('tipo_tramite_id', $get('tipo_tramite_id'))
+                                ->options(fn (\Filament\Schemas\Components\Utilities\Get $get, $record) =>
+                                    EtapaTramite::where('tipo_tramite_id', $get('tipo_tramite_id') ?? $record?->tipo_tramite_id)
                                         ->orderBy('orden')
                                         ->pluck('nombre', 'id')
                                 )
