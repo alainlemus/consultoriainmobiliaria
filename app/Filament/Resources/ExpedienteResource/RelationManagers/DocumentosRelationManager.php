@@ -6,6 +6,7 @@ use App\Models\DocumentoExpediente;
 use Filament\Forms;
 use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Actions\BulkAction;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -174,13 +175,13 @@ class DocumentosRelationManager extends RelationManager
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkAction::make('marcar_recibidos')
+                BulkAction::make('marcar_recibidos')
                     ->label('Marcar seleccionados como recibidos')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->action(fn ($records) => $records->each->update(['estado' => 'recibido'])),
 
-                Tables\Actions\BulkAction::make('marcar_no_aplica_bulk')
+                BulkAction::make('marcar_no_aplica_bulk')
                     ->label('Marcar como no aplica')
                     ->icon('heroicon-o-x-circle')
                     ->color('gray')

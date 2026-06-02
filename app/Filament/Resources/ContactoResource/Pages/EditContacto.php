@@ -69,15 +69,15 @@ if (Auth::user()->hasRole('super_admin') && $record->estado_prospecto === 'pendi
                 ->modalDescription('Se creará un nuevo expediente vinculado a este contacto.')
                 ->action(function () use ($record) {
                     $expediente = Expediente::create([
-                        'contacto_id' => $record->id,
-                        'asesor_id' => $record->asesor_id,
-                        'acreditado_nombre' => $record->nombre,
-                        'acreditado_telefono' => $record->telefono,
-                        'acreditado_email' => $record->email,
-                        'acreditado_curp' => $record->curp,
-                        'tipo_tramite_id' => 1,
-                        'etapa_tramite_id' => 1,
-                        'estado' => 'en_proceso',
+                        'contacto_id'        => $record->id,
+                        'asesor_id'          => $record->asesor_id ?? Auth::id(),
+                        'acreditado_nombre'  => $record->nombre,
+                        'acreditado_telefono'=> $record->telefono,
+                        'acreditado_email'   => $record->email,
+                        'acreditado_curp'    => $record->curp,
+                        'tipo_tramite_id'    => 1,
+                        'etapa_tramite_id'   => 1,
+                        'estado'             => 'en_proceso',
                     ]);
                     $record->update(['estado_prospecto' => 'convertido']);
                     $this->redirect(ExpedienteResource::getUrl('edit', ['record' => $expediente]), navigate: true);

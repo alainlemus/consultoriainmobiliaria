@@ -10,6 +10,8 @@ use App\Models\Expediente;
 use App\Models\TipoTramite;
 use App\Models\User;
 use Filament\Forms;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\View as SchemaView;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -95,18 +97,18 @@ class ExpedienteResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Forms\Components\Tabs::make('Expediente')
+            Tabs::make('Expediente')
                 ->tabs([
 
                     // ── TAB 1: TRÁMITE ────────────────────────────────────
-                    Forms\Components\Tabs\Tab::make('Trámite')
+                    Tabs\Tab::make('Trámite')
                         ->icon('heroicon-o-document-text')
                         ->schema([
                             // ── Stepper de progreso ───────────────────────
-                            Forms\Components\View::make('filament.components.expediente-stepper')
-                                ->viewData(fn (Get $get, $record) => ['record' => $record])
+                            SchemaView::make('filament.components.expediente-stepper')
+                                ->viewData(fn ($livewire) => ['record' => $livewire->getRecord()])
                                 ->columnSpanFull()
-                                ->visible(fn ($record) => $record !== null),
+                                ->visible(fn ($livewire) => $livewire->getRecord() !== null),
 
                             Forms\Components\TextInput::make('folio')
                                 ->label('Folio')
@@ -124,8 +126,8 @@ class ExpedienteResource extends Resource
                                 ]),
                             Forms\Components\Select::make('etapa_tramite_id')
                                 ->label('Etapa actual')
-                                ->options(fn (\Filament\Schemas\Components\Utilities\Get $get) =>
-                                    EtapaTramite::where('tipo_tramite_id', $get('tipo_tramite_id'))
+                                ->options(fn (\Filament\Schemas\Components\Utilities\Get $get, $record) =>
+                                    EtapaTramite::where('tipo_tramite_id', $get('tipo_tramite_id') ?? $record?->tipo_tramite_id)
                                         ->orderBy('orden')
                                         ->pluck('nombre', 'id')
                                 )
@@ -206,7 +208,7 @@ class ExpedienteResource extends Resource
                         ])->columns(2),
 
                     // ── TAB 2: ACREDITADO ─────────────────────────────────
-                    Forms\Components\Tabs\Tab::make('Acreditado')
+                    Tabs\Tab::make('Acreditado')
                         ->icon('heroicon-o-user')
                         ->schema([
                             Forms\Components\TextInput::make('acreditado_nombre')
@@ -330,7 +332,7 @@ class ExpedienteResource extends Resource
                         ])->columns(2),
 
                     // ── TAB 3: VENDEDOR ───────────────────────────────────
-                    Forms\Components\Tabs\Tab::make('Vendedor')
+                    Tabs\Tab::make('Vendedor')
                         ->icon('heroicon-o-user-circle')
                         ->schema([
                             Forms\Components\Placeholder::make('_vendedor_info')
@@ -389,7 +391,7 @@ class ExpedienteResource extends Resource
                         ])->columns(2),
 
                     // ── TAB 4: VIVIENDA ───────────────────────────────────
-                    Forms\Components\Tabs\Tab::make('Vivienda')
+                    Tabs\Tab::make('Vivienda')
                         ->icon('heroicon-o-home')
                         ->schema([
                             Forms\Components\Select::make('vivienda_tipo')
@@ -433,7 +435,7 @@ class ExpedienteResource extends Resource
                         ])->columns(2),
 
                     // ── TAB 5: CÓNYUGE (visible solo cuando aplica) ───────
-                    Forms\Components\Tabs\Tab::make('Cónyuge')
+                    Tabs\Tab::make('Cónyuge')
                         ->icon('heroicon-o-user-group')
                         ->schema([
                             Forms\Components\Placeholder::make('info_conyuge')
@@ -474,7 +476,7 @@ class ExpedienteResource extends Resource
                         ])->columns(2),
 
                     // ── TAB 6: PENSIONADO ─────────────────────────────────
-                    Forms\Components\Tabs\Tab::make('Pensionado')
+                    Tabs\Tab::make('Pensionado')
                         ->icon('heroicon-o-identification')
                         ->schema([
                             Forms\Components\Placeholder::make('info_pensionado')
@@ -502,7 +504,7 @@ class ExpedienteResource extends Resource
                                 ->minValue(0)
                                 ->hint('Concepto 001 del talón (pensión base, sin bonos). Mín. $32,200.60 para crédito máximo.'),
                         ])->columns(2),
-                    Forms\Components\Tabs\Tab::make('Financiero')
+                    Tabs\Tab::make('Financiero')
                         ->icon('heroicon-o-banknotes')
                         ->schema([
                             \Filament\Schemas\Components\Section::make('Montos del crédito')

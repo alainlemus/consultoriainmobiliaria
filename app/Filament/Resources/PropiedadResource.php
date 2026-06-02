@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PropiedadResource\Pages;
 use App\Models\Propiedad;
 use Filament\Forms;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -106,7 +107,7 @@ class PropiedadResource extends Resource
                     ->label('Dirección (referencia)')
                     ->columnSpanFull(),
 
-                Forms\Components\Fieldset::make('Mapa (opcional)')
+                Fieldset::make('Mapa (opcional)')
                     ->schema([
                         Forms\Components\TextInput::make('latitud')
                             ->label('Latitud')

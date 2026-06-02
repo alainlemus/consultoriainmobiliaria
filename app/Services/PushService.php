@@ -4,23 +4,23 @@ namespace App\Services;
 
 use App\Models\DeviceToken;
 use App\Models\User;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Servicio para enviar Push Notifications via Firebase Cloud Messaging (FCM) HTTP v1.
+ * Servicio para enviar Push Notifications.
  *
- * Configuración requerida en .env:
- *   FIREBASE_CREDENTIALS=/ruta/al/service-account.json
- *   FIREBASE_PROJECT_ID=tu-project-id
+ * Detecta automáticamente el tipo de token:
+ *   - ExponentPushToken[...] → Expo Push API
+ *   - Cualquier otro          → FCM HTTP v1 (nativo)
  */
 class PushService
 {
-    private const FCM_URL = 'https://fcm.googleapis.com/v1/projects/%s/messages:send';
-    private const TOKEN_URL = 'https://oauth2.googleapis.com/token';
-    private const SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
-    private const CACHE_KEY = 'fcm_access_token';
+    private const EXPO_URL = 'https://exp.host/--/api/v2/push/send';
+    private const FCM_URL  = 'https://fcm.googleapis.com/v1/projects/%s/messages:send';
+    private const TOKEN_URL   = 'https://oauth2.googleapis.com/token';
+    private const SCOPE       = 'https://www.googleapis.com/auth/firebase.messaging';
+    private const CACHE_KEY   = 'fcm_access_token';
 
     /**
      * Envía una push notification a todos los dispositivos de un usuario.
@@ -38,8 +38,82 @@ class PushService
 
     /**
      * Envía una push notification a un token específico.
+     * Detecta automáticamente si es Expo o FCM nativo.
      */
     public static function sendToToken(string $token, string $title, string $body, array $data = []): void
+    {
+        if (str_starts_with($token, 'ExponentPushToken')) {
+            static::sendViaExpo($token, $title, $body, $data);
+        } else {
+            static::sendViaFcm($token, $title, $body, $data);
+        }
+    }
+
+    // ── Expo Push API ─────────────────────────────────────────────────────────
+
+    private static function sendViaExpo(string $token, string $title, string $body, array $data = []): void
+    {
+        $response = Http::withHeaders([
+            'Accept'       => 'application/json',
+            'Content-Type' => 'application/json',
+        ])->timeout(10)->post(static::EXPO_URL, [
+            'to'    => $token,
+            'title' => $title,
+            'body'  => $body,
+            'data'  => $data,
+            'sound' => 'default',
+            'badge' => 1,
+        ]);
+
+        if ($response->failed()) {
+            Log::warning("[Expo Push] Error enviando a {$token}: " . $response->body());
+            return;
+        }
+
+        $result   = $response->json('data');
+        $status   = $result['status']  ?? 'unknown';
+        $ticketId = $result['id']      ?? null;
+
+        if ($status === 'error') {
+            $details   = $result['details'] ?? [];
+            $errorCode = $details['error']  ?? $result['message'] ?? 'unknown';
+            Log::warning("[Expo Push] Error en respuesta para {$token}: {$errorCode}");
+
+            if (in_array($errorCode, ['DeviceNotRegistered', 'InvalidCredentials'])) {
+                DeviceToken::where('fcm_token', $token)->delete();
+                Log::info("[Expo Push] Token inválido eliminado: {$token}");
+            }
+        } else {
+            Log::info("[Expo Push] Ticket OK para {$token} — ticketId: {$ticketId}");
+
+            // Verificar receipt para confirmar entrega APNs/FCM
+            if ($ticketId) {
+                sleep(3); // Expo tarda ~2s en procesar
+                $receiptResponse = Http::withHeaders([
+                    'Accept'       => 'application/json',
+                    'Content-Type' => 'application/json',
+                ])->timeout(10)->post('https://exp.host/--/api/v2/push/getReceipts', [
+                    'ids' => [$ticketId],
+                ]);
+
+                if ($receiptResponse->ok()) {
+                    $receipt = $receiptResponse->json("data.{$ticketId}") ?? [];
+                    $receiptStatus = $receipt['status'] ?? 'unknown';
+
+                    if ($receiptStatus === 'error') {
+                        $receiptError = $receipt['details']['error'] ?? $receipt['message'] ?? 'unknown';
+                        Log::warning("[Expo Push] Receipt ERROR para ticketId {$ticketId}: {$receiptError}");
+                    } else {
+                        Log::info("[Expo Push] Receipt OK — notificación entregada a APNs/FCM (ticketId: {$ticketId})");
+                    }
+                }
+            }
+        }
+    }
+
+    // ── FCM HTTP v1 ───────────────────────────────────────────────────────────
+
+    private static function sendViaFcm(string $token, string $title, string $body, array $data = []): void
     {
         $projectId = config('services.firebase.project_id');
 
@@ -55,41 +129,26 @@ class PushService
 
         $payload = [
             'message' => [
-                'token' => $token,
-                'notification' => [
-                    'title' => $title,
-                    'body'  => $body,
-                ],
-                'data' => collect($data)->map(fn ($v) => (string) $v)->toArray(),
-                'android' => [
-                    'priority' => 'high',
-                    'notification' => [
-                        'sound'        => 'default',
-                        'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
-                    ],
+                'token'        => $token,
+                'notification' => ['title' => $title, 'body' => $body],
+                'data'         => collect($data)->map(fn ($v) => (string) $v)->toArray(),
+                'android'      => [
+                    'priority'     => 'high',
+                    'notification' => ['sound' => 'default', 'click_action' => 'FLUTTER_NOTIFICATION_CLICK'],
                 ],
                 'apns' => [
-                    'payload' => [
-                        'aps' => [
-                            'sound' => 'default',
-                            'badge' => 1,
-                        ],
-                    ],
+                    'payload' => ['aps' => ['sound' => 'default', 'badge' => 1]],
                 ],
             ],
         ];
 
-        $url = sprintf(static::FCM_URL, $projectId);
-
-        $response = Http::withToken($accessToken)
-            ->timeout(10)
-            ->post($url, $payload);
+        $url      = sprintf(static::FCM_URL, $projectId);
+        $response = Http::withToken($accessToken)->timeout(10)->post($url, $payload);
 
         if ($response->failed()) {
             $error = $response->json('error.message') ?? $response->body();
             Log::warning("[FCM] Error enviando push a token {$token}: {$error}");
 
-            // Si el token es inválido, eliminarlo
             if (str_contains($error, 'UNREGISTERED') || str_contains($error, 'INVALID_ARGUMENT')) {
                 DeviceToken::where('fcm_token', $token)->delete();
                 Log::info("[FCM] Token inválido eliminado: {$token}");
@@ -97,13 +156,11 @@ class PushService
         }
     }
 
-    /**
-     * Obtiene (o renueva) el access token OAuth2 para FCM v1.
-     * Se cachea 50 minutos (expira en 60).
-     */
+    // ── OAuth2 para FCM ───────────────────────────────────────────────────────
+
     private static function getAccessToken(): ?string
     {
-        return Cache::remember(static::CACHE_KEY, 3000, function () {
+        return \Illuminate\Support\Facades\Cache::remember(static::CACHE_KEY, 3000, function () {
             $credentialsPath = config('services.firebase.credentials');
 
             if (! $credentialsPath || ! file_exists($credentialsPath)) {
@@ -118,9 +175,7 @@ class PushService
                 return null;
             }
 
-            // Crear JWT para solicitar el access token
-            $jwt = static::buildJwt($credentials['client_email'], $credentials['private_key']);
-
+            $jwt      = static::buildJwt($credentials['client_email'], $credentials['private_key']);
             $response = Http::asForm()->post(static::TOKEN_URL, [
                 'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
                 'assertion'  => $jwt,
@@ -135,19 +190,12 @@ class PushService
         });
     }
 
-    /**
-     * Construye el JWT firmado con la clave privada del service account.
-     */
     private static function buildJwt(string $clientEmail, string $privateKey): string
     {
         $now = time();
         $exp = $now + 3600;
 
-        $header = static::base64UrlEncode(json_encode([
-            'alg' => 'RS256',
-            'typ' => 'JWT',
-        ]));
-
+        $header  = static::base64UrlEncode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
         $payload = static::base64UrlEncode(json_encode([
             'iss'   => $clientEmail,
             'scope' => static::SCOPE,
@@ -157,7 +205,6 @@ class PushService
         ]));
 
         $signingInput = "{$header}.{$payload}";
-
         openssl_sign($signingInput, $signature, $privateKey, OPENSSL_ALGO_SHA256);
 
         return $signingInput . '.' . static::base64UrlEncode($signature);
