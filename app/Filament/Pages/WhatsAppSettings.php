@@ -136,8 +136,9 @@ class WhatsAppSettings extends Page
         if (! $nuevoId) {
             Notification::make()
                 ->title('No se pudo registrar el webhook en OpenWA.')
-                ->body('Verifica que el hostname y el Session ID sean correctos y que el contenedor esté corriendo.')
+                ->body("Session ID: {$sessionId} | URL: {$url}")
                 ->danger()
+                ->persistent()
                 ->send();
             return;
         }
@@ -308,16 +309,29 @@ class WhatsAppSettings extends Page
     private function registrarWebhook(string $url, string $sessionId): ?string
     {
         try {
-            $response = Http::withHeader('x-api-key', config('services.openwa.api_key'))
-                ->timeout(5)
-                ->post(config('services.openwa.url') . "/api/sessions/{$sessionId}/webhooks", [
+            $apiKey  = config('services.openwa.api_key');
+            $baseUrl = config('services.openwa.url');
+
+            $response = Http::withHeader('x-api-key', $apiKey)
+                ->timeout(10)
+                ->post("{$baseUrl}/api/sessions/{$sessionId}/webhooks", [
                     'url'    => $url,
                     'events' => ['message.received'],
                 ]);
 
+            Log::info("[WhatsApp Settings] Registrar webhook response: " . $response->status() . " — " . $response->body());
+
             if ($response->successful()) {
                 return $response->json('id');
             }
+
+            Log::warning("[WhatsApp Settings] Error al registrar webhook ({$response->status()}): " . $response->body());
+        } catch (\Throwable $e) {
+            Log::error("[WhatsApp Settings] Excepción: " . $e->getMessage());
+        }
+
+        return null;
+    }
 
             Log::warning("[WhatsApp Settings] Error al registrar webhook: " . $response->body());
         } catch (\Throwable $e) {
