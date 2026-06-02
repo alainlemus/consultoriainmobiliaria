@@ -23,6 +23,31 @@ class ExpedienteObserver
                 ->update(['estado_prospecto' => 'convertido']);
         }
 
+        // WhatsApp al asesor: nuevo expediente asignado
+        if ($expediente->asesor?->telefono) {
+            $folio   = $expediente->folio ?? "#{$expediente->id}";
+            $cliente = $expediente->acreditado_nombre;
+            WhatsAppService::sendText(
+                $expediente->asesor->telefono,
+                "📂 *Nuevo expediente asignado*\n\n" .
+                "Folio: *{$folio}*\n" .
+                "Cliente: {$cliente}\n\n" .
+                "Entra al CRM para ver los detalles y comenzar el trámite."
+            );
+        }
+
+        // WhatsApp al acreditado: confirmación de inicio de trámite
+        if ($expediente->acreditado_telefono) {
+            $folio   = $expediente->folio ?? "#{$expediente->id}";
+            $cliente = $expediente->acreditado_nombre;
+            WhatsAppService::sendText(
+                $expediente->acreditado_telefono,
+                "¡Hola *{$cliente}*! 🏠\n\n" .
+                "Tu trámite ha sido iniciado con el folio *{$folio}*.\n\n" .
+                "Tu asesor estará en contacto contigo para guiarte en cada etapa del proceso. ¡Bienvenido!"
+            );
+        }
+
         User::role('super_admin')
             ->get()
             ->each(fn (User $admin) => $admin->notify(new NuevoExpedienteCreado($expediente)));

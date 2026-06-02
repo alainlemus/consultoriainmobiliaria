@@ -15,15 +15,21 @@ class ContactoObserver
      */
     public function created(Contacto $contacto): void
     {
-        // 1. Notificar al asesor asignado
+        // 1. WhatsApp de bienvenida al prospecto
+        $this->notificarBienvenidaProspecto($contacto);
+
+        // 2. Notificar al asesor asignado (si hay)
         if ($contacto->asesor_id) {
             $contacto->asesor?->notify(new ProspectoAsignado($contacto));
-
-            // WhatsApp al asesor con datos del nuevo prospecto
             $this->notificarAsesorNuevoProspecto($contacto);
         }
 
-        // 2. Notificar a todos los super_admin
+        // 3. WhatsApp a super_admins cuando viene del sitio web
+        if ($contacto->origen === 'sitio_web') {
+            $this->notificarAdminsNuevoProspectoWeb($contacto);
+        }
+
+        // 4. Notificación in-app a todos los super_admin
         User::role('super_admin')
             ->get()
             ->each(fn (User $admin) => $admin->notify(new NuevoProspectoCreado($contacto)));
@@ -58,6 +64,40 @@ class ContactoObserver
             // WhatsApp al nuevo asesor asignado
             $this->notificarAsesorNuevoProspecto($contacto);
         }
+    }
+
+    private function notificarBienvenidaProspecto(Contacto $contacto): void
+    {
+        $telefono = $contacto->celular ?? $contacto->telefono ?? null;
+        if (! $telefono) return;
+
+        $nombre = trim("{$contacto->nombre} {$contacto->apellidos}");
+
+        WhatsAppService::sendText(
+            $telefono,
+            "¡Hola *{$nombre}*! 👋\n\n" .
+            "Gracias por contactarnos. Hemos recibido tu información y un asesor se pondrá en contacto contigo a la brevedad.\n\n" .
+            "Si tienes alguna duda, no dudes en escribirnos. 🏠"
+        );
+    }
+
+    private function notificarAdminsNuevoProspectoWeb(Contacto $contacto): void
+    {
+        $nombre   = trim("{$contacto->nombre} {$contacto->apellidos}");
+        $celular  = $contacto->celular ?? $contacto->telefono ?? '—';
+        $servicio = $contacto->servicio ?? '—';
+
+        User::role('super_admin')->get()->each(function (User $admin) use ($nombre, $celular, $servicio) {
+            if (! $admin->telefono) return;
+            WhatsAppService::sendText(
+                $admin->telefono,
+                "🌐 *Nuevo prospecto del sitio web*\n\n" .
+                "Nombre: *{$nombre}*\n" .
+                "Teléfono: {$celular}\n" .
+                "Servicio: {$servicio}\n\n" .
+                "Entra al CRM para asignarlo a un asesor."
+            );
+        });
     }
 
     private function notificarAsesorNuevoProspecto(Contacto $contacto): void
