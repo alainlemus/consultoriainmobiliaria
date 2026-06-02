@@ -3,7 +3,10 @@
 
     $etapas  = \App\Models\EtapaTramite::where('tipo_tramite_id', $record->tipo_tramite_id)
                 ->orderBy('orden')->get();
-    $current = $record->etapa?->orden ?? 0;
+
+    // Usar etapaActivaId si viene del form state (reactivo), sino usar el del record guardado
+    $etapaActualId = $etapaActivaId ?? $record->etapa_tramite_id;
+    $current = $etapas->firstWhere('id', $etapaActualId)?->orden ?? $record->etapa?->orden ?? 0;
     $total   = $etapas->count();
 
     $estadoConfig = [
@@ -15,21 +18,6 @@
     ];
     $cfg = $estadoConfig[$record->estado] ?? ['label' => ucfirst($record->estado), 'bg' => '#6b7280', 'text' => '#fff'];
 @endphp
-
-@once
-@push('scripts')
-<script>
-let lastReload = 0;
-window.addEventListener('livewire:update', () => {
-    const now = Date.now();
-    if (now - lastReload > 2000) {
-        lastReload = now;
-        setTimeout(() => location.reload(), 1000);
-    }
-});
-</script>
-@endpush
-@endonce
 
 <div style="padding: 16px 0 8px;">
     {{-- Stepper --}}
@@ -90,7 +78,9 @@ window.addEventListener('livewire:update', () => {
         </span>
         <span>Etapa <strong>{{ $current }}</strong> de <strong>{{ $total }}</strong></span>
         <span>·</span>
-        <span>{{ $record->etapa ? preg_replace('/^\d+\.\s*/', '', $record->etapa->nombre) : '—' }}</span>
+    <span>· {{ $etapas->firstWhere('id', $etapaActualId)?->nombre
+        ? preg_replace('/^\d+\.\s*/', '', $etapas->firstWhere('id', $etapaActualId)->nombre)
+        : ($record->etapa ? preg_replace('/^\d+\.\s*/', '', $record->etapa->nombre) : '—') }}</span>
         @if($record->tipoTramite)
             <span>·</span>
             <span>{{ $record->tipoTramite->nombre }}</span>

@@ -14,8 +14,9 @@ trait SendsPushNotification
 {
     public function viaPush(): bool
     {
-        return filled(config('services.firebase.project_id'))
-            && filled(config('services.firebase.credentials'));
+        // Siempre intentar — PushService detecta el tipo de token (Expo vs FCM)
+        // y usa la API correcta. FCM requiere Firebase config; Expo no.
+        return true;
     }
 
     /**

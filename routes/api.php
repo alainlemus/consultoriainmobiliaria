@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\UbicacionController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\ComisionController;
+use App\Http\Controllers\Api\WhatsAppWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,6 +18,10 @@ use App\Http\Controllers\Api\V1\ComisionController;
 | Prefijo automático: /api  (definido en bootstrap/app.php)
 | Autenticación:      Laravel Sanctum (Bearer token)
 */
+
+// ── Webhook de OpenWA (sin auth, verificación por secret) ─────────────────
+Route::post('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'handle'])
+    ->name('webhooks.whatsapp');
 
 // ── Descarga de documento con URL firmada temporalmente ────────────────────
 // No requiere Bearer token — la firma de la URL es la autorización.

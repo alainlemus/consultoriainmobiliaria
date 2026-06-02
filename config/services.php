@@ -40,4 +40,11 @@ return [
         'project_id'   => env('FIREBASE_PROJECT_ID'),
     ],
 
+    'openwa' => [
+        'url'            => env('OPENWA_URL', 'http://localhost:2785'),
+        'api_key'        => env('OPENWA_API_KEY', 'dev-admin-key'),
+        'session'        => env('OPENWA_SESSION', ''),
+        'webhook_secret' => env('OPENWA_WEBHOOK_SECRET', ''),
+    ],
+
 ];
