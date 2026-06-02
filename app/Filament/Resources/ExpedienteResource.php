@@ -11,6 +11,7 @@ use App\Models\TipoTramite;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\View as SchemaView;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -104,7 +105,7 @@ class ExpedienteResource extends Resource
                         ->icon('heroicon-o-document-text')
                         ->schema([
                             // ── Stepper de progreso ───────────────────────
-                            Forms\Components\View::make('filament.components.expediente-stepper')
+                            SchemaView::make('filament.components.expediente-stepper')
                                 ->viewData(fn (Get $get, $record) => ['record' => $record])
                                 ->columnSpanFull()
                                 ->visible(fn ($record) => $record !== null),
