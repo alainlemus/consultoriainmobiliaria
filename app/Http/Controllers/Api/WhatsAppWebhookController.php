@@ -54,8 +54,13 @@ class WhatsAppWebhookController extends Controller
 
         // Si viene en formato @lid, resolver al @c.us real vía API de contactos
         if (str_contains($chatId, '@lid')) {
-            $chatId = $this->resolverLidACus($chatId);
-            if (! $chatId) return;
+            $resolved = $this->resolverLidACus($chatId);
+            if (! $resolved) return;
+            $chatId   = $resolved['id'];
+            // Usar el nombre del contacto si no viene en el mensaje
+            if (! ($data['notifyName'] ?? null) && ! ($data['pushName'] ?? null)) {
+                $data['pushName'] = $resolved['pushName'] ?? $resolved['name'] ?? null;
+            }
         }
 
         if (! str_contains($chatId, '@c.us')) return;
@@ -90,7 +95,7 @@ class WhatsAppWebhookController extends Controller
         Log::info("[WhatsApp Webhook] Nuevo prospecto creado: {$contacto->id} — {$telefono}");
     }
 
-    private function resolverLidACus(string $lidChatId): ?string
+    private function resolverLidACus(string $lidChatId): ?array
     {
         try {
             $sessionId = config('services.openwa.session');
@@ -102,10 +107,15 @@ class WhatsAppWebhookController extends Controller
                 ->get("{$url}/api/sessions/{$sessionId}/contacts/{$lidChatId}");
 
             if ($response->successful()) {
-                $contactId = $response->json('id'); // ej: "5217751557436@c.us"
+                $contact = $response->json();
+                $contactId = $contact['id'] ?? null; // ej: "5217751557436@c.us"
                 if ($contactId && str_contains($contactId, '@c.us')) {
                     Log::info("[WhatsApp Webhook] @lid {$lidChatId} resuelto a {$contactId}");
-                    return $contactId;
+                    return [
+                        'id'       => $contactId,
+                        'name'     => $contact['name'] ?? null,
+                        'pushName' => $contact['pushName'] ?? null,
+                    ];
                 }
             }
         } catch (\Throwable $e) {
