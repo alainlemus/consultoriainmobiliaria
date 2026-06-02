@@ -40,10 +40,6 @@ class WhatsappChatbotService
             $conv->ultimo_mensaje_at = now();
             $conv->save();
 
-            // ── Crear prospecto inmediatamente al primer contacto ──────────
-            $this->crearProspectoInicial($telefono, $pushName);
-            // ─────────────────────────────────────────────────────────────
-
             $this->enviarBienvenida($chatId, $pushName);
             $conv->paso = 'esperando_servicio';
             $conv->ultimo_mensaje_at = now();
@@ -181,62 +177,26 @@ class WhatsappChatbotService
     // ──────────────────────────────────────────────
 
     /**
-     * Crear prospecto inmediatamente al primer mensaje (con datos básicos).
-     * Esto preserva el comportamiento anterior: cualquier mensaje crea un prospecto.
-     */
-    private function crearProspectoInicial(string $telefono, ?string $pushName): void
-    {
-        $existe = Contacto::where('telefono', $telefono)->exists();
-        if ($existe) return;
-
-        $partes    = explode(' ', $pushName ?? 'Prospecto WhatsApp', 2);
-        $nombre    = $partes[0];
-        $apellidos = $partes[1] ?? '';
-
-        Contacto::create([
-            'nombre'                => $nombre,
-            'apellidos'             => $apellidos,
-            'telefono'              => $telefono,
-            'origen'                => 'whatsapp',
-            'estado_prospecto'      => 'nuevo',
-            'fecha_primer_contacto' => now()->toDateString(),
-            'notas'                 => "Prospecto capturado por WhatsApp (pendiente de enriquecer con chatbot).\n",
-        ]);
-
-        Log::info("[Chatbot WhatsApp] Prospecto inicial creado: {$telefono} — {$pushName}");
-    }
-
-    /**
-     * Al finalizar el flujo del chatbot, enriquecer el prospecto existente
-     * con nombre completo, correo, servicio y CURP.
+     * Crear prospecto al finalizar el flujo completo del chatbot.
      */
     private function crearProspecto(WhatsappConversation $conv): void
     {
         $datos          = $conv->datos ?? [];
-        $nombreCompleto = $datos['nombre_completo'] ?? null;
-        $partes         = explode(' ', $nombreCompleto ?? '', 2);
-        $nombre         = $partes[0] ?: null;
+        $nombreCompleto = $datos['nombre_completo'] ?? 'Prospecto WhatsApp';
+        $partes         = explode(' ', $nombreCompleto, 2);
+        $nombre         = $partes[0];
         $apellidos      = $partes[1] ?? '';
 
-        $notas = "Servicio de interés: " . ($datos['servicio'] ?? '—') . "\n";
+        $notas = "Prospecto generado por chatbot WhatsApp.\n";
+        $notas .= "Servicio de interés: " . ($datos['servicio'] ?? '—') . "\n";
         if (! empty($datos['curp'])) {
             $notas .= "CURP: " . $datos['curp'] . "\n";
         }
 
-        // Actualizar el prospecto existente con los datos enriquecidos
-        $contacto = Contacto::where('telefono', $conv->telefono)->first();
-
-        if ($contacto) {
-            $updates = ['notas' => $notas];
-            if ($nombre)              $updates['nombre']    = $nombre;
-            if ($apellidos)           $updates['apellidos'] = $apellidos;
-            if (! empty($datos['correo'])) $updates['email'] = $datos['correo'];
-            $contacto->update($updates);
-            Log::info("[Chatbot WhatsApp] Prospecto enriquecido: {$conv->telefono} — {$nombreCompleto}");
-        } else {
-            // Fallback: crear si por alguna razón no existe
+        $existe = Contacto::where('telefono', $conv->telefono)->exists();
+        if (! $existe) {
             Contacto::create([
-                'nombre'                => $nombre ?? 'Prospecto WhatsApp',
+                'nombre'                => $nombre,
                 'apellidos'             => $apellidos,
                 'telefono'              => $conv->telefono,
                 'email'                 => $datos['correo'] ?? null,
@@ -245,15 +205,15 @@ class WhatsappChatbotService
                 'fecha_primer_contacto' => now()->toDateString(),
                 'notas'                 => $notas,
             ]);
+            Log::info("[Chatbot WhatsApp] Prospecto creado: {$conv->telefono} — {$nombreCompleto}");
         }
 
         $conv->paso = 'completado';
         $conv->save();
 
-        $nombreMostrar = $nombre ?? 'amigo';
         $this->whatsapp->sendText(
             $conv->chat_id,
-            "✅ ¡Listo *{$nombreMostrar}*!\n\n" .
+            "✅ ¡Listo *{$nombre}*!\n\n" .
             "Hemos registrado tu solicitud de *{$datos['servicio']}*.\n\n" .
             "Un asesor se pondrá en contacto contigo a la brevedad. 🏠\n\n" .
             "_Consultoría Inmobiliaria_"
