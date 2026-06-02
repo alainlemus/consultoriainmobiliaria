@@ -43,11 +43,15 @@ use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\ToggleColumn;
 ```
 
-### Schema en métodos de formulario
+### Get/Set reactivos en formularios
 ```php
-// En lugar de: Schema $schema
-use Filament\Schemas\Schema;
-public function form(Schema $schema): Schema
+// En Filament v5 usar:
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+
+// NO usar:
+// use Filament\Forms\Get;
+// use Filament\Forms\Set;
 ```
 
 ## Reglas de desarrollo

@@ -11,6 +11,7 @@ use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -168,7 +169,7 @@ class ChatbotSettings extends Page implements HasTable
             // Opciones del menú (solo tipo=seleccion)
             Forms\Components\Repeater::make('opciones')
                 ->label('Opciones del menú')
-                ->visible(fn (Forms\Get $get) => $get('tipo') === 'seleccion')
+                ->visible(fn (Get $get) => $get('tipo') === 'seleccion')
                 ->schema([
                     Forms\Components\TextInput::make('valor')
                         ->label('Número/valor')
