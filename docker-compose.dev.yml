@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        APP_ENV: development
+    container_name: laravel-app-dev
+    ports:
+      - "8000"
+    volumes:
+      - storage_dev:/var/www/html/storage
+    networks:
+      - dokploy
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+
+volumes:
+  storage_dev:
+
+networks:
+  dokploy:
+    external: true

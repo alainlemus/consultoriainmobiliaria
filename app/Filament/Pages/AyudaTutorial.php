@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Infolists\Components\Section;
+use Filament\Schemas\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Infolists\Contracts\HasInfolists;
@@ -32,7 +32,7 @@ class AyudaTutorial extends Page implements HasInfolists
 
     // ── Infolist Admin ────────────────────────────────────────────────────────
 
-    public function adminInfolist(Infolist $infolist): Infolist
+    public function adminInfolist(Schema $schema): Schema
     {
         return $schema
             ->state([])
@@ -210,7 +210,7 @@ class AyudaTutorial extends Page implements HasInfolists
 
     // ── Infolist Asesor ───────────────────────────────────────────────────────
 
-    public function asesorInfolist(Infolist $infolist): Infolist
+    public function asesorInfolist(Schema $schema): Schema
     {
         return $schema
             ->state([])
