@@ -57,9 +57,7 @@ class WhatsAppWebhookController extends Controller
         $pushName = $data['notifyName'] ?? $data['pushName'] ?? null;
 
         // Verificar si ya existe un contacto con ese teléfono
-        $existe = Contacto::where('celular', $telefono)
-            ->orWhere('telefono', $telefono)
-            ->exists();
+        $existe = Contacto::where('telefono', $telefono)->exists();
 
         if ($existe) {
             Log::info("[WhatsApp Webhook] Contacto ya existe para {$telefono}, ignorando.");
@@ -72,7 +70,7 @@ class WhatsAppWebhookController extends Controller
         $contacto = Contacto::create([
             'nombre'                => $nombre['nombre'],
             'apellidos'             => $nombre['apellidos'],
-            'celular'               => $telefono,
+            'telefono'              => $telefono,
             'origen'                => 'whatsapp',
             'estado_prospecto'      => 'nuevo',
             'fecha_primer_contacto' => now()->toDateString(),
