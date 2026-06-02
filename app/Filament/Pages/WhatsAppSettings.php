@@ -197,7 +197,10 @@ class WhatsAppSettings extends Page
                 ->post("{$baseUrl}/api/sessions", ['name' => $nombre]);
 
             if (! $resp->successful()) {
-                Notification::make()->title('Error al crear la sesión: ' . $resp->body())->danger()->send();
+                $msg = $resp->status() === 400
+                    ? 'Ya existe una sesión con ese nombre. Usa un nombre diferente.'
+                    : 'Error al crear la sesión: ' . $resp->body();
+                Notification::make()->title($msg)->danger()->send();
                 return;
             }
 
