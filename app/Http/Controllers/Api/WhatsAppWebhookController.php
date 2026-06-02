@@ -43,12 +43,22 @@ class WhatsAppWebhookController extends Controller
 
     private function procesarMensajeEntrante(array $data): void
     {
-        // Solo procesar mensajes de contactos reales (@c.us), ignorar grupos (@g.us) y dispositivos vinculados (@lid)
         $chatId = $data['from'] ?? $data['chatId'] ?? null;
-        if (! $chatId || ! str_contains($chatId, '@c.us')) return;
+        if (! $chatId) return;
+
+        // Ignorar grupos
+        if (str_contains($chatId, '@g.us')) return;
 
         // Ignorar mensajes propios (enviados por nosotros)
         if (($data['fromMe'] ?? false) === true) return;
+
+        // Si viene en formato @lid, resolver al @c.us real vía API de contactos
+        if (str_contains($chatId, '@lid')) {
+            $chatId = $this->resolverLidACus($chatId);
+            if (! $chatId) return;
+        }
+
+        if (! str_contains($chatId, '@c.us')) return;
 
         // Extraer teléfono limpio: "521XXXXXXXXXX@c.us" → "5531293712"
         $telefono = $this->extraerTelefono($chatId);
@@ -78,6 +88,31 @@ class WhatsAppWebhookController extends Controller
         ]);
 
         Log::info("[WhatsApp Webhook] Nuevo prospecto creado: {$contacto->id} — {$telefono}");
+    }
+
+    private function resolverLidACus(string $lidChatId): ?string
+    {
+        try {
+            $sessionId = config('services.openwa.session');
+            $apiKey    = config('services.openwa.api_key');
+            $url       = config('services.openwa.url');
+
+            $response = \Illuminate\Support\Facades\Http::withHeader('x-api-key', $apiKey)
+                ->timeout(5)
+                ->get("{$url}/api/sessions/{$sessionId}/contacts/{$lidChatId}");
+
+            if ($response->successful()) {
+                $contactId = $response->json('id'); // ej: "5217751557436@c.us"
+                if ($contactId && str_contains($contactId, '@c.us')) {
+                    Log::info("[WhatsApp Webhook] @lid {$lidChatId} resuelto a {$contactId}");
+                    return $contactId;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning("[WhatsApp Webhook] No se pudo resolver @lid {$lidChatId}: " . $e->getMessage());
+        }
+
+        return null;
     }
 
     private function extraerTelefono(string $chatId): ?string
