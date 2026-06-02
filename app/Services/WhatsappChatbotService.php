@@ -3,198 +3,228 @@
 namespace App\Services;
 
 use App\Models\Contacto;
+use App\Models\ChatbotPaso;
 use App\Models\WhatsappConversation;
 use Illuminate\Support\Facades\Log;
 
 class WhatsappChatbotService
 {
-    // Servicios disponibles
-    const SERVICIOS = [
-        '1' => 'Crédito INFONAVIT',
-        '2' => 'Crédito FOVISSSTE',
-        '3' => 'Avalúo',
-        '4' => 'Escrituración',
-        '5' => 'Asesoría personalizada',
-    ];
-
-    // Servicios que requieren CURP para simulación
-    const SERVICIOS_CON_CURP = ['1', '2'];
-
     public function __construct(
         private WhatsAppService $whatsapp
     ) {}
 
     /**
-     * Procesar un mensaje entrante y avanzar el flujo del chatbot.
+     * Punto de entrada: procesa un mensaje entrante y avanza el flujo.
      */
     public function procesar(string $chatId, string $telefono, ?string $mensaje, ?string $pushName = null): void
     {
         $conv = WhatsappConversation::firstOrNew(['chat_id' => $chatId]);
 
-        // Si es nueva o expiró, reiniciar
+        // Conversación nueva o expirada → reiniciar desde el primer paso
         if (! $conv->exists || $conv->expirada()) {
+            $primerPaso = ChatbotPaso::flujoActivo()->first();
+            if (! $primerPaso) {
+                Log::warning('[Chatbot] No hay pasos configurados en BD.');
+                return;
+            }
+
             $conv->chat_id           = $chatId;
             $conv->telefono          = $telefono;
-            $conv->paso              = 'inicio';
             $conv->datos             = [];
             $conv->ultimo_mensaje_at = now();
+            $conv->paso              = $primerPaso->clave;
             $conv->save();
 
-            $this->enviarBienvenida($chatId, $pushName);
-            $conv->paso = 'esperando_servicio';
-            $conv->ultimo_mensaje_at = now();
-            $conv->save();
+            $this->ejecutarPaso($primerPaso, $conv, $pushName);
             return;
         }
 
         $conv->ultimo_mensaje_at = now();
         $mensaje = trim($mensaje ?? '');
 
-        match ($conv->paso) {
-            'esperando_servicio' => $this->procesarServicio($conv, $mensaje),
-            'esperando_nombre'   => $this->procesarNombre($conv, $mensaje),
-            'esperando_correo'   => $this->procesarCorreo($conv, $mensaje),
-            'esperando_curp'     => $this->procesarCurp($conv, $mensaje),
-            'completado'         => $this->mensajeYaRegistrado($chatId),
-            default              => $this->enviarBienvenida($chatId, $pushName),
+        if ($conv->paso === 'completado') {
+            $this->mensajeYaRegistrado($chatId);
+            return;
+        }
+
+        $pasoActual = ChatbotPaso::porClave($conv->paso);
+
+        if (! $pasoActual) {
+            // Paso eliminado/desactivado — avanzar al siguiente activo
+            $this->avanzarAlSiguiente($conv, null);
+            return;
+        }
+
+        $this->procesarRespuesta($pasoActual, $conv, $mensaje);
+    }
+
+    // ──────────────────────────────────────────────
+    // EJECUTAR UN PASO (enviar mensaje al usuario)
+    // ──────────────────────────────────────────────
+
+    private function ejecutarPaso(ChatbotPaso $paso, WhatsappConversation $conv, ?string $nombre = null): void
+    {
+        $texto = $this->interpolar($paso->mensaje, $conv, $nombre);
+        $this->whatsapp->sendText($conv->chat_id, $texto);
+        $conv->paso = $paso->clave;
+        $conv->save();
+
+        // Si es solo un mensaje (sin esperar respuesta), avanzar automáticamente
+        if ($paso->tipo === 'mensaje') {
+            $this->avanzarAlSiguiente($conv, null);
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    // PROCESAR RESPUESTA DEL USUARIO
+    // ──────────────────────────────────────────────
+
+    private function procesarRespuesta(ChatbotPaso $paso, WhatsappConversation $conv, string $mensaje): void
+    {
+        // Permitir "omitir" en pasos no requeridos
+        $omitir = ! $paso->requerido && strtolower($mensaje) === 'omitir';
+
+        match ($paso->tipo) {
+            'seleccion'   => $this->procesarSeleccion($paso, $conv, $mensaje),
+            'texto_libre' => $this->procesarTextoLibre($paso, $conv, $mensaje, $omitir),
+            'condicional' => $this->procesarCondicional($paso, $conv, $mensaje, $omitir),
+            default       => $this->avanzarAlSiguiente($conv, null),
         };
     }
 
-    // ──────────────────────────────────────────────
-    // PASOS
-    // ──────────────────────────────────────────────
-
-    private function enviarBienvenida(string $chatId, ?string $nombre = null): void
+    private function procesarSeleccion(ChatbotPaso $paso, WhatsappConversation $conv, string $mensaje): void
     {
-        $saludo = $nombre ? "Hola {$nombre} 👋" : "Hola 👋";
+        $opciones = collect($paso->opciones ?? []);
+        $opcion   = $opciones->firstWhere('valor', trim($mensaje));
 
-        $this->whatsapp->sendText(
-            $chatId,
-            "{$saludo} Bienvenido a *Consultoría Inmobiliaria*.\n\n" .
-            "¿En qué podemos ayudarte? Responde con el número de tu opción:\n\n" .
-            "1️⃣  Crédito INFONAVIT\n" .
-            "2️⃣  Crédito FOVISSSTE\n" .
-            "3️⃣  Avalúo\n" .
-            "4️⃣  Escrituración\n" .
-            "5️⃣  Asesoría personalizada"
-        );
-    }
-
-    private function procesarServicio(WhatsappConversation $conv, string $mensaje): void
-    {
-        $opcion = trim($mensaje);
-
-        if (! isset(self::SERVICIOS[$opcion])) {
-            $this->whatsapp->sendText(
-                $conv->chat_id,
-                "Por favor responde con un número del *1 al 5* para seleccionar tu servicio. 😊"
-            );
+        if (! $opcion) {
+            $total = $opciones->count();
+            $texto = $this->interpolar($paso->mensaje, $conv);
+            $this->whatsapp->sendText($conv->chat_id, $texto);
             $conv->save();
             return;
         }
 
-        $conv->setDato('servicio', self::SERVICIOS[$opcion]);
-        $conv->setDato('servicio_clave', $opcion);
-        $conv->paso = 'esperando_nombre';
+        $conv->setDato('servicio', $opcion['etiqueta']);
+        $conv->setDato('servicio_clave', $opcion['valor']);
+        $conv->setDato('requiere_curp', $opcion['requiere_curp'] ?? false);
         $conv->save();
 
-        $this->whatsapp->sendText(
-            $conv->chat_id,
-            "Excelente, seleccionaste *" . self::SERVICIOS[$opcion] . "* ✅\n\n¿Cuál es tu *nombre completo*?"
-        );
+        $this->avanzarAlSiguiente($conv, $paso);
     }
 
-    private function procesarNombre(WhatsappConversation $conv, string $mensaje): void
+    private function procesarTextoLibre(ChatbotPaso $paso, WhatsappConversation $conv, string $mensaje, bool $omitir): void
     {
-        if (strlen($mensaje) < 3) {
-            $this->whatsapp->sendText($conv->chat_id, "Por favor escribe tu nombre completo.");
+        if (! $omitir && strlen($mensaje) < 2) {
+            $this->whatsapp->sendText($conv->chat_id, "Por favor escribe una respuesta válida o escribe *omitir*.");
             $conv->save();
             return;
         }
 
-        $conv->setDato('nombre_completo', $mensaje);
-        $conv->paso = 'esperando_correo';
+        // Validación especial para correo
+        if ($paso->clave === 'correo' && ! $omitir && ! filter_var($mensaje, FILTER_VALIDATE_EMAIL)) {
+            $this->whatsapp->sendText($conv->chat_id, "El correo no parece válido. Por favor escríbelo de nuevo o escribe *omitir*.");
+            $conv->save();
+            return;
+        }
+
+        $conv->setDato($paso->clave, $omitir ? null : $mensaje);
         $conv->save();
 
-        $this->whatsapp->sendText(
-            $conv->chat_id,
-            "Gracias *{$mensaje}* 😊\n\n¿Cuál es tu *correo electrónico*?\n_(Escribe 'omitir' si no deseas proporcionarlo)_"
-        );
+        $this->avanzarAlSiguiente($conv, $paso);
     }
 
-    private function procesarCorreo(WhatsappConversation $conv, string $mensaje): void
+    private function procesarCondicional(ChatbotPaso $paso, WhatsappConversation $conv, string $mensaje, bool $omitir): void
     {
-        $omitir = strtolower($mensaje) === 'omitir';
-
-        if (! $omitir && ! filter_var($mensaje, FILTER_VALIDATE_EMAIL)) {
-            $this->whatsapp->sendText(
-                $conv->chat_id,
-                "El correo no parece válido. Por favor escríbelo de nuevo o escribe *omitir*."
-            );
-            $conv->save();
-            return;
-        }
-
-        $conv->setDato('correo', $omitir ? null : $mensaje);
-
-        // ¿Requiere CURP?
-        $clave = $conv->getDato('servicio_clave');
-        if (in_array($clave, self::SERVICIOS_CON_CURP)) {
-            $conv->paso = 'esperando_curp';
-            $conv->save();
-
-            $this->whatsapp->sendText(
-                $conv->chat_id,
-                "Para realizar una simulación de crédito necesitamos tu *CURP*.\n\n" .
-                "Por favor escríbela (18 caracteres):\n_(Escribe 'omitir' para continuar sin ella)_"
-            );
+        // Paso CURP: validar formato si no omite
+        if ($paso->clave === 'curp' && ! $omitir) {
+            $curp = strtoupper(trim($mensaje));
+            if (! $this->validarCurp($curp)) {
+                $this->whatsapp->sendText($conv->chat_id, "La CURP no parece válida (18 caracteres).\nIntenta de nuevo o escribe *omitir*.");
+                $conv->save();
+                return;
+            }
+            $conv->setDato('curp', $curp);
         } else {
-            $this->crearProspecto($conv);
+            $conv->setDato($paso->clave, $omitir ? null : $mensaje);
         }
+
+        $conv->save();
+        $this->avanzarAlSiguiente($conv, $paso);
     }
 
-    private function procesarCurp(WhatsappConversation $conv, string $mensaje): void
-    {
-        $omitir = strtolower($mensaje) === 'omitir';
-        $curp   = strtoupper(trim($mensaje));
+    // ──────────────────────────────────────────────
+    // NAVEGACIÓN ENTRE PASOS
+    // ──────────────────────────────────────────────
 
-        if (! $omitir && ! $this->validarCurp($curp)) {
-            $this->whatsapp->sendText(
-                $conv->chat_id,
-                "La CURP no parece válida (debe tener 18 caracteres alfanuméricos).\n" .
-                "Intenta de nuevo o escribe *omitir*."
-            );
-            $conv->save();
+    private function avanzarAlSiguiente(WhatsappConversation $conv, ?ChatbotPaso $pasoActual): void
+    {
+        $flujo = ChatbotPaso::flujoActivo();
+
+        // Determinar el siguiente paso
+        $siguienteClave = $pasoActual?->siguiente_paso;
+
+        if ($siguienteClave) {
+            $siguiente = $flujo->firstWhere('clave', $siguienteClave);
+        } else {
+            // Siguiente en orden
+            $indiceActual = $pasoActual
+                ? $flujo->search(fn ($p) => $p->clave === $pasoActual->clave)
+                : -1;
+            $siguiente = $flujo->slice($indiceActual + 1)->first();
+        }
+
+        // Saltar pasos condicionales si no aplican
+        while ($siguiente && $siguiente->tipo === 'condicional') {
+            if (! $this->aplicaCondicional($siguiente, $conv)) {
+                $siguiente = $flujo->slice(
+                    $flujo->search(fn ($p) => $p->clave === $siguiente->clave) + 1
+                )->first();
+            } else {
+                break;
+            }
+        }
+
+        if (! $siguiente) {
+            // Fin del flujo → crear prospecto
+            $this->crearProspecto($conv);
             return;
         }
 
-        $conv->setDato('curp', $omitir ? null : $curp);
-        $this->crearProspecto($conv);
+        $this->ejecutarPaso($siguiente, $conv);
+    }
+
+    private function aplicaCondicional(ChatbotPaso $paso, WhatsappConversation $conv): bool
+    {
+        // El paso CURP solo aplica si el servicio requiere CURP
+        if ($paso->clave === 'curp') {
+            return (bool) $conv->getDato('requiere_curp', false);
+        }
+
+        return true;
     }
 
     // ──────────────────────────────────────────────
-    // CREAR PROSPECTO
+    // CREAR PROSPECTO AL FINAL DEL FLUJO
     // ──────────────────────────────────────────────
 
-    /**
-     * Crear prospecto al finalizar el flujo completo del chatbot.
-     */
     private function crearProspecto(WhatsappConversation $conv): void
     {
         $datos          = $conv->datos ?? [];
-        $nombreCompleto = $datos['nombre_completo'] ?? 'Prospecto WhatsApp';
+        $nombreCompleto = $datos['nombre'] ?? $datos['nombre_completo'] ?? 'Prospecto WhatsApp';
         $partes         = explode(' ', $nombreCompleto, 2);
         $nombre         = $partes[0];
         $apellidos      = $partes[1] ?? '';
 
         $notas = "Prospecto generado por chatbot WhatsApp.\n";
         $notas .= "Servicio de interés: " . ($datos['servicio'] ?? '—') . "\n";
-        if (! empty($datos['curp'])) {
-            $notas .= "CURP: " . $datos['curp'] . "\n";
+        foreach ($datos as $clave => $valor) {
+            if (! in_array($clave, ['nombre', 'nombre_completo', 'servicio', 'servicio_clave', 'correo', 'requiere_curp']) && $valor) {
+                $notas .= ucfirst($clave) . ": {$valor}\n";
+            }
         }
 
-        $existe = Contacto::where('telefono', $conv->telefono)->exists();
-        if (! $existe) {
+        if (! Contacto::where('telefono', $conv->telefono)->exists()) {
             Contacto::create([
                 'nombre'                => $nombre,
                 'apellidos'             => $apellidos,
@@ -214,7 +244,7 @@ class WhatsappChatbotService
         $this->whatsapp->sendText(
             $conv->chat_id,
             "✅ ¡Listo *{$nombre}*!\n\n" .
-            "Hemos registrado tu solicitud de *{$datos['servicio']}*.\n\n" .
+            "Hemos registrado tu solicitud de *" . ($datos['servicio'] ?? 'nuestros servicios') . "*.\n\n" .
             "Un asesor se pondrá en contacto contigo a la brevedad. 🏠\n\n" .
             "_Consultoría Inmobiliaria_"
         );
@@ -226,6 +256,38 @@ class WhatsappChatbotService
             $chatId,
             "Ya tienes una solicitud registrada. Un asesor se pondrá en contacto contigo pronto. 🏠\n\n" .
             "Si deseas iniciar una nueva consulta, escribe *hola*."
+        );
+    }
+
+    // ──────────────────────────────────────────────
+    // INTERPOLACIÓN DE VARIABLES EN MENSAJES
+    // ──────────────────────────────────────────────
+
+    private function interpolar(string $texto, WhatsappConversation $conv, ?string $pushName = null): string
+    {
+        $datos   = $conv->datos ?? [];
+        $nombre  = $pushName ?? $datos['nombre'] ?? $datos['nombre_completo'] ?? '';
+        $servicio = $datos['servicio'] ?? '';
+
+        // {menu} → genera la lista numerada del paso de selección
+        if (str_contains($texto, '{menu}')) {
+            $pasoServicio = ChatbotPaso::porClave('servicio');
+            $menu = '';
+            if ($pasoServicio && $pasoServicio->opciones) {
+                foreach ($pasoServicio->opciones as $op) {
+                    $emoji = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣'][$op['valor'] - 1] ?? $op['valor'];
+                    $menu .= "{$emoji}  {$op['etiqueta']}\n";
+                }
+            }
+            $texto = str_replace('{menu}', trim($menu), $texto);
+        }
+
+        $total = count(ChatbotPaso::porClave('servicio')?->opciones ?? []);
+
+        return str_replace(
+            ['{nombre}', '{servicio}', '{total}'],
+            [$nombre, $servicio, $total],
+            $texto
         );
     }
 
