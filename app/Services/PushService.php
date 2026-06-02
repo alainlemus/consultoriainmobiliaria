@@ -70,21 +70,44 @@ class PushService
             return;
         }
 
-        $result = $response->json('data');
-        $status = $result['status'] ?? 'unknown';
+        $result   = $response->json('data');
+        $status   = $result['status']  ?? 'unknown';
+        $ticketId = $result['id']      ?? null;
 
         if ($status === 'error') {
-            $details = $result['details'] ?? [];
-            $errorCode = $details['error'] ?? $result['message'] ?? 'unknown';
+            $details   = $result['details'] ?? [];
+            $errorCode = $details['error']  ?? $result['message'] ?? 'unknown';
             Log::warning("[Expo Push] Error en respuesta para {$token}: {$errorCode}");
 
-            // Token inválido — eliminarlo
             if (in_array($errorCode, ['DeviceNotRegistered', 'InvalidCredentials'])) {
                 DeviceToken::where('fcm_token', $token)->delete();
                 Log::info("[Expo Push] Token inválido eliminado: {$token}");
             }
         } else {
-            Log::info("[Expo Push] Enviado correctamente a {$token} (status: {$status})");
+            Log::info("[Expo Push] Ticket OK para {$token} — ticketId: {$ticketId}");
+
+            // Verificar receipt para confirmar entrega APNs/FCM
+            if ($ticketId) {
+                sleep(3); // Expo tarda ~2s en procesar
+                $receiptResponse = Http::withHeaders([
+                    'Accept'       => 'application/json',
+                    'Content-Type' => 'application/json',
+                ])->timeout(10)->post('https://exp.host/--/api/v2/push/getReceipts', [
+                    'ids' => [$ticketId],
+                ]);
+
+                if ($receiptResponse->ok()) {
+                    $receipt = $receiptResponse->json("data.{$ticketId}") ?? [];
+                    $receiptStatus = $receipt['status'] ?? 'unknown';
+
+                    if ($receiptStatus === 'error') {
+                        $receiptError = $receipt['details']['error'] ?? $receipt['message'] ?? 'unknown';
+                        Log::warning("[Expo Push] Receipt ERROR para ticketId {$ticketId}: {$receiptError}");
+                    } else {
+                        Log::info("[Expo Push] Receipt OK — notificación entregada a APNs/FCM (ticketId: {$ticketId})");
+                    }
+                }
+            }
         }
     }
 
