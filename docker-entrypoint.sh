@@ -14,5 +14,8 @@ chmod -R 775 /var/www/html/storage
 # Crear symlink de storage
 php artisan storage:link --force || true
 
+# Auto-detectar hostname y actualizar webhook en OpenWA
+php artisan whatsapp:actualizar-webhook || true
+
 # Ejecutar el comando principal
 exec "$@"

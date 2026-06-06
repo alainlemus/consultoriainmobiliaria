@@ -157,6 +157,17 @@ class ContactoResource extends Resource
                         ])
                         ->default('nuevo')
                         ->hint('Actualiza conforme avance el proceso'),
+                    Forms\Components\Select::make('estado_ubicacion')
+                        ->label('Estado / Ubicación')
+                        ->options([
+                            'Hidalgo'          => 'Hidalgo',
+                            'Veracruz'         => 'Veracruz',
+                            'Tamaulipas'       => 'Tamaulipas',
+                            'San Luis Potosí'  => 'San Luis Potosí',
+                            'Otro'             => 'Otro',
+                        ])
+                        ->searchable()
+                        ->nullable(),
                     Forms\Components\Select::make('estado')
                         ->label('Estado (interno)')
                         ->options([
@@ -363,6 +374,11 @@ class ContactoResource extends Resource
                         'descartado'       => 'Descartado',
                         default            => $state,
                     }),
+                Tables\Columns\TextColumn::make('estado_ubicacion')
+                    ->label('Estado')
+                    ->placeholder('—')
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('modalidad_cierre')
                     ->label('Modalidad')
                     ->placeholder('—')

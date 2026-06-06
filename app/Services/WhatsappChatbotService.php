@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Contacto;
 use App\Models\ChatbotPaso;
+use App\Models\Expediente;
 use App\Models\WhatsappConversation;
 use Illuminate\Support\Facades\Log;
 
@@ -101,8 +102,7 @@ class WhatsappChatbotService
             'texto_libre' => $this->procesarTextoLibre($paso, $conv, $mensaje, $omitir),
             'condicional' => $this->procesarCondicional($paso, $conv, $mensaje, $omitir),
             default       => $this->avanzarAlSiguiente($conv, null),
-        };
-    }
+        };    }
 
     private function procesarSeleccion(ChatbotPaso $paso, WhatsappConversation $conv, string $mensaje): void
     {
@@ -110,10 +110,36 @@ class WhatsappChatbotService
         $opcion   = $opciones->firstWhere('valor', trim($mensaje));
 
         if (! $opcion) {
-            $total = $opciones->count();
             $texto = $this->interpolar($paso->mensaje, $conv);
             $this->whatsapp->sendText($conv->chat_id, $texto);
             $conv->save();
+            return;
+        }
+
+        // Paso especial: confirmación de teléfono
+        if ($paso->clave === 'confirmacion_telefono') {
+            if (trim($mensaje) === '1') {
+                // Confirma el teléfono detectado
+                $conv->setDato('telefono_confirmado', $conv->telefono);
+                $conv->save();
+                $this->avanzarAlSiguiente($conv, $paso);
+            } else {
+                // Quiere cambiar → ir al paso telefono_manual
+                $pasoManual = ChatbotPaso::porClave('telefono_manual');
+                if ($pasoManual) {
+                    $this->ejecutarPaso($pasoManual, $conv);
+                } else {
+                    $this->avanzarAlSiguiente($conv, $paso);
+                }
+            }
+            return;
+        }
+
+        // Pasos de selección genéricos: guardar etiqueta con la clave del paso
+        if (in_array($paso->clave, ['estado_ubicacion', 'situacion_laboral'])) {
+            $conv->setDato($paso->clave, $opcion['etiqueta']);
+            $conv->save();
+            $this->avanzarAlSiguiente($conv, $paso);
             return;
         }
 
@@ -137,6 +163,21 @@ class WhatsappChatbotService
         if ($paso->clave === 'correo' && ! $omitir && ! filter_var($mensaje, FILTER_VALIDATE_EMAIL)) {
             $this->whatsapp->sendText($conv->chat_id, "El correo no parece válido. Por favor escríbelo de nuevo o escribe *omitir*.");
             $conv->save();
+            return;
+        }
+
+        // Validación especial para teléfono manual
+        if ($paso->clave === 'telefono_manual') {
+            $tel = preg_replace('/\D/', '', $mensaje);
+            if (strlen($tel) !== 10) {
+                $this->whatsapp->sendText($conv->chat_id, "El número debe tener exactamente *10 dígitos*. Por ejemplo: 5512345678\n\nIntenta de nuevo:");
+                $conv->save();
+                return;
+            }
+            $conv->setDato('telefono_confirmado', $tel);
+            $conv->telefono = $tel;
+            $conv->save();
+            $this->avanzarAlSiguiente($conv, $paso);
             return;
         }
 
@@ -225,30 +266,59 @@ class WhatsappChatbotService
         $datos          = $conv->datos ?? [];
         $nombreCompleto = $datos['nombre'] ?? $datos['nombre_completo'] ?? 'Prospecto WhatsApp';
         $primerNombre   = explode(' ', $nombreCompleto)[0];
+        $telefono       = $datos['telefono_confirmado'] ?? $conv->telefono;
 
         $notas = "Prospecto generado por chatbot WhatsApp.\n";
         $notas .= "Servicio de interés: " . ($datos['servicio'] ?? '—') . "\n";
         foreach ($datos as $clave => $valor) {
-            if (! in_array($clave, ['nombre', 'nombre_completo', 'servicio', 'servicio_clave', 'correo', 'requiere_curp']) && $valor) {
+            if (! in_array($clave, ['nombre', 'nombre_completo', 'servicio', 'servicio_clave', 'correo', 'requiere_curp', 'telefono_confirmado']) && $valor) {
                 $notas .= ucfirst($clave) . ": {$valor}\n";
             }
         }
 
-        if (! Contacto::where('telefono', $conv->telefono)->exists()) {
+        $conv->paso = 'completado';
+        $conv->save();
+
+        // Verificar si tiene expediente activo
+        $contactoExistente = Contacto::where('telefono', $telefono)->first();
+        if ($contactoExistente) {
+            $tieneExpediente = Expediente::where('contacto_id', $contactoExistente->id)->exists();
+            if ($tieneExpediente) {
+                $this->whatsapp->sendText(
+                    $conv->chat_id,
+                    "ℹ️ *{$primerNombre}*, ya tienes un expediente activo con nosotros.\n\n" .
+                    "Un asesor está trabajando en tu caso y se pondrá en contacto contigo pronto. 🏠\n\n" .
+                    "_Consultoría Inmobiliaria_"
+                );
+                Log::info("[Chatbot WhatsApp] Expediente existente para: {$telefono}");
+                return;
+            }
+
+            // Actualizar datos del contacto existente
+            $contactoExistente->update([
+                'nombre'              => $nombreCompleto,
+                'email'               => $datos['correo'] ?? $contactoExistente->email,
+                'estado_prospecto'    => 'nuevo',
+                'estado_ubicacion'    => $datos['estado_ubicacion'] ?? $contactoExistente->estado_ubicacion,
+                'tipo_credito_interes'=> $datos['situacion_laboral'] ?? $contactoExistente->tipo_credito_interes,
+                'notas'               => $notas,
+            ]);
+            Log::info("[Chatbot WhatsApp] Contacto actualizado: {$telefono} — {$nombreCompleto}");
+        } else {
+            // Crear nuevo contacto
             Contacto::create([
                 'nombre'                => $nombreCompleto,
-                'telefono'              => $conv->telefono,
+                'telefono'              => $telefono,
                 'email'                 => $datos['correo'] ?? null,
                 'origen'                => 'whatsapp',
                 'estado_prospecto'      => 'nuevo',
+                'estado_ubicacion'      => $datos['estado_ubicacion'] ?? null,
+                'tipo_credito_interes'  => $datos['situacion_laboral'] ?? null,
                 'fecha_primer_contacto' => now()->toDateString(),
                 'notas'                 => $notas,
             ]);
-            Log::info("[Chatbot WhatsApp] Prospecto creado: {$conv->telefono} — {$nombreCompleto}");
+            Log::info("[Chatbot WhatsApp] Prospecto creado: {$telefono} — {$nombreCompleto}");
         }
-
-        $conv->paso = 'completado';
-        $conv->save();
 
         $this->whatsapp->sendText(
             $conv->chat_id,
@@ -274,9 +344,10 @@ class WhatsappChatbotService
 
     private function interpolar(string $texto, WhatsappConversation $conv, ?string $pushName = null): string
     {
-        $datos   = $conv->datos ?? [];
-        $nombre  = $pushName ?? $datos['nombre'] ?? $datos['nombre_completo'] ?? '';
+        $datos    = $conv->datos ?? [];
+        $nombre   = $pushName ?? $datos['nombre'] ?? $datos['nombre_completo'] ?? '';
         $servicio = $datos['servicio'] ?? '';
+        $telefono = $datos['telefono_confirmado'] ?? $conv->telefono ?? '';
 
         // {menu} → genera la lista numerada del paso de selección
         if (str_contains($texto, '{menu}')) {
@@ -294,8 +365,8 @@ class WhatsappChatbotService
         $total = count(ChatbotPaso::porClave('servicio')?->opciones ?? []);
 
         return str_replace(
-            ['{nombre}', '{servicio}', '{total}'],
-            [$nombre, $servicio, $total],
+            ['{nombre}', '{servicio}', '{total}', '{telefono}'],
+            [$nombre, $servicio, $total, $telefono],
             $texto
         );
     }
