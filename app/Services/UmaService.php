@@ -12,19 +12,26 @@ use Illuminate\Support\Facades\Log;
  *
  * La UMA se actualiza cada 1 de febrero según lo establece el INEGI.
  * Fuentes consultadas (en orden de prioridad):
- *   1. API oficial INEGI BIE (requiere token en .env → INEGI_TOKEN)
+ *   1. API oficial INEGI BIE (requiere token BIE en .env → INEGI_TOKEN)
  *   2. Scraping de la página oficial INEGI
- *   3. Valor de respaldo hardcodeado (UMA 2025)
+ *   3. Valor de respaldo hardcodeado (UMA vigente)
  *
  * Los valores se almacenan en la tabla `configuraciones` para ser
  * usados por el simulador y cualquier otro cálculo del CRM.
  *
- * ⚠️  IMPORTANTE: existen DOS APIs distintas en INEGI:
- *   - API DENUE (directorio de negocios): https://www.inegi.org.mx/app/mapa/denue/
- *   - API Indicadores BIE (datos estadísticos): https://www.inegi.org.mx/app/api/indicadores/
+ * ⚠️  IMPORTANTE — INEGI tiene APIs separadas:
+ *   - API DENUE (directorio negocios): token de https://www.inegi.org.mx/app/mapa/denue/
+ *   - API BISE (indicadores sociodemográficos): mismo token DENUE, funciona ✓
+ *   - API BIE (banco de información económica): requiere token DISTINTO
+ *     Registro en: https://www.inegi.org.mx/app/api/indicadores/
  *
- *   El INEGI_TOKEN debe ser de la API de INDICADORES (BIE), no del DENUE.
- *   Registro gratuito en: https://www.inegi.org.mx/app/api/indicadores/
+ *   El indicador UMA (ID 539358) vive en BIE, NO en BISE.
+ *   Con un token DENUE el endpoint BIE devuelve ErrorCode:100.
+ *   → Obtener token BIE (registro gratuito) y guardarlo como INEGI_TOKEN.
+ *
+ * ⚠️  UMA 2026: valor en FALLBACK es estimado (INPC 2024 ~4.x%).
+ *   Confirmar en DOF (31-ene-2026) o en https://www.inegi.org.mx/temas/uma/
+ *   y actualizar manualmente vía admin → UMA Settings.
  */
 class UmaService
 {
@@ -35,14 +42,17 @@ class UmaService
     const CLAVE_VIGENCIA = 'uma_vigencia'; // año de vigencia del valor guardado
 
     // ── Valores de respaldo (UMA 2026, vigente desde 01-feb-2026) ─────────
-    // Fuente oficial: DOF 30-ene-2026 / Resolución INEGI
-    // ⚠ Verificar en: https://www.inegi.org.mx/temas/uma/
+    // ⚠ ESTIMADO — calculado con INPC 2024 ~4.x% sobre UMA 2025 ($113.14)
+    // Confirmar valor oficial en DOF 31-ene-2026 o https://www.inegi.org.mx/temas/uma/
+    // y actualizar vía admin → UMA Settings para sobreescribir este fallback.
     const FALLBACK_DIARIA  = 117.63;
-    const FALLBACK_MENSUAL = 3575.95;  // 117.63 × 30.4
-    const FALLBACK_ANUAL   = 42934.95; // 117.63 × 365
+    const FALLBACK_MENSUAL = 3575.95;  // diaria × 30.4
+    const FALLBACK_ANUAL   = 42934.95; // diaria × 365
+    // Referencia: UMA 2025 oficial → $113.14/día · $3,439.46/mes · $41,273.52/año
 
     // ── Indicador INEGI BIE para UMA diaria ───────────────────────────────
-    // ID 539358 en el Banco de Indicadores del INEGI (BIE)
+    // ID 539358 en el Banco de Información Económica (BIE) del INEGI
+    // ⚠ Solo accesible con token BIE (NO con token DENUE/BISE)
     const INEGI_INDICADOR_UMA = '539358';
 
     // ─────────────────────────────────────────────────────────────────────
@@ -119,8 +129,11 @@ class UmaService
     // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * Consulta la API oficial del Banco de Indicadores del INEGI.
-     * Requiere INEGI_TOKEN en .env → registrar gratis en inegi.org.mx
+     * Consulta la API oficial del Banco de Información Económica (BIE) del INEGI.
+     *
+     * Requiere token BIE en INEGI_TOKEN (.env).
+     * Token DENUE ≠ token BIE → devuelve ErrorCode:100 si se usa token DENUE.
+     * Registro gratuito: https://www.inegi.org.mx/app/api/indicadores/
      *
      * URL: https://www.inegi.org.mx/app/api/indicadores/desarrolladores/
      *       jsonxml/INDICATOR/{ID}/es/00/true/BIE/2.0/{TOKEN}?type=json
@@ -139,7 +152,14 @@ class UmaService
             }
 
             $json = $response->json();
-            $obs  = $json['Series'][0]['OBSERVATIONS'][0] ?? null;
+
+            // Detectar errores explícitos de la API (ej. ErrorCode:100 = token incorrecto o indicador no encontrado)
+            if (isset($json[0]) && str_contains($json[0] ?? '', 'ErrorCode')) {
+                Log::warning('[UmaService] INEGI API error: ' . ($json[0] ?? ''));
+                return null;
+            }
+
+            $obs = $json['Series'][0]['OBSERVATIONS'][0] ?? null;
 
             if (! $obs || empty($obs['OBS_VALUE'])) {
                 Log::warning('[UmaService] INEGI API: respuesta sin observaciones.');
@@ -166,20 +186,87 @@ class UmaService
 
     /**
      * Scraping de múltiples fuentes como respaldo cuando no hay token BIE.
-     *  1. Boletín de prensa INEGI (URL fija por año)
-     *  2. Página principal UMA del INEGI
+     *  1. Servicio interno del BIE (endpoint no autenticado del visor interactivo)
+     *  2. Boletín de prensa INEGI (URL fija por año)
+     *  3. Página principal UMA del INEGI
      */
     private static function fetchFromScraping(): ?array
     {
         $año = (int) date('Y');
 
-        // Fuente 1: boletín UMA del año actual en INEGI (PDF texto)
+        // Fuente 1: servicio interno del visor BIE (no requiere token de desarrollador)
+        $datos = self::scrapeVisorBIE();
+        if ($datos) return $datos;
+
+        // Fuente 2: boletín UMA del año actual en INEGI (PDF texto)
         $datos = self::scrapeBoletin($año);
         if ($datos) return $datos;
 
-        // Fuente 2: página principal UMA (carga dinámica con JS, raramente funciona)
+        // Fuente 3: página principal UMA (carga dinámica con JS, raramente funciona)
         $datos = self::scrapeUmaPage();
         if ($datos) return $datos;
+
+        return null;
+    }
+
+    /**
+     * Intenta leer el valor UMA desde el web service interno del visor BIE de INEGI.
+     * Endpoint: https://www.inegi.org.mx/app/tabulados/serviciocuadros/wsDataService.svc
+     *           /listaindicadorbiinegi/{serie}/false/0700/es/json/{añoInicio}/{añoFin}/000/000/BIE
+     *
+     * Este endpoint es el que usa el visor interactivo de INEGI sin autenticación.
+     * Devuelve un array JSON con los datos de la serie; puede devolver [] si no hay datos.
+     */
+    private static function scrapeVisorBIE(): ?array
+    {
+        $id   = self::INEGI_INDICADOR_UMA;
+        $año  = (int) date('Y');
+        $base = 'https://www.inegi.org.mx/app/tabulados/serviciocuadros/wsDataService.svc';
+        $url  = "{$base}/listaindicadorbiinegi/{$id}/false/0700/es/json/2016/{$año}/000/000/BIE";
+
+        try {
+            $response = Http::timeout(15)
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (compatible; CRMInmobiliaria/1.0)',
+                    'Referer'    => 'https://www.inegi.org.mx/temas/uma/',
+                ])
+                ->get($url);
+
+            if (! $response->ok()) return null;
+
+            $data = $response->json();
+
+            // Buscar el último período disponible con valor UMA
+            if (! is_array($data) || empty($data)) return null;
+
+            // Los datos vienen como [[año, valor], [año, valor], ...]
+            // o como objetos con claves variadas — extraer el más reciente
+            $ultimo = null;
+            foreach ($data as $item) {
+                if (is_array($item)) {
+                    $val = null;
+                    // Intentar extraer valor numérico de la fila
+                    foreach ($item as $v) {
+                        if (is_numeric($v)) {
+                            $f = (float) $v;
+                            if ($f >= 70 && $f <= 300) {
+                                $val = $f;
+                                break;
+                            }
+                        }
+                    }
+                    if ($val !== null) $ultimo = $val;
+                }
+            }
+
+            if ($ultimo !== null) {
+                Log::info("[UmaService] Visor BIE: valor UMA encontrado: {$ultimo}");
+                return ['diaria' => $ultimo, 'vigencia' => $año];
+            }
+
+        } catch (\Throwable $e) {
+            Log::warning('[UmaService] Visor BIE scraping excepción: ' . $e->getMessage());
+        }
 
         return null;
     }

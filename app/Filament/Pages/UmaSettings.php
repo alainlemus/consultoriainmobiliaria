@@ -121,10 +121,19 @@ class UmaSettings extends Page
                             ->content(function (): string {
                                 $token = config('services.inegi.token');
                                 if ($token) {
-                                    return '✅ Token configurado (INEGI_TOKEN en .env)';
+                                    // Detectar si es token DENUE (no sirve para BIE)
+                                    $esDenue = str_starts_with($token, '7aa27064');
+                                    if ($esDenue) {
+                                        return '⚠️ Token detectado es DENUE (no BIE) — El indicador UMA (BIE) '
+                                            . 'devolverá ErrorCode:100. Registra un token de la API de '
+                                            . 'INDICADORES en: https://www.inegi.org.mx/app/api/indicadores/ '
+                                            . '(es diferente al DENUE, registro gratuito)';
+                                    }
+                                    return '✅ Token BIE configurado (INEGI_TOKEN en .env)';
                                 }
-                                return '⚠️ Sin token BIE — Solo scraping disponible. '
-                                    . 'Registra el token de la API de INDICADORES (no DENUE) en: '
+                                return '⚠️ Sin token — Solo scraping disponible. '
+                                    . 'Para auto-actualización: registrar token de la API de '
+                                    . 'INDICADORES (≠ DENUE) en: '
                                     . 'https://www.inegi.org.mx/app/api/indicadores/';
                             }),
                     ]),
@@ -167,7 +176,10 @@ class UmaSettings extends Page
                         } else {
                             Notification::make()
                                 ->title('No se pudo actualizar desde INEGI')
-                                ->body('Verifica tu INEGI_TOKEN en .env o la conexión a internet. El valor actual sigue vigente.')
+                                ->body('Verifica tu INEGI_TOKEN en .env: debe ser de la API de INDICADORES BIE, '
+                                    . 'NO del DENUE (token distinto). Si no tienes token BIE, el botón usará '
+                                    . 'scraping pero puede no encontrar el valor. '
+                                    . 'Puedes actualizar el valor manualmente con el formulario.')
                                 ->warning()
                                 ->send();
                         }
