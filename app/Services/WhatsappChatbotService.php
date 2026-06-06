@@ -43,6 +43,18 @@ class WhatsappChatbotService
         $mensaje = trim($mensaje ?? '');
 
         if ($conv->paso === 'completado') {
+            $mensajeNormalizado = strtolower(trim($mensaje ?? ''));
+            if (in_array($mensajeNormalizado, ['hola', 'hola!', 'hola.', 'hi', 'buenas', 'buenos días', 'buenas tardes', 'buenas noches'])) {
+                // Reiniciar flujo
+                $conv->datos             = [];
+                $conv->ultimo_mensaje_at = now();
+                $primerPaso = ChatbotPaso::flujoActivo()->first();
+                if (! $primerPaso) return;
+                $conv->paso = $primerPaso->clave;
+                $conv->save();
+                $this->ejecutarPaso($primerPaso, $conv, $pushName);
+                return;
+            }
             $this->mensajeYaRegistrado($chatId);
             return;
         }
