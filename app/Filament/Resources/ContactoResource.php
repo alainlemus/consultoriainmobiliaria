@@ -138,7 +138,7 @@ class ContactoResource extends Resource
                         ]),
                     Forms\Components\Textarea::make('mensaje')
                         ->label('Mensaje')->rows(3)->columnSpanFull()
-                        ->hint('Mensaje original del sitio web o nota inicial'),
+                        ->hint('Mensaje del prospecto (sitio web, WhatsApp u otro canal)'),
                 ])->columns(2),
 
             \Filament\Schemas\Components\Section::make('Gestión del Prospecto')
@@ -378,6 +378,17 @@ class ContactoResource extends Resource
                     ->label('Estado')
                     ->placeholder('—')
                     ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('tipo_credito_interes')
+                    ->label('Tipo crédito')
+                    ->placeholder('—')
+                    ->formatStateUsing(fn ($state) => match($state) {
+                        'infonavit' => 'INFONAVIT',
+                        'fovissste' => 'FOVISSSTE',
+                        'ambos'     => 'Ambos',
+                        'otro'      => 'Otro',
+                        default     => $state ?? '—',
+                    })
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('modalidad_cierre')
                     ->label('Modalidad')

@@ -268,6 +268,14 @@ class WhatsappChatbotService
         $primerNombre   = explode(' ', $nombreCompleto)[0];
         $telefono       = $datos['telefono_confirmado'] ?? $conv->telefono;
 
+        // Mapear situacion_laboral → tipo_credito_interes (valores del Select de Filament)
+        $mapaTipoCredito = [
+            'Trabajador IMSS (INFONAVIT)'   => 'infonavit',
+            'Trabajador ISSSTE (FOVISSSTE)'  => 'fovissste',
+            'Independiente / otro'           => 'otro',
+        ];
+        $tipoCredito = $mapaTipoCredito[$datos['situacion_laboral'] ?? ''] ?? null;
+
         $notas = "Prospecto generado por chatbot WhatsApp.\n";
         $notas .= "Servicio de interés: " . ($datos['servicio'] ?? '—') . "\n";
         foreach ($datos as $clave => $valor) {
@@ -300,7 +308,8 @@ class WhatsappChatbotService
                 'email'               => $datos['correo'] ?? $contactoExistente->email,
                 'estado_prospecto'    => 'nuevo',
                 'estado_ubicacion'    => $datos['estado_ubicacion'] ?? $contactoExistente->estado_ubicacion,
-                'tipo_credito_interes'=> $datos['situacion_laboral'] ?? $contactoExistente->tipo_credito_interes,
+                'tipo_credito_interes'=> $tipoCredito ?? $contactoExistente->tipo_credito_interes,
+                'mensaje'             => $datos['mensaje_libre'] ?? $contactoExistente->mensaje,
                 'notas'               => $notas,
             ]);
             Log::info("[Chatbot WhatsApp] Contacto actualizado: {$telefono} — {$nombreCompleto}");
@@ -313,7 +322,8 @@ class WhatsappChatbotService
                 'origen'                => 'whatsapp',
                 'estado_prospecto'      => 'nuevo',
                 'estado_ubicacion'      => $datos['estado_ubicacion'] ?? null,
-                'tipo_credito_interes'  => $datos['situacion_laboral'] ?? null,
+                'tipo_credito_interes'  => $tipoCredito,
+                'mensaje'               => $datos['mensaje_libre'] ?? null,
                 'fecha_primer_contacto' => now()->toDateString(),
                 'notas'                 => $notas,
             ]);

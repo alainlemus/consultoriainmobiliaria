@@ -96,14 +96,25 @@ class ChatbotPasosSeeder extends Seeder
                 'etiqueta'      => 'Situación laboral',
                 'mensaje'       => "¿Cuál es tu situación laboral? 💼\n\n1️⃣  Trabajador IMSS (INFONAVIT)\n2️⃣  Trabajador ISSSTE (FOVISSSTE)\n3️⃣  Independiente / otro",
                 'opciones'      => [
-                    ['valor' => '1', 'etiqueta' => 'Trabajador IMSS (INFONAVIT)',  'requiere_curp' => false],
+                    ['valor' => '1', 'etiqueta' => 'Trabajador IMSS (INFONAVIT)',   'requiere_curp' => false],
                     ['valor' => '2', 'etiqueta' => 'Trabajador ISSSTE (FOVISSSTE)', 'requiere_curp' => false],
-                    ['valor' => '3', 'etiqueta' => 'Independiente / otro',          'requiere_curp' => false],
+                    ['valor' => '3', 'etiqueta' => 'Independiente / otro',           'requiere_curp' => false],
                 ],
-                'siguiente_paso'=> 'correo',
+                'siguiente_paso'=> 'mensaje_libre',
                 'activo'        => true,
                 'requerido'     => true,
                 'orden'         => 7,
+            ],
+            [
+                'clave'         => 'mensaje_libre',
+                'tipo'          => 'texto_libre',
+                'etiqueta'      => 'Mensaje adicional',
+                'mensaje'       => "¿Hay algo más que quieras contarnos sobre tu situación o lo que buscas? 📝\n_(Escribe tu mensaje o escribe *omitir* para continuar)_",
+                'opciones'      => null,
+                'siguiente_paso'=> 'correo',
+                'activo'        => true,
+                'requerido'     => false,
+                'orden'         => 8,
             ],
             [
                 'clave'         => 'correo',
@@ -114,7 +125,7 @@ class ChatbotPasosSeeder extends Seeder
                 'siguiente_paso'=> 'curp',
                 'activo'        => true,
                 'requerido'     => false,
-                'orden'         => 8,
+                'orden'         => 9,
             ],
             [
                 'clave'         => 'curp',
@@ -125,7 +136,7 @@ class ChatbotPasosSeeder extends Seeder
                 'siguiente_paso'=> null,
                 'activo'        => true,
                 'requerido'     => false,
-                'orden'         => 9,
+                'orden'         => 10,
             ],
         ];
 
