@@ -117,24 +117,20 @@ class UmaSettings extends Page
                     ->collapsed()
                     ->schema([
                         Forms\Components\Placeholder::make('inegi_token_estado')
-                            ->label('Estado del token BIE')
+                            ->label('Estado de auto-actualización')
                             ->content(function (): string {
                                 $token = config('services.inegi.token');
                                 if ($token) {
-                                    // Detectar si es token DENUE (no sirve para BIE)
-                                    $esDenue = str_starts_with($token, '7aa27064');
-                                    if ($esDenue) {
-                                        return '⚠️ Token detectado es DENUE (no BIE) — El indicador UMA (BIE) '
-                                            . 'devolverá ErrorCode:100. Registra un token de la API de '
-                                            . 'INDICADORES en: https://www.inegi.org.mx/app/api/indicadores/ '
-                                            . '(es diferente al DENUE, registro gratuito)';
-                                    }
-                                    return '✅ Token BIE configurado (INEGI_TOKEN en .env)';
+                                    return '✅ Token configurado — Nota: la API pública del INEGI solo expone '
+                                        . 'indicadores BISE. El indicador UMA vive en BIE (no accesible vía API '
+                                        . 'pública). El botón "Actualizar desde INEGI" intentará scraping como '
+                                        . 'respaldo, pero puede no encontrar el valor. '
+                                        . 'Se recomienda actualizar manualmente cada febrero con el valor del DOF.';
                                 }
-                                return '⚠️ Sin token — Solo scraping disponible. '
-                                    . 'Para auto-actualización: registrar token de la API de '
-                                    . 'INDICADORES (≠ DENUE) en: '
-                                    . 'https://www.inegi.org.mx/app/api/indicadores/';
+                                return '⚠️ Sin token configurado (INEGI_TOKEN en .env). '
+                                    . 'De cualquier forma, la auto-actualización no está disponible '
+                                    . 'porque el indicador UMA está en BIE (no expuesto en la API pública). '
+                                    . 'Actualizar el valor manualmente cada febrero.';
                             }),
                     ]),
             ]);
