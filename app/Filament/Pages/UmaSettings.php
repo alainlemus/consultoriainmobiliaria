@@ -5,15 +5,12 @@ namespace App\Filament\Pages;
 use App\Models\Configuracion;
 use App\Services\UmaService;
 use Filament\Forms;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Placeholder;
 use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Grid;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -68,7 +65,7 @@ class UmaSettings extends Page
                     ->icon('heroicon-o-information-circle')
                     ->schema([
                         Grid::make(4)->schema([
-                            TextInput::make('uma_vigencia')
+                            Forms\Components\TextInput::make('uma_vigencia')
                                 ->label('Año de vigencia')
                                 ->placeholder('2026')
                                 ->numeric()
@@ -76,7 +73,7 @@ class UmaSettings extends Page
                                 ->maxValue(2099)
                                 ->required(),
 
-                            TextInput::make('uma_diaria')
+                            Forms\Components\TextInput::make('uma_diaria')
                                 ->label('UMA Diaria ($)')
                                 ->placeholder('117.63')
                                 ->numeric()
@@ -94,7 +91,7 @@ class UmaSettings extends Page
                                 })
                                 ->required(),
 
-                            TextInput::make('uma_mensual')
+                            Forms\Components\TextInput::make('uma_mensual')
                                 ->label('UMA Mensual ($)')
                                 ->placeholder('3,575.95')
                                 ->numeric()
@@ -103,7 +100,7 @@ class UmaSettings extends Page
                                 ->readOnly()
                                 ->helperText('Calculado: diaria × 30.4'),
 
-                            TextInput::make('uma_anual')
+                            Forms\Components\TextInput::make('uma_anual')
                                 ->label('UMA Anual ($)')
                                 ->placeholder('42,934.95')
                                 ->numeric()
@@ -119,7 +116,7 @@ class UmaSettings extends Page
                     ->icon('heroicon-o-cloud-arrow-down')
                     ->collapsed()
                     ->schema([
-                        Placeholder::make('inegi_token_estado')
+                        Forms\Components\Placeholder::make('inegi_token_estado')
                             ->label('Estado del token BIE')
                             ->content(function (): string {
                                 $token = config('services.inegi.token');
