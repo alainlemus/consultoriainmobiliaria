@@ -257,7 +257,9 @@ class ContactoResource extends Resource
                 ->description('Datos del simulador FOVISSSTE / portal INFONAVIT.')
                 ->schema([
                     Forms\Components\TextInput::make('curp')
-                        ->label('CURP')->maxLength(18)->minLength(18)
+                        ->label('CURP')
+                        ->nullable()
+                        ->maxLength(18)->minLength(18)
                         ->regex('/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i')
                         ->validationMessages([
                             'regex' => 'La CURP no tiene el formato correcto (ej: LOHA850101HDFPLN02).',
@@ -265,7 +267,9 @@ class ContactoResource extends Resource
                             'max'   => 'La CURP debe tener exactamente 18 caracteres.',
                         ])
                         ->live(onBlur: true)
-                        ->extraAttributes(['style' => 'text-transform:uppercase']),
+                        ->afterStateUpdated(fn (\Filament\Schemas\Components\Utilities\Set $set, ?string $state) => $set('curp', strtoupper($state ?? '')))
+                        ->dehydrated(true)
+                        ->placeholder('LOHA850101HDFPLN02'),
                     Forms\Components\DatePicker::make('fecha_nacimiento')
                         ->label('Fecha de nacimiento')->before('today')
                         ->validationMessages([
@@ -301,6 +305,18 @@ class ContactoResource extends Resource
                         ->validationMessages([
                             'min' => 'La subcuenta de vivienda no puede ser negativa.',
                         ]),
+
+                    Forms\Components\Select::make('resultado_precalificacion')
+                        ->label('Resultado de precalificación')
+                        ->options([
+                            'pendiente'    => '⏳ Pendiente',
+                            'aprobado'     => '✅ Aprobado',
+                            'condicional'  => '⚠️ Condicional',
+                            'no_califica'  => '❌ No califica',
+                        ])
+                        ->nullable()
+                        ->placeholder('Sin evaluar')
+                        ->columnSpanFull(),
 
                     Forms\Components\Placeholder::make('acceso_simulador')
                         ->label('Simuladores oficiales')->columnSpanFull()
@@ -378,6 +394,23 @@ class ContactoResource extends Resource
                     ->label('Estado')
                     ->placeholder('—')
                     ->sortable()
+                    ->toggleable(),
+                Tables\Columns\BadgeColumn::make('resultado_precalificacion')
+                    ->label('Precalif.')
+                    ->colors([
+                        'gray'    => 'pendiente',
+                        'success' => 'aprobado',
+                        'warning' => 'condicional',
+                        'danger'  => 'no_califica',
+                    ])
+                    ->formatStateUsing(fn ($state) => match($state) {
+                        'pendiente'   => '⏳ Pendiente',
+                        'aprobado'    => '✅ Aprobado',
+                        'condicional' => '⚠️ Condicional',
+                        'no_califica' => '❌ No califica',
+                        default       => '—',
+                    })
+                    ->placeholder('—')
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('tipo_credito_interes')
                     ->label('Tipo crédito')

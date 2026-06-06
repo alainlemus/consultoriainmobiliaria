@@ -13,7 +13,8 @@ class Contacto extends Model
         // CRM
         'asesor_id', 'origen', 'curp', 'fecha_nacimiento', 'antiguedad_laboral',
         'salario_mensual', 'tipo_credito_interes', 'monto_credito_estimado',
-        'subcuenta_vivienda', 'notas_precalificacion', 'estado_prospecto', 'estado_ubicacion',
+        'subcuenta_vivienda', 'notas_precalificacion', 'resultado_precalificacion',
+        'estado_prospecto', 'estado_ubicacion',
         'fecha_primer_contacto', 'modalidad_cierre', 'notas_cierre', 'fecha_envio_dueno',
     ];
 

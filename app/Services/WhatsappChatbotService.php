@@ -310,6 +310,7 @@ class WhatsappChatbotService
                 'estado_ubicacion'    => $datos['estado_ubicacion'] ?? $contactoExistente->estado_ubicacion,
                 'tipo_credito_interes'=> $tipoCredito ?? $contactoExistente->tipo_credito_interes,
                 'mensaje'             => $datos['mensaje_libre'] ?? $contactoExistente->mensaje,
+                'curp'                => isset($datos['curp']) ? strtoupper($datos['curp']) : $contactoExistente->curp,
                 'notas'               => $notas,
             ]);
             Log::info("[Chatbot WhatsApp] Contacto actualizado: {$telefono} — {$nombreCompleto}");
@@ -324,6 +325,7 @@ class WhatsappChatbotService
                 'estado_ubicacion'      => $datos['estado_ubicacion'] ?? null,
                 'tipo_credito_interes'  => $tipoCredito,
                 'mensaje'               => $datos['mensaje_libre'] ?? null,
+                'curp'                  => isset($datos['curp']) ? strtoupper($datos['curp']) : null,
                 'fecha_primer_contacto' => now()->toDateString(),
                 'notas'                 => $notas,
             ]);
