@@ -71,7 +71,7 @@ class WhatsappChatbotService
 
         // Si es solo un mensaje (sin esperar respuesta), avanzar automáticamente
         if ($paso->tipo === 'mensaje') {
-            $this->avanzarAlSiguiente($conv, null);
+            $this->avanzarAlSiguiente($conv, $paso);
         }
     }
 
