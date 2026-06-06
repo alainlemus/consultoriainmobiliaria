@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Contacto;
 use App\Models\ChatbotPaso;
 use App\Models\Expediente;
+use App\Models\User;
 use App\Models\WhatsappConversation;
 use App\Services\UmaService;
 use Illuminate\Support\Facades\Log;
@@ -517,6 +518,107 @@ class WhatsappChatbotService
             "Un asesor se pondrá en contacto contigo a la brevedad. 🏠\n\n" .
             "_Consultoría Inmobiliaria_"
         );
+
+        $this->notificarSuperAdmin($datos, $nombreCompleto, $telefono);
+    }
+
+    // ──────────────────────────────────────────────
+    // NOTIFICACIÓN AL SUPER ADMIN
+    // ──────────────────────────────────────────────
+
+    private function notificarSuperAdmin(array $datos, string $nombreCompleto, string $telefono): void
+    {
+        try {
+            // Buscar todos los usuarios super_admin con teléfono registrado
+            $admins = User::role('super_admin')->whereNotNull('telefono')->where('telefono', '!=', '')->get();
+
+            if ($admins->isEmpty()) {
+                Log::info('[Chatbot] notificarSuperAdmin: ningún super_admin con teléfono registrado.');
+                return;
+            }
+
+            $msg = $this->construirMensajeAdmin($datos, $nombreCompleto, $telefono);
+
+            foreach ($admins as $admin) {
+                $chatId = preg_replace('/\D/', '', $admin->telefono) . '@c.us';
+                $this->whatsapp->sendText($chatId, $msg);
+                Log::info("[Chatbot] Notificación enviada a super_admin {$admin->name} ({$admin->telefono})");
+            }
+
+        } catch (\Throwable $e) {
+            // No interrumpir el flujo si falla la notificación
+            Log::warning('[Chatbot] Error al notificar super_admin: ' . $e->getMessage());
+        }
+    }
+
+    private function construirMensajeAdmin(array $datos, string $nombreCompleto, string $telefono): string
+    {
+        $servicio   = $datos['servicio']          ?? '—';
+        $estado     = $datos['estado_ubicacion']  ?? '—';
+        $situacion  = $datos['situacion_laboral'] ?? '—';
+        $correo     = $datos['correo']            ?? '—';
+        $curp       = isset($datos['curp'])       ? strtoupper($datos['curp']) : null;
+        $mensaje    = $datos['mensaje_libre']     ?? null;
+        $resultado  = $datos['resultado_precalificacion'] ?? null;
+
+        // Datos de precalificación
+        $sueldo     = isset($datos['sueldo_precal'])     ? '$' . number_format((float)$datos['sueldo_precal'], 0, '.', ',') : null;
+        $edad       = isset($datos['edad_precal'])       ? $datos['edad_precal'] . ' años' : null;
+        $antiguedad = isset($datos['antiguedad_precal']) ? $datos['antiguedad_precal'] . ' años' : null;
+        $subcuenta  = isset($datos['subcuenta_precal']) && (float)$datos['subcuenta_precal'] > 0
+                        ? '$' . number_format((float)$datos['subcuenta_precal'], 0, '.', ',')
+                        : null;
+
+        $resultadoEmoji = match ($resultado) {
+            'pre_califica' => '✅ Pre-califica',
+            'no_califica'  => '❌ No califica',
+            default        => null,
+        };
+
+        // ── Construir mensaje ──────────────────────────────────────────────
+        $msg  = "🔔 *Nuevo prospecto registrado*\n";
+        $msg .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $msg .= "👤 *Nombre:* {$nombreCompleto}\n";
+        $msg .= "📱 *Teléfono:* {$telefono}\n";
+
+        if ($correo && $correo !== '—') {
+            $msg .= "📧 *Correo:* {$correo}\n";
+        }
+
+        $msg .= "📍 *Estado:* {$estado}\n";
+        $msg .= "🏦 *Servicio:* {$servicio}\n";
+        $msg .= "💼 *Situación laboral:* {$situacion}\n";
+
+        // Bloque de precalificación (solo si hizo el flujo)
+        if ($sueldo || $edad || $antiguedad) {
+            $msg .= "━━━━━━━━━━━━━━━━━━━━\n";
+            $msg .= "📊 *Datos de precalificación:*\n";
+            if ($sueldo)     $msg .= "  • Sueldo mensual: {$sueldo}\n";
+            if ($edad)       $msg .= "  • Edad: {$edad}\n";
+            if ($antiguedad) $msg .= "  • Antigüedad: {$antiguedad}\n";
+            if ($subcuenta)  $msg .= "  • Subcuenta vivienda: {$subcuenta}\n";
+            if ($resultadoEmoji) {
+                $msg .= "  • Resultado: *{$resultadoEmoji}*\n";
+            }
+        }
+
+        // CURP si la proporcionó
+        if ($curp) {
+            $msg .= "━━━━━━━━━━━━━━━━━━━━\n";
+            $msg .= "🪪 *CURP:* {$curp}\n";
+        }
+
+        // Mensaje libre si lo escribió
+        if ($mensaje) {
+            $msg .= "━━━━━━━━━━━━━━━━━━━━\n";
+            $msg .= "💬 *Mensaje del prospecto:*\n_{$mensaje}_\n";
+        }
+
+        $msg .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $msg .= "🕐 " . now()->timezone('America/Mexico_City')->format('d/m/Y H:i') . " hrs\n";
+        $msg .= "_Consultoría Inmobiliaria — CRM_";
+
+        return $msg;
     }
 
     private function mensajeYaRegistrado(string $chatId): void
