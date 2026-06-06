@@ -212,9 +212,7 @@ class WhatsappChatbotService
     {
         $datos          = $conv->datos ?? [];
         $nombreCompleto = $datos['nombre'] ?? $datos['nombre_completo'] ?? 'Prospecto WhatsApp';
-        $partes         = explode(' ', $nombreCompleto, 2);
-        $nombre         = $partes[0];
-        $apellidos      = $partes[1] ?? '';
+        $primerNombre   = explode(' ', $nombreCompleto)[0];
 
         $notas = "Prospecto generado por chatbot WhatsApp.\n";
         $notas .= "Servicio de interés: " . ($datos['servicio'] ?? '—') . "\n";
@@ -226,8 +224,7 @@ class WhatsappChatbotService
 
         if (! Contacto::where('telefono', $conv->telefono)->exists()) {
             Contacto::create([
-                'nombre'                => $nombre,
-                'apellidos'             => $apellidos,
+                'nombre'                => $nombreCompleto,
                 'telefono'              => $conv->telefono,
                 'email'                 => $datos['correo'] ?? null,
                 'origen'                => 'whatsapp',
@@ -243,7 +240,7 @@ class WhatsappChatbotService
 
         $this->whatsapp->sendText(
             $conv->chat_id,
-            "✅ ¡Listo *{$nombre}*!\n\n" .
+            "✅ ¡Listo *{$primerNombre}*!\n\n" .
             "Hemos registrado tu solicitud de *" . ($datos['servicio'] ?? 'nuestros servicios') . "*.\n\n" .
             "Un asesor se pondrá en contacto contigo a la brevedad. 🏠\n\n" .
             "_Consultoría Inmobiliaria_"
