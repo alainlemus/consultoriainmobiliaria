@@ -47,4 +47,10 @@ return [
         'webhook_secret' => env('OPENWA_WEBHOOK_SECRET', ''),
     ],
 
+    // API del Banco de Indicadores del INEGI — para actualizar la UMA automáticamente.
+    // Token gratuito en: https://www.inegi.org.mx/app/api/indicadores/
+    'inegi' => [
+        'token' => env('INEGI_TOKEN', ''),
+    ],
+
 ];
