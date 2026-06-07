@@ -32,6 +32,7 @@ class ChatbotPasosSeeder extends Seeder
                     ['valor' => '3', 'etiqueta' => 'Avalúo',                 'requiere_curp' => false],
                     ['valor' => '4', 'etiqueta' => 'Escrituración',          'requiere_curp' => false],
                     ['valor' => '5', 'etiqueta' => 'Asesoría personalizada', 'requiere_curp' => false],
+                    ['valor' => '6', 'etiqueta' => 'Otro',                   'requiere_curp' => false],
                 ],
                 'siguiente_paso'=> 'nombre',
                 'activo'        => true,

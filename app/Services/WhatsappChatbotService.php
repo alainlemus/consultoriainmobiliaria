@@ -290,6 +290,17 @@ class WhatsappChatbotService
         ];
         $tipoCredito = $mapaTipoCredito[$datos['situacion_laboral'] ?? ''] ?? null;
 
+        // Mapear servicio_clave → valor del campo 'servicio' en BD
+        $mapaServicio = [
+            '1' => 'infonavit',
+            '2' => 'fovissste',
+            '3' => 'avaluo',
+            '4' => 'escrituras',
+            '5' => 'asesoria',
+            '6' => 'otro',
+        ];
+        $servicioBD = $mapaServicio[$datos['servicio_clave'] ?? ''] ?? null;
+
         $notas = "Prospecto generado por chatbot WhatsApp.\n";
         $notas .= "Servicio de interés: " . ($datos['servicio'] ?? '—') . "\n";
         foreach ($datos as $clave => $valor) {
@@ -323,6 +334,7 @@ class WhatsappChatbotService
                 'email'                   => $datos['correo'] ?? $contactoExistente->email,
                 'estado_prospecto'        => 'nuevo',
                 'estado_ubicacion'        => $datos['estado_ubicacion'] ?? $contactoExistente->estado_ubicacion,
+                'servicio'                => $servicioBD ?? $contactoExistente->servicio,
                 'tipo_credito_interes'    => $tipoCredito ?? $contactoExistente->tipo_credito_interes,
                 'mensaje'                 => $datos['mensaje_libre'] ?? $contactoExistente->mensaje,
                 'curp'                    => isset($datos['curp']) ? strtoupper($datos['curp']) : $contactoExistente->curp,
@@ -338,6 +350,7 @@ class WhatsappChatbotService
                 'origen'                    => 'whatsapp',
                 'estado_prospecto'          => 'nuevo',
                 'estado_ubicacion'          => $datos['estado_ubicacion'] ?? null,
+                'servicio'                  => $servicioBD,
                 'tipo_credito_interes'      => $tipoCredito,
                 'mensaje'                   => $datos['mensaje_libre'] ?? null,
                 'curp'                      => isset($datos['curp']) ? strtoupper($datos['curp']) : null,
