@@ -142,11 +142,24 @@ class ExpedienteResource extends Resource
                                 ->required()
                                 ->searchable()
                                 ->live()
-                                ->disabled(fn () => ! auth()->user()?->hasRole('super_admin'))
-                                ->dehydrated(fn () => auth()->user()?->hasRole('super_admin'))
+                                ->hidden(fn ($livewire) =>
+                                    ! auth()->user()?->hasRole('super_admin') ||
+                                    $livewire instanceof \App\Filament\Resources\ExpedienteResource\Pages\EditExpediente
+                                )
+                                ->dehydrated(fn ($livewire) =>
+                                    auth()->user()?->hasRole('super_admin') &&
+                                    ! ($livewire instanceof \App\Filament\Resources\ExpedienteResource\Pages\EditExpediente)
+                                )
                                 ->validationMessages([
                                     'required' => 'La etapa del trámite es obligatoria.',
                                 ]),
+                            Forms\Components\Placeholder::make('etapa_tramite_display')
+                                ->label('Etapa actual')
+                                ->content(fn ($record) => $record?->etapa?->nombre ?? '—')
+                                ->visible(fn ($livewire) =>
+                                    ! auth()->user()?->hasRole('super_admin') ||
+                                    $livewire instanceof \App\Filament\Resources\ExpedienteResource\Pages\EditExpediente
+                                ),
                             Forms\Components\Select::make('estado')
                                 ->label('Estado general')
                                 ->options([
@@ -159,12 +172,24 @@ class ExpedienteResource extends Resource
                                 ])
                                 ->default('en_proceso')
                                 ->required()
-                                ->disabled(fn () => ! auth()->user()?->hasRole('super_admin'))
+                                ->hidden(fn () => ! auth()->user()?->hasRole('super_admin'))
                                 ->dehydrated(fn () => auth()->user()?->hasRole('super_admin'))
                                 ->hint('Al cambiar a "Cerrado" se genera la comisión automáticamente')
                                 ->validationMessages([
                                     'required' => 'El estado del expediente es obligatorio.',
                                 ]),
+                            Forms\Components\Placeholder::make('estado_display')
+                                ->label('Estado')
+                                ->content(fn ($record) => match($record?->estado) {
+                                    'en_proceso' => 'En proceso',
+                                    'pausado'    => 'Pausado',
+                                    'aprobado'   => 'Aprobado',
+                                    'firmado'    => 'Firmado',
+                                    'cerrado'    => 'Cerrado',
+                                    'cancelado'  => 'Cancelado',
+                                    default      => '—',
+                                })
+                                ->visible(fn () => ! auth()->user()?->hasRole('super_admin')),
                             Forms\Components\Select::make('asesor_id')
                                 ->label('Asesor asignado')
                                 ->options(User::where('activo', true)->pluck('name', 'id'))
@@ -190,6 +215,7 @@ class ExpedienteResource extends Resource
                                 ])
                                 ->default('retiro_directo')
                                 ->required()
+                                ->live()
                                 ->validationMessages([
                                     'required' => 'Debes indicar el uso del crédito.',
                                 ]),
@@ -200,6 +226,7 @@ class ExpedienteResource extends Resource
                                     'mancomunado'  => 'Mancomunado (con cónyuge)',
                                 ])
                                 ->default('individual')
+                                ->live()
                                 ->hint('Mancomunado suma la capacidad de crédito de ambos cónyuges'),
                             Forms\Components\Select::make('banco_participante')
                                 ->label('Banco participante')
@@ -214,6 +241,104 @@ class ExpedienteResource extends Resource
                                 ->label('Fecha de apertura')
                                 ->default(now())
                                 ->hint('Fecha en que se abre formalmente el expediente'),
+                            Forms\Components\Textarea::make('notas_internas')
+                                ->label('Notas internas')
+                                ->placeholder('Ej: Cliente confirmó que entregará el acta la próxima semana...')
+                                ->rows(3)
+                                ->columnSpanFull(),
+
+                            // ── Montos del crédito ────────────────────────────
+                            \Filament\Schemas\Components\Section::make('Montos del crédito')
+                                ->description('Al marcar "Honorarios cobrados" y cambiar el estado a "Cerrado", el sistema generará automáticamente la comisión del asesor.')
+                                ->columnSpanFull()
+                                ->schema([
+                                    Forms\Components\TextInput::make('monto_credito')
+                                        ->label('Monto del crédito')
+                                        ->numeric()->prefix('$')
+                                        ->minValue(0)
+                                        ->validationMessages(['min' => 'El monto del crédito no puede ser negativo.'])
+                                        ->hint('Monto aprobado por la institución'),
+                                    Forms\Components\TextInput::make('subcuenta_vivienda')
+                                        ->label('Subcuenta de vivienda')
+                                        ->numeric()->prefix('$')
+                                        ->minValue(0)
+                                        ->hint('Saldo acumulado INFONAVIT/FOVISSSTE')
+                                        ->validationMessages([
+                                            'min' => 'La subcuenta de vivienda no puede ser negativa.',
+                                        ]),
+                                    Forms\Components\TextInput::make('monto_total_estimado')
+                                        ->label('Monto total estimado')
+                                        ->numeric()->prefix('$')
+                                        ->minValue(0)
+                                        ->hint('Crédito + subcuenta + otros recursos')
+                                        ->validationMessages([
+                                            'min' => 'El monto total estimado no puede ser negativo.',
+                                        ])
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Get $get, Set $set, $state) {
+                                            $total = floatval($state);
+                                            $pct   = floatval($get('honorarios_porcentaje') ?? 0);
+                                            $set('honorarios_monto', $total > 0 && $pct > 0
+                                                ? round($total * $pct / 100, 2)
+                                                : null
+                                            );
+                                        }),
+                                    Forms\Components\TextInput::make('total_gastos_financiados')
+                                        ->label('Total gastos financiados')
+                                        ->numeric()->prefix('$')
+                                        ->disabled()
+                                        ->hint('Calculado automáticamente'),
+                                ])->columns(2),
+
+                            // ── Honorarios (solo super_admin) ─────────────────
+                            \Filament\Schemas\Components\Section::make('Honorarios')
+                                ->visible(fn () => Auth::user()?->hasRole('super_admin'))
+                                ->columnSpanFull()
+                                ->schema([
+                                    Forms\Components\TextInput::make('honorarios_porcentaje')
+                                        ->label('% Honorarios')
+                                        ->numeric()->suffix('%')
+                                        ->minValue(0)->maxValue(100)
+                                        ->validationMessages([
+                                            'min' => 'El porcentaje no puede ser negativo.',
+                                            'max' => 'El porcentaje no puede superar 100%.',
+                                        ])
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Get $get, Set $set, $state) {
+                                            $pct   = floatval($state);
+                                            $total = floatval($get('monto_total_estimado') ?? 0);
+                                            $set('honorarios_monto', $total > 0 && $pct > 0
+                                                ? round($total * $pct / 100, 2)
+                                                : null
+                                            );
+                                        }),
+                                    Forms\Components\TextInput::make('honorarios_monto')
+                                        ->label('Monto de honorarios (calculado)')
+                                        ->prefix('$')
+                                        ->disabled()
+                                        ->dehydrated()
+                                        ->placeholder('Se calcula automáticamente')
+                                        ->hint(fn (\Filament\Schemas\Components\Utilities\Get $get) => ($get('honorarios_porcentaje') && $get('monto_total_estimado'))
+                                            ? number_format(floatval($get('monto_total_estimado')) * floatval($get('honorarios_porcentaje')) / 100, 2) . ' MXN'
+                                            : 'Captura el % y el monto total estimado'
+                                        ),
+                                    Forms\Components\Toggle::make('honorarios_pagados')
+                                        ->label('Honorarios cobrados')
+                                        ->hint('Activa cuando el cliente haya pagado')
+                                        ->visible(fn ($record) => $record?->etapa?->es_final ?? false),
+                                    Forms\Components\DatePicker::make('fecha_pago_honorarios')
+                                        ->label('Fecha de cobro')
+                                        ->beforeOrEqual('today')
+                                        ->validationMessages(['before_or_equal' => 'La fecha de cobro no puede ser futura.'])
+                                        ->visible(fn ($record) => $record?->etapa?->es_final ?? false),
+                                    Forms\Components\DatePicker::make('fecha_cierre')
+                                        ->label('Fecha de cierre')
+                                        ->beforeOrEqual('today')
+                                        ->hint('Fecha en que se formalizó el trámite')
+                                        ->validationMessages([
+                                            'before_or_equal' => 'La fecha de cierre no puede ser futura.',
+                                        ]),
+                                ])->columns(2),
                         ])->columns(2),
 
                     // ── TAB 2: ACREDITADO ─────────────────────────────────
@@ -343,6 +468,7 @@ class ExpedienteResource extends Resource
                     // ── TAB 3: VENDEDOR ───────────────────────────────────
                     Tabs\Tab::make('Vendedor')
                         ->icon('heroicon-o-user-circle')
+                        ->visible(fn (Get $get) => $get('uso_credito') === 'compraventa')
                         ->schema([
                             Forms\Components\Placeholder::make('_vendedor_info')
                                 ->label('')
@@ -446,6 +572,10 @@ class ExpedienteResource extends Resource
                     // ── TAB 5: CÓNYUGE (visible solo cuando aplica) ───────
                     Tabs\Tab::make('Cónyuge')
                         ->icon('heroicon-o-user-group')
+                        ->visible(fn (Get $get) =>
+                            $get('modalidad_credito') === 'mancomunado' ||
+                            in_array((int) $get('tipo_tramite_id'), [3, 7])
+                        )
                         ->schema([
                             Forms\Components\Placeholder::make('info_conyuge')
                                 ->label('')
@@ -485,8 +615,10 @@ class ExpedienteResource extends Resource
                         ])->columns(2),
 
                     // ── TAB 6: PENSIONADO ─────────────────────────────────
+                    // ── TAB 6: PENSIONADO ─────────────────────────────────
                     Tabs\Tab::make('Pensionado')
                         ->icon('heroicon-o-identification')
+                        ->visible(fn (Get $get) => (int) $get('tipo_tramite_id') === 2)
                         ->schema([
                             Forms\Components\Placeholder::make('info_pensionado')
                                 ->label('')
@@ -513,107 +645,6 @@ class ExpedienteResource extends Resource
                                 ->minValue(0)
                                 ->hint('Concepto 001 del talón (pensión base, sin bonos). Mín. $32,200.60 para crédito máximo.'),
                         ])->columns(2),
-                    Tabs\Tab::make('Financiero')
-                        ->icon('heroicon-o-banknotes')
-                        ->schema([
-                            \Filament\Schemas\Components\Section::make('Montos del crédito')
-                                ->description('Al marcar "Honorarios cobrados" y cambiar el estado a "Cerrado", el sistema generará automáticamente la comisión del asesor.')
-                                ->schema([
-                                    Forms\Components\TextInput::make('monto_credito')
-                                        ->label('Monto del crédito')
-                                        ->numeric()->prefix('$')
-                                        ->minValue(0)
-                                        ->validationMessages(['min' => 'El monto del crédito no puede ser negativo.'])
-                                        ->hint('Monto aprobado por la institución'),
-                                    Forms\Components\TextInput::make('subcuenta_vivienda')
-                                        ->label('Subcuenta de vivienda')
-                                        ->numeric()->prefix('$')
-                                        ->minValue(0)
-                                        ->hint('Saldo acumulado INFONAVIT/FOVISSSTE')
-                                        ->validationMessages([
-                                            'min' => 'La subcuenta de vivienda no puede ser negativa.',
-                                        ]),
-                                    Forms\Components\TextInput::make('monto_total_estimado')
-                                        ->label('Monto total estimado')
-                                        ->numeric()->prefix('$')
-                                        ->minValue(0)
-                                        ->hint('Crédito + subcuenta + otros recursos')
-                                        ->validationMessages([
-                                            'min' => 'El monto total estimado no puede ser negativo.',
-                                        ])
-                                        ->live(onBlur: true)
-                                        ->afterStateUpdated(function (Get $get, Set $set, $state) {
-                                            $total = floatval($state);
-                                            $pct   = floatval($get('honorarios_porcentaje') ?? 0);
-                                            $set('honorarios_monto', $total > 0 && $pct > 0
-                                                ? round($total * $pct / 100, 2)
-                                                : null
-                                            );
-                                        }),
-                                    Forms\Components\TextInput::make('total_gastos_financiados')
-                                        ->label('Total gastos financiados')
-                                        ->numeric()->prefix('$')
-                                        ->disabled()
-                                        ->hint('Calculado automáticamente'),
-                                ])->columns(2),
-                            \Filament\Schemas\Components\Section::make('Honorarios')
-                                ->visible(fn () => Auth::user()?->hasRole('super_admin'))
-                                ->schema([
-                                    Forms\Components\TextInput::make('honorarios_porcentaje')
-                                        ->label('% Honorarios')
-                                        ->numeric()->suffix('%')
-                                        ->minValue(0)->maxValue(100)
-                                        ->validationMessages([
-                                            'min' => 'El porcentaje no puede ser negativo.',
-                                            'max' => 'El porcentaje no puede superar 100%.',
-                                        ])
-                                        ->live(onBlur: true)
-                                        ->afterStateUpdated(function (Get $get, Set $set, $state) {
-                                            $pct   = floatval($state);
-                                            $total = floatval($get('monto_total_estimado') ?? 0);
-                                            $set('honorarios_monto', $total > 0 && $pct > 0
-                                                ? round($total * $pct / 100, 2)
-                                                : null
-                                            );
-                                        }),
-
-                                    Forms\Components\TextInput::make('honorarios_monto')
-                                        ->label('Monto de honorarios (calculado)')
-                                        ->prefix('$')
-                                        ->disabled()
-                                        ->dehydrated()
-                                        ->placeholder('Se calcula automáticamente')
-                                        ->hint(fn (\Filament\Schemas\Components\Utilities\Get $get) => ($get('honorarios_porcentaje') && $get('monto_total_estimado'))
-                                            ? number_format(floatval($get('monto_total_estimado')) * floatval($get('honorarios_porcentaje')) / 100, 2) . ' MXN'
-                                            : 'Captura el % y el monto total estimado'
-                                        ),
-                                    Forms\Components\Toggle::make('honorarios_pagados')
-                                        ->label('Honorarios cobrados')
-                                        ->hint('Activa cuando el cliente haya pagado')
-                                        ->visible(fn ($record) => $record?->etapa?->es_final ?? false),
-                                    Forms\Components\DatePicker::make('fecha_pago_honorarios')
-                                        ->label('Fecha de cobro')
-                                        ->beforeOrEqual('today')
-                                        ->validationMessages(['before_or_equal' => 'La fecha de cobro no puede ser futura.'])
-                                        ->visible(fn ($record) => $record?->etapa?->es_final ?? false),
-                                    Forms\Components\DatePicker::make('fecha_cierre')
-                                        ->label('Fecha de cierre')
-                                        ->beforeOrEqual('today')
-                                        ->hint('Fecha en que se formalizó el trámite')
-                                        ->validationMessages([
-                                            'before_or_equal' => 'La fecha de cierre no puede ser futura.',
-                                        ]),
-                                ])->columns(2),
-                            \Filament\Schemas\Components\Section::make('Notas internas')
-                                ->description('Visible solo para el equipo admin.')
-                                ->schema([
-                                    Forms\Components\Textarea::make('notas_internas')
-                                        ->label('Notas')
-                                        ->placeholder('Ej: Cliente confirmó que entregará el acta la próxima semana...')
-                                        ->rows(4)
-                                        ->columnSpanFull(),
-                                ]),
-                        ]),
 
                 ])->columnSpanFull()->persistTabInQueryString(),
         ]);
@@ -708,11 +739,13 @@ public static function canDelete(Model $record): bool
                 Tables\Columns\TextColumn::make('monto_credito')
                     ->label('Monto crédito')
                     ->money('MXN')
+                    ->placeholder('Sin monto de crédito')
                     ->toggleable()
                     ->tooltip('Monto del crédito aprobado por la institución'),
                 Tables\Columns\TextColumn::make('honorarios_monto')
                     ->label('Honorarios')
                     ->money('MXN')
+                    ->placeholder('Sin porcentaje de honorarios asignado')
                     ->toggleable()
                     ->visible(fn () => Auth::user()?->hasRole('super_admin'))
                     ->tooltip('Honorarios pactados con el cliente'),

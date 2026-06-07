@@ -90,7 +90,6 @@ class SimuladorPrecalificacion extends Page implements HasForms
                         Forms\Components\TextInput::make('sueldo_mensual')
                             ->label('Sueldo mensual neto ($)')
                             ->numeric()->prefix('$')->required()->minValue(1)
-                            ->live(onBlur: true)
                             ->validationMessages([
                                 'required'  => 'El sueldo mensual es obligatorio.',
                                 'min_value' => 'El sueldo debe ser mayor a cero.',
@@ -99,13 +98,16 @@ class SimuladorPrecalificacion extends Page implements HasForms
                         Forms\Components\TextInput::make('subcuenta_vivienda')
                             ->label('Subcuenta de vivienda ($)')
                             ->numeric()->prefix('$')->default(0)->minValue(0)
-                            ->live(onBlur: true)
                             ->helperText('Saldo acumulado FOVISSSTE/INFONAVIT'),
+
+                        Forms\Components\TextInput::make('precio_inmueble')
+                            ->label('Precio del inmueble deseado ($)')
+                            ->numeric()->prefix('$')->minValue(0)
+                            ->helperText('Opcional — para verificar si el crédito alcanza'),
 
                         Forms\Components\TextInput::make('antiguedad_laboral')
                             ->label('Antigüedad laboral (años)')
                             ->numeric()->required()->minValue(1)->maxValue(50)
-                            ->live(onBlur: true)
                             ->validationMessages([
                                 'required'  => 'La antigüedad es obligatoria.',
                                 'min_value' => 'La antigüedad debe ser de al menos 1 año.',
@@ -114,7 +116,6 @@ class SimuladorPrecalificacion extends Page implements HasForms
                         Forms\Components\TextInput::make('edad')
                             ->label('Edad (años)')
                             ->numeric()->required()->minValue(18)->maxValue(74)
-                            ->live(onBlur: true)
                             ->validationMessages([
                                 'required'  => 'La edad es obligatoria.',
                                 'min_value' => 'La edad mínima es 18 años.',
@@ -125,7 +126,6 @@ class SimuladorPrecalificacion extends Page implements HasForms
                         Forms\Components\TextInput::make('sueldo_conyuge')
                             ->label('Sueldo mensual cónyuge ($)')
                             ->numeric()->prefix('$')->minValue(0)->default(0)
-                            ->live(onBlur: true)
                             ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $get('tipo_credito') === 'conyugal')
                             ->helperText('Sueldo neto del cónyuge — se suma para el crédito conyugal'),
 
@@ -133,7 +133,6 @@ class SimuladorPrecalificacion extends Page implements HasForms
                         Forms\Components\TextInput::make('monto_pension')
                             ->label('Monto de pensión mensual ($)')
                             ->numeric()->prefix('$')->minValue(0)->default(0)
-                            ->live(onBlur: true)
                             ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $get('tipo_credito') === 'pensionados')
                             ->helperText('Mínimo requerido: $32,200.60 para monto máximo'),
 
@@ -141,7 +140,6 @@ class SimuladorPrecalificacion extends Page implements HasForms
                         Forms\Components\TextInput::make('subcuenta_infonavit')
                             ->label('Subcuenta INFONAVIT ($)')
                             ->numeric()->prefix('$')->default(0)->minValue(0)
-                            ->live(onBlur: true)
                             ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => in_array($get('tipo_credito'), ['infonavit', 'infonavit_puro']))
                             ->helperText('Saldo acumulado en subcuenta INFONAVIT'),
                     ]),
@@ -158,6 +156,7 @@ class SimuladorPrecalificacion extends Page implements HasForms
         $tipo               = $d['tipo_credito']         ?? 'tradicional';
         $sueldo             = (float) ($d['sueldo_mensual']      ?? 0);
         $subcuenta          = (float) ($d['subcuenta_vivienda']  ?? 0);
+        $precioInmueble     = (float) ($d['precio_inmueble']     ?? 0);
         $antiguedad         = (int)   ($d['antiguedad_laboral']  ?? 0);
         $edad               = (int)   ($d['edad']                ?? 0);
         $sueldoConyuge      = (float) ($d['sueldo_conyuge']      ?? 0);
@@ -176,6 +175,13 @@ class SimuladorPrecalificacion extends Page implements HasForms
             'infonavit_puro' => $this->calcularInfonavitPuro($sueldo, $subcuentaInfonavit, $antiguedad, $edad),
             default          => [],
         };
+
+        // Comparación con precio del inmueble deseado
+        if ($precioInmueble > 0) {
+            $this->resultado['precio_inmueble_deseado'] = $precioInmueble;
+            $this->resultado['alcanza']     = ($this->resultado['valor_inmueble'] ?? 0) >= $precioInmueble;
+            $this->resultado['diferencia']  = ($this->resultado['valor_inmueble'] ?? 0) - $precioInmueble;
+        }
     }
 
     // ─── Crédito Tradicional ─────────────────────────────────────────────
@@ -208,7 +214,7 @@ class SimuladorPrecalificacion extends Page implements HasForms
             ? $pagoMaxMensual * (1 - pow(1 + $tasaMensual, -$n)) / $tasaMensual
             : 0;
 
-        // Tope por UMA: 954 × UMA mensual (CORRECTO — sin × 12)
+        // Tope por UMA: 954 × UMA mensual
         $topeUma = self::TOPE_VSM * $vsm;
 
         $montoCredito  = min($montoCapacidad, $topeUma);
@@ -221,18 +227,18 @@ class SimuladorPrecalificacion extends Page implements HasForms
         $honorarios = $montoCredito * self::HONORARIOS_DEFAULT;
 
         return [
-            'tipo'            => 'Crédito Tradicional FOVISSSTE',
-            'elegible'        => empty($errores),
-            'errores'         => $errores,
-            'monto_credito'   => $montoCredito,
-            'subcuenta'       => $subcuenta,
-            'valor_inmueble'  => $valorInmueble,
-            'mensualidad'     => $mensualidad,
-            'tasa_anual'      => $tasa * 100,
-            'plazo_años'      => $plazoDisponible,
-            'pago_max_mensual'=> $pagoMaxMensual,
-            'honorarios'      => $honorarios,
-            'notas'           => [
+            'tipo'             => 'Crédito Tradicional FOVISSSTE',
+            'elegible'         => empty($errores),
+            'errores'          => $errores,
+            'monto_credito'    => $montoCredito,
+            'subcuenta'        => $subcuenta,
+            'valor_inmueble'   => $valorInmueble,
+            'mensualidad'      => $mensualidad,
+            'tasa_anual'       => $tasa * 100,
+            'plazo_años'       => $plazoDisponible,
+            'pago_max_mensual' => $pagoMaxMensual,
+            'honorarios'       => $honorarios,
+            'notas'            => [
                 "UMA del trabajador: " . number_format($umasTrabajador, 2) . " veces",
                 "Tasa de interés anual: " . ($tasa * 100) . "%",
                 "Plazo: {$plazoDisponible} años",

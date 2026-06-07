@@ -351,13 +351,17 @@ class ContactoResource extends Resource
                         'primary' => 'campo',
                         'success' => 'referido',
                         'warning' => 'whatsapp',
+                        'info'    => 'admin',
+                        'info'    => 'asesor',
                     ])
-                    ->formatStateUsing(fn ($state) => match($state) {
+                    ->formatStateUsing(fn ($state, $record) => match($state) {
                         'sitio_web' => 'Sitio web',
                         'campo'     => 'Campo',
                         'referido'  => 'Referido',
                         'whatsapp'  => 'WhatsApp',
                         'app_movil' => '📱 App móvil',
+                        'admin'     => 'CRM — ' . ($record->asesor?->name ?? 'Admin'),
+                        'asesor'    => 'CRM — ' . ($record->asesor?->name ?? 'Asesor'),
                         default     => 'Otro',
                     }),
                 Tables\Columns\BadgeColumn::make('estado_prospecto')
@@ -414,21 +418,14 @@ class ContactoResource extends Resource
                         default     => $state ?? '—',
                     })
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('modalidad_cierre')
-                    ->label('Modalidad')
-                    ->placeholder('—')
-                    ->formatStateUsing(fn ($state) => match($state) {
-                        'telefono'         => 'Teléfono',
-                        'cita_oficina'     => 'Cita en oficina',
-                        'visita_domicilio' => 'Visita domicilio',
-                        'whatsapp'         => 'WhatsApp',
-                        default            => '—',
-                    })
-                    ->toggleable(),
                 Tables\Columns\TextColumn::make('asesor.name')
-                    ->label('Asesor')->toggleable(),
+                    ->label('Asesor')
+                    ->placeholder('Sin asesor asignado')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('monto_credito_estimado')
-                    ->label('Monto estimado')->money('MXN')->toggleable(),
+                    ->label('Monto estimado')->money('MXN')
+                    ->placeholder('No cuenta con monto estimado')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha')->dateTime('d M Y H:i')->sortable(),
             ])
