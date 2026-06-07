@@ -138,7 +138,7 @@ class WhatsappChatbotService
         }
 
         // Pasos de selección genéricos: guardar etiqueta con la clave del paso
-        if (in_array($paso->clave, ['estado_ubicacion', 'situacion_laboral'])) {
+        if ($paso->clave === 'estado_ubicacion') {
             $conv->setDato($paso->clave, $opcion['etiqueta']);
             $conv->save();
             $this->avanzarAlSiguiente($conv, $paso);
@@ -200,6 +200,18 @@ class WhatsappChatbotService
                 return;
             }
             $conv->setDato('curp', $curp);
+
+        // Paso situacion_laboral: selección condicional (solo INFONAVIT/FOVISSSTE)
+        } elseif ($paso->clave === 'situacion_laboral') {
+            $opciones = collect($paso->opciones ?? []);
+            $opcion   = $opciones->firstWhere('valor', trim($mensaje));
+            if (! $opcion) {
+                $texto = $this->interpolar($paso->mensaje, $conv);
+                $this->whatsapp->sendText($conv->chat_id, $texto);
+                $conv->save();
+                return;
+            }
+            $conv->setDato('situacion_laboral', $opcion['etiqueta']);
 
         // Paso sueldo_precal: si omite, saltar TODA la precalificación
         } elseif ($paso->clave === 'sueldo_precal' && $omitir) {
@@ -313,8 +325,8 @@ class WhatsappChatbotService
             return (bool) $conv->getDato('requiere_curp', false);
         }
 
-        // Pasos de precalificación: solo para servicios de crédito (INFONAVIT/FOVISSSTE)
-        if (in_array($paso->clave, ['sueldo_precal', 'edad_precal', 'antiguedad_precal', 'subcuenta_precal'])) {
+        // Situación laboral y precalificación: solo para servicios de crédito (INFONAVIT/FOVISSSTE)
+        if (in_array($paso->clave, ['situacion_laboral', 'sueldo_precal', 'edad_precal', 'antiguedad_precal', 'subcuenta_precal'])) {
             return (bool) $conv->getDato('requiere_curp', false);
         }
 
