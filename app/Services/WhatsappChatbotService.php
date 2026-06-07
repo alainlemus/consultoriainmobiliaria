@@ -4,7 +4,10 @@ namespace App\Services;
 
 use App\Models\Contacto;
 use App\Models\ChatbotPaso;
+use App\Models\Expediente;
+use App\Models\User;
 use App\Models\WhatsappConversation;
+use App\Services\UmaService;
 use Illuminate\Support\Facades\Log;
 
 class WhatsappChatbotService
@@ -43,6 +46,18 @@ class WhatsappChatbotService
         $mensaje = trim($mensaje ?? '');
 
         if ($conv->paso === 'completado') {
+            $mensajeNormalizado = strtolower(trim($mensaje ?? ''));
+            if (in_array($mensajeNormalizado, ['hola', 'hola!', 'hola.', 'hi', 'buenas', 'buenos días', 'buenas tardes', 'buenas noches'])) {
+                // Reiniciar flujo
+                $conv->datos             = [];
+                $conv->ultimo_mensaje_at = now();
+                $primerPaso = ChatbotPaso::flujoActivo()->first();
+                if (! $primerPaso) return;
+                $conv->paso = $primerPaso->clave;
+                $conv->save();
+                $this->ejecutarPaso($primerPaso, $conv, $pushName);
+                return;
+            }
             $this->mensajeYaRegistrado($chatId);
             return;
         }
@@ -71,7 +86,7 @@ class WhatsappChatbotService
 
         // Si es solo un mensaje (sin esperar respuesta), avanzar automáticamente
         if ($paso->tipo === 'mensaje') {
-            $this->avanzarAlSiguiente($conv, null);
+            $this->avanzarAlSiguiente($conv, $paso);
         }
     }
 
@@ -89,8 +104,7 @@ class WhatsappChatbotService
             'texto_libre' => $this->procesarTextoLibre($paso, $conv, $mensaje, $omitir),
             'condicional' => $this->procesarCondicional($paso, $conv, $mensaje, $omitir),
             default       => $this->avanzarAlSiguiente($conv, null),
-        };
-    }
+        };    }
 
     private function procesarSeleccion(ChatbotPaso $paso, WhatsappConversation $conv, string $mensaje): void
     {
@@ -98,10 +112,36 @@ class WhatsappChatbotService
         $opcion   = $opciones->firstWhere('valor', trim($mensaje));
 
         if (! $opcion) {
-            $total = $opciones->count();
             $texto = $this->interpolar($paso->mensaje, $conv);
             $this->whatsapp->sendText($conv->chat_id, $texto);
             $conv->save();
+            return;
+        }
+
+        // Paso especial: confirmación de teléfono
+        if ($paso->clave === 'confirmacion_telefono') {
+            if (trim($mensaje) === '1') {
+                // Confirma el teléfono detectado
+                $conv->setDato('telefono_confirmado', $conv->telefono);
+                $conv->save();
+                $this->avanzarAlSiguiente($conv, $paso);
+            } else {
+                // Quiere cambiar → ir al paso telefono_manual
+                $pasoManual = ChatbotPaso::porClave('telefono_manual');
+                if ($pasoManual) {
+                    $this->ejecutarPaso($pasoManual, $conv);
+                } else {
+                    $this->avanzarAlSiguiente($conv, $paso);
+                }
+            }
+            return;
+        }
+
+        // Pasos de selección genéricos: guardar etiqueta con la clave del paso
+        if (in_array($paso->clave, ['estado_ubicacion', 'situacion_laboral'])) {
+            $conv->setDato($paso->clave, $opcion['etiqueta']);
+            $conv->save();
+            $this->avanzarAlSiguiente($conv, $paso);
             return;
         }
 
@@ -128,6 +168,21 @@ class WhatsappChatbotService
             return;
         }
 
+        // Validación especial para teléfono manual
+        if ($paso->clave === 'telefono_manual') {
+            $tel = preg_replace('/\D/', '', $mensaje);
+            if (strlen($tel) !== 10) {
+                $this->whatsapp->sendText($conv->chat_id, "El número debe tener exactamente *10 dígitos*. Por ejemplo: 5512345678\n\nIntenta de nuevo:");
+                $conv->save();
+                return;
+            }
+            $conv->setDato('telefono_confirmado', $tel);
+            $conv->telefono = $tel;
+            $conv->save();
+            $this->avanzarAlSiguiente($conv, $paso);
+            return;
+        }
+
         $conv->setDato($paso->clave, $omitir ? null : $mensaje);
         $conv->save();
 
@@ -145,6 +200,58 @@ class WhatsappChatbotService
                 return;
             }
             $conv->setDato('curp', $curp);
+
+        // Paso sueldo_precal: si omite, saltar TODA la precalificación
+        } elseif ($paso->clave === 'sueldo_precal' && $omitir) {
+            $conv->setDato('sueldo_precal', null);
+            $conv->save();
+            $pasoMensaje = ChatbotPaso::porClave('mensaje_libre');
+            if ($pasoMensaje) {
+                $this->ejecutarPaso($pasoMensaje, $conv);
+            } else {
+                $this->avanzarAlSiguiente($conv, $paso);
+            }
+            return;
+
+        // Paso sueldo_precal: validar número > 1000
+        } elseif ($paso->clave === 'sueldo_precal' && ! $omitir) {
+            $num = (float) preg_replace('/[^0-9.]/', '', $mensaje);
+            if ($num < 1000) {
+                $this->whatsapp->sendText($conv->chat_id, "Por favor escribe tu sueldo mensual neto en números. Ejemplo: *15000*");
+                $conv->save();
+                return;
+            }
+            $conv->setDato('sueldo_precal', $num);
+
+        // Paso edad_precal: validar 18–74
+        } elseif ($paso->clave === 'edad_precal' && ! $omitir) {
+            $num = (int) preg_replace('/[^0-9]/', '', $mensaje);
+            if ($num < 18 || $num > 74) {
+                $this->whatsapp->sendText($conv->chat_id, "Por favor escribe tu edad en años (entre 18 y 74). Ejemplo: *35*");
+                $conv->save();
+                return;
+            }
+            $conv->setDato('edad_precal', $num);
+
+        // Paso antiguedad_precal: validar >= 1
+        } elseif ($paso->clave === 'antiguedad_precal' && ! $omitir) {
+            $num = (int) preg_replace('/[^0-9]/', '', $mensaje);
+            if ($num < 1 || $num > 50) {
+                $this->whatsapp->sendText($conv->chat_id, "Por favor escribe tus años de antigüedad laboral (mínimo 1). Ejemplo: *5*");
+                $conv->save();
+                return;
+            }
+            $conv->setDato('antiguedad_precal', $num);
+
+        // Paso subcuenta_precal: número opcional (0 si omite o no es número)
+        } elseif ($paso->clave === 'subcuenta_precal') {
+            if ($omitir) {
+                $conv->setDato('subcuenta_precal', 0);
+            } else {
+                $num = (float) preg_replace('/[^0-9.]/', '', $mensaje);
+                $conv->setDato('subcuenta_precal', max(0, $num));
+            }
+
         } else {
             $conv->setDato($paso->clave, $omitir ? null : $mensaje);
         }
@@ -159,6 +266,11 @@ class WhatsappChatbotService
 
     private function avanzarAlSiguiente(WhatsappConversation $conv, ?ChatbotPaso $pasoActual): void
     {
+        // Tras recopilar todos los datos de precalificación → enviar estimado
+        if ($pasoActual?->clave === 'subcuenta_precal') {
+            $this->enviarEstimadoPrecalificacion($conv);
+        }
+
         $flujo = ChatbotPaso::flujoActivo();
 
         // Determinar el siguiente paso
@@ -201,7 +313,126 @@ class WhatsappChatbotService
             return (bool) $conv->getDato('requiere_curp', false);
         }
 
+        // Pasos de precalificación: solo para servicios de crédito (INFONAVIT/FOVISSSTE)
+        if (in_array($paso->clave, ['sueldo_precal', 'edad_precal', 'antiguedad_precal', 'subcuenta_precal'])) {
+            return (bool) $conv->getDato('requiere_curp', false);
+        }
+
         return true;
+    }
+
+    // ──────────────────────────────────────────────
+    // PRECALIFICACIÓN — estimado vía WhatsApp
+    // ──────────────────────────────────────────────
+
+    private function enviarEstimadoPrecalificacion(WhatsappConversation $conv): void
+    {
+        $datos      = $conv->datos ?? [];
+        $sueldo     = (float) ($datos['sueldo_precal']     ?? 0);
+        $edad       = (int)   ($datos['edad_precal']       ?? 0);
+        $antiguedad = (int)   ($datos['antiguedad_precal'] ?? 0);
+        $subcuenta  = (float) ($datos['subcuenta_precal']  ?? 0);
+        $situacion  = $datos['situacion_laboral'] ?? '';
+
+        // Si faltan datos clave, no calcular
+        if ($sueldo < 1000 || $edad < 18 || $antiguedad < 1) {
+            Log::info('[Chatbot] Precal: datos insuficientes, se omite estimado.');
+            return;
+        }
+
+        $uma         = UmaService::getUmaMensual(); // UMA mensual desde BD
+        $primerNombre = explode(' ', $datos['nombre'] ?? 'Estimado')[0];
+
+        // Determinar producto y parámetros según situación laboral
+        if (str_contains($situacion, 'ISSSTE') || str_contains($situacion, 'FOVISSSTE')) {
+            // ── Crédito Tradicional FOVISSSTE ─────────────────────────────
+            $producto    = 'Crédito Tradicional FOVISSSTE';
+            $umasTrab    = $uma > 0 ? $sueldo / $uma : 0;
+            $tasa        = $umasTrab <= 4 ? 0.04 : ($umasTrab <= 7 ? 0.05 : 0.06);
+            $plazo       = max(0, min(30, 65 - $edad));
+            $topeCredito = 954 * $uma; // tope en UMAs
+
+        } elseif (str_contains($situacion, 'IMSS') || str_contains($situacion, 'INFONAVIT')) {
+            // ── INFONAVIT (sector privado) ─────────────────────────────────
+            $producto    = 'Crédito INFONAVIT';
+            $tasa        = 0.10; // tasa orientativa — varía según puntos y salario
+            $plazo       = max(0, min(30, 65 - $edad));
+            $topeCredito = null; // sin tope UMA (INFONAVIT no usa UMA como tope)
+
+        } else {
+            // ── Independiente → solo orientativo bancario ──────────────────
+            $producto    = 'Crédito bancario (orientativo)';
+            $tasa        = 0.12;
+            $plazo       = max(0, min(20, 65 - $edad));
+            $topeCredito = null;
+        }
+
+        // Verificar elegibilidad mínima
+        if ($plazo < 3) {
+            $conv->setDato('resultado_precalificacion', 'no_califica');
+            $conv->save();
+            $this->whatsapp->sendText(
+                $conv->chat_id,
+                "📊 *Estimado de precalificación*\n\n" .
+                "⚠️ Con {$edad} años el plazo disponible sería muy corto ({$plazo} años).\n\n" .
+                "Un asesor evaluará opciones adicionales para tu caso. 🏠\n\n" .
+                "_Consultoría Inmobiliaria_"
+            );
+            return;
+        }
+
+        // Cálculo de monto por capacidad de pago
+        $pagoMax     = $sueldo * 0.30;
+        $tasaMensual = $tasa / 12;
+        $n           = $plazo * 12;
+        $montoCapacidad = ($n > 0 && $tasaMensual > 0)
+            ? $pagoMax * (1 - pow(1 + $tasaMensual, -$n)) / $tasaMensual
+            : 0;
+
+        $monto = ($topeCredito !== null) ? min($montoCapacidad, $topeCredito) : $montoCapacidad;
+        $valorInmueble = $monto + $subcuenta;
+        $mensualidad   = ($tasaMensual > 0 && $n > 0)
+            ? $monto * $tasaMensual / (1 - pow(1 + $tasaMensual, -$n))
+            : 0;
+
+        if ($monto < 100000) {
+            $conv->setDato('resultado_precalificacion', 'no_califica');
+            $conv->save();
+            $this->whatsapp->sendText(
+                $conv->chat_id,
+                "📊 *Estimado de precalificación*\n\n" .
+                "Con un sueldo de $" . number_format($sueldo, 0, '.', ',') . " el monto estimado es bajo.\n\n" .
+                "⚠️ Te recomendamos hablar con un asesor para explorar todas las opciones disponibles. 🏠\n\n" .
+                "_Consultoría Inmobiliaria_"
+            );
+            return;
+        }
+
+        $conv->setDato('resultado_precalificacion', 'pre_califica');
+        $conv->save();
+
+        $msg  = "📊 *Estimado de precalificación*\n\n";
+        $msg .= "Basado en tu información:\n";
+        $msg .= "• Sueldo: *$" . number_format($sueldo, 0, '.', ',') . "/mes*\n";
+        $msg .= "• Edad: {$edad} años · Antigüedad: {$antiguedad} años\n";
+        if ($subcuenta > 0) {
+            $msg .= "• Subcuenta: $" . number_format($subcuenta, 0, '.', ',') . "\n";
+        }
+        $msg .= "\n✅ *Podrías calificar aproximadamente para:*\n\n";
+        $msg .= "💰 Crédito: *$" . number_format(round($monto, -3), 0, '.', ',') . " MXN*\n";
+        if ($subcuenta > 0) {
+            $msg .= "🏡 Valor del inmueble: *$" . number_format(round($valorInmueble, -3), 0, '.', ',') . " MXN*\n";
+        }
+        $msg .= "📅 Plazo: {$plazo} años\n";
+        $msg .= "💳 Mensualidad aprox.: *$" . number_format(round($mensualidad, -1), 0, '.', ',') . "/mes*\n";
+        $msg .= "📌 Producto: {$producto}\n";
+        $msg .= "\n_⚠️ Este es un estimado *orientativo*. El monto real depende de tu expediente y puntos._\n";
+        $msg .= "_Un asesor te dará los detalles exactos. 🏠_\n\n";
+        $msg .= "_Consultoría Inmobiliaria_";
+
+        $this->whatsapp->sendText($conv->chat_id, $msg);
+
+        Log::info("[Chatbot] Estimado precal enviado a {$conv->chat_id}: monto={$monto}, producto={$producto}");
     }
 
     // ──────────────────────────────────────────────
@@ -212,42 +443,194 @@ class WhatsappChatbotService
     {
         $datos          = $conv->datos ?? [];
         $nombreCompleto = $datos['nombre'] ?? $datos['nombre_completo'] ?? 'Prospecto WhatsApp';
-        $partes         = explode(' ', $nombreCompleto, 2);
-        $nombre         = $partes[0];
-        $apellidos      = $partes[1] ?? '';
+        $primerNombre   = explode(' ', $nombreCompleto)[0];
+        $telefono       = $datos['telefono_confirmado'] ?? $conv->telefono;
+
+        // Mapear situacion_laboral → tipo_credito_interes (valores del Select de Filament)
+        $mapaTipoCredito = [
+            'Trabajador IMSS (INFONAVIT)'   => 'infonavit',
+            'Trabajador ISSSTE (FOVISSSTE)'  => 'fovissste',
+            'Independiente / otro'           => 'otro',
+        ];
+        $tipoCredito = $mapaTipoCredito[$datos['situacion_laboral'] ?? ''] ?? null;
 
         $notas = "Prospecto generado por chatbot WhatsApp.\n";
         $notas .= "Servicio de interés: " . ($datos['servicio'] ?? '—') . "\n";
+        if (isset($datos['sueldo_precal'])) {
+            $notas .= "Sueldo declarado: $" . number_format((float)$datos['sueldo_precal'], 0, '.', ',') . "\n";
+        }
+        if (isset($datos['edad_precal'])) {
+            $notas .= "Edad: " . $datos['edad_precal'] . " años\n";
+        }
+        if (isset($datos['antiguedad_precal'])) {
+            $notas .= "Antigüedad: " . $datos['antiguedad_precal'] . " años\n";
+        }
         foreach ($datos as $clave => $valor) {
-            if (! in_array($clave, ['nombre', 'nombre_completo', 'servicio', 'servicio_clave', 'correo', 'requiere_curp']) && $valor) {
+            if (! in_array($clave, ['nombre', 'nombre_completo', 'servicio', 'servicio_clave', 'correo',
+                                     'requiere_curp', 'telefono_confirmado', 'sueldo_precal',
+                                     'edad_precal', 'antiguedad_precal', 'subcuenta_precal']) && $valor) {
                 $notas .= ucfirst($clave) . ": {$valor}\n";
             }
-        }
-
-        if (! Contacto::where('telefono', $conv->telefono)->exists()) {
-            Contacto::create([
-                'nombre'                => $nombre,
-                'apellidos'             => $apellidos,
-                'telefono'              => $conv->telefono,
-                'email'                 => $datos['correo'] ?? null,
-                'origen'                => 'whatsapp',
-                'estado_prospecto'      => 'nuevo',
-                'fecha_primer_contacto' => now()->toDateString(),
-                'notas'                 => $notas,
-            ]);
-            Log::info("[Chatbot WhatsApp] Prospecto creado: {$conv->telefono} — {$nombreCompleto}");
         }
 
         $conv->paso = 'completado';
         $conv->save();
 
+        // Verificar si tiene expediente activo
+        $contactoExistente = Contacto::where('telefono', $telefono)->first();
+        if ($contactoExistente) {
+            $tieneExpediente = Expediente::where('contacto_id', $contactoExistente->id)->exists();
+            if ($tieneExpediente) {
+                $this->whatsapp->sendText(
+                    $conv->chat_id,
+                    "ℹ️ *{$primerNombre}*, ya tienes un expediente activo con nosotros.\n\n" .
+                    "Un asesor está trabajando en tu caso y se pondrá en contacto contigo pronto. 🏠\n\n" .
+                    "_Consultoría Inmobiliaria_"
+                );
+                Log::info("[Chatbot WhatsApp] Expediente existente para: {$telefono}");
+                return;
+            }
+
+            // Actualizar datos del contacto existente
+            $contactoExistente->update([
+                'nombre'                  => $nombreCompleto,
+                'email'                   => $datos['correo'] ?? $contactoExistente->email,
+                'estado_prospecto'        => 'nuevo',
+                'estado_ubicacion'        => $datos['estado_ubicacion'] ?? $contactoExistente->estado_ubicacion,
+                'tipo_credito_interes'    => $tipoCredito ?? $contactoExistente->tipo_credito_interes,
+                'mensaje'                 => $datos['mensaje_libre'] ?? $contactoExistente->mensaje,
+                'curp'                    => isset($datos['curp']) ? strtoupper($datos['curp']) : $contactoExistente->curp,
+                'resultado_precalificacion' => $datos['resultado_precalificacion'] ?? $contactoExistente->resultado_precalificacion,
+                'notas'                   => $notas,
+            ]);
+            Log::info("[Chatbot WhatsApp] Contacto actualizado: {$telefono} — {$nombreCompleto}");
+        } else {
+            // Crear nuevo contacto
+            Contacto::create([
+                'nombre'                    => $nombreCompleto,
+                'telefono'                  => $telefono,
+                'email'                     => $datos['correo'] ?? null,
+                'origen'                    => 'whatsapp',
+                'estado_prospecto'          => 'nuevo',
+                'estado_ubicacion'          => $datos['estado_ubicacion'] ?? null,
+                'tipo_credito_interes'      => $tipoCredito,
+                'mensaje'                   => $datos['mensaje_libre'] ?? null,
+                'curp'                      => isset($datos['curp']) ? strtoupper($datos['curp']) : null,
+                'resultado_precalificacion' => $datos['resultado_precalificacion'] ?? null,
+                'fecha_primer_contacto'     => now()->toDateString(),
+                'notas'                     => $notas,
+            ]);
+            Log::info("[Chatbot WhatsApp] Prospecto creado: {$telefono} — {$nombreCompleto}");
+        }
+
         $this->whatsapp->sendText(
             $conv->chat_id,
-            "✅ ¡Listo *{$nombre}*!\n\n" .
+            "✅ ¡Listo *{$primerNombre}*!\n\n" .
             "Hemos registrado tu solicitud de *" . ($datos['servicio'] ?? 'nuestros servicios') . "*.\n\n" .
             "Un asesor se pondrá en contacto contigo a la brevedad. 🏠\n\n" .
             "_Consultoría Inmobiliaria_"
         );
+
+        $this->notificarSuperAdmin($datos, $nombreCompleto, $telefono);
+    }
+
+    // ──────────────────────────────────────────────
+    // NOTIFICACIÓN AL SUPER ADMIN
+    // ──────────────────────────────────────────────
+
+    private function notificarSuperAdmin(array $datos, string $nombreCompleto, string $telefono): void
+    {
+        try {
+            // Buscar todos los usuarios super_admin con teléfono registrado
+            $admins = User::role('super_admin')->whereNotNull('telefono')->where('telefono', '!=', '')->get();
+
+            if ($admins->isEmpty()) {
+                Log::info('[Chatbot] notificarSuperAdmin: ningún super_admin con teléfono registrado.');
+                return;
+            }
+
+            $msg = $this->construirMensajeAdmin($datos, $nombreCompleto, $telefono);
+
+            foreach ($admins as $admin) {
+                $chatId = preg_replace('/\D/', '', $admin->telefono) . '@c.us';
+                $this->whatsapp->sendText($chatId, $msg);
+                Log::info("[Chatbot] Notificación enviada a super_admin {$admin->name} ({$admin->telefono})");
+            }
+
+        } catch (\Throwable $e) {
+            // No interrumpir el flujo si falla la notificación
+            Log::warning('[Chatbot] Error al notificar super_admin: ' . $e->getMessage());
+        }
+    }
+
+    private function construirMensajeAdmin(array $datos, string $nombreCompleto, string $telefono): string
+    {
+        $servicio   = $datos['servicio']          ?? '—';
+        $estado     = $datos['estado_ubicacion']  ?? '—';
+        $situacion  = $datos['situacion_laboral'] ?? '—';
+        $correo     = $datos['correo']            ?? '—';
+        $curp       = isset($datos['curp'])       ? strtoupper($datos['curp']) : null;
+        $mensaje    = $datos['mensaje_libre']     ?? null;
+        $resultado  = $datos['resultado_precalificacion'] ?? null;
+
+        // Datos de precalificación
+        $sueldo     = isset($datos['sueldo_precal'])     ? '$' . number_format((float)$datos['sueldo_precal'], 0, '.', ',') : null;
+        $edad       = isset($datos['edad_precal'])       ? $datos['edad_precal'] . ' años' : null;
+        $antiguedad = isset($datos['antiguedad_precal']) ? $datos['antiguedad_precal'] . ' años' : null;
+        $subcuenta  = isset($datos['subcuenta_precal']) && (float)$datos['subcuenta_precal'] > 0
+                        ? '$' . number_format((float)$datos['subcuenta_precal'], 0, '.', ',')
+                        : null;
+
+        $resultadoEmoji = match ($resultado) {
+            'pre_califica' => '✅ Pre-califica',
+            'no_califica'  => '❌ No califica',
+            default        => null,
+        };
+
+        // ── Construir mensaje ──────────────────────────────────────────────
+        $msg  = "🔔 *Nuevo prospecto registrado*\n";
+        $msg .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $msg .= "👤 *Nombre:* {$nombreCompleto}\n";
+        $msg .= "📱 *Teléfono:* {$telefono}\n";
+
+        if ($correo && $correo !== '—') {
+            $msg .= "📧 *Correo:* {$correo}\n";
+        }
+
+        $msg .= "📍 *Estado:* {$estado}\n";
+        $msg .= "🏦 *Servicio:* {$servicio}\n";
+        $msg .= "💼 *Situación laboral:* {$situacion}\n";
+
+        // Bloque de precalificación (solo si hizo el flujo)
+        if ($sueldo || $edad || $antiguedad) {
+            $msg .= "━━━━━━━━━━━━━━━━━━━━\n";
+            $msg .= "📊 *Datos de precalificación:*\n";
+            if ($sueldo)     $msg .= "  • Sueldo mensual: {$sueldo}\n";
+            if ($edad)       $msg .= "  • Edad: {$edad}\n";
+            if ($antiguedad) $msg .= "  • Antigüedad: {$antiguedad}\n";
+            if ($subcuenta)  $msg .= "  • Subcuenta vivienda: {$subcuenta}\n";
+            if ($resultadoEmoji) {
+                $msg .= "  • Resultado: *{$resultadoEmoji}*\n";
+            }
+        }
+
+        // CURP si la proporcionó
+        if ($curp) {
+            $msg .= "━━━━━━━━━━━━━━━━━━━━\n";
+            $msg .= "🪪 *CURP:* {$curp}\n";
+        }
+
+        // Mensaje libre si lo escribió
+        if ($mensaje) {
+            $msg .= "━━━━━━━━━━━━━━━━━━━━\n";
+            $msg .= "💬 *Mensaje del prospecto:*\n_{$mensaje}_\n";
+        }
+
+        $msg .= "━━━━━━━━━━━━━━━━━━━━\n";
+        $msg .= "🕐 " . now()->timezone('America/Mexico_City')->format('d/m/Y H:i') . " hrs\n";
+        $msg .= "_Consultoría Inmobiliaria — CRM_";
+
+        return $msg;
     }
 
     private function mensajeYaRegistrado(string $chatId): void
@@ -265,9 +648,10 @@ class WhatsappChatbotService
 
     private function interpolar(string $texto, WhatsappConversation $conv, ?string $pushName = null): string
     {
-        $datos   = $conv->datos ?? [];
-        $nombre  = $pushName ?? $datos['nombre'] ?? $datos['nombre_completo'] ?? '';
+        $datos    = $conv->datos ?? [];
+        $nombre   = $pushName ?? $datos['nombre'] ?? $datos['nombre_completo'] ?? '';
         $servicio = $datos['servicio'] ?? '';
+        $telefono = $datos['telefono_confirmado'] ?? $conv->telefono ?? '';
 
         // {menu} → genera la lista numerada del paso de selección
         if (str_contains($texto, '{menu}')) {
@@ -285,8 +669,8 @@ class WhatsappChatbotService
         $total = count(ChatbotPaso::porClave('servicio')?->opciones ?? []);
 
         return str_replace(
-            ['{nombre}', '{servicio}', '{total}'],
-            [$nombre, $servicio, $total],
+            ['{nombre}', '{servicio}', '{total}', '{telefono}'],
+            [$nombre, $servicio, $total, $telefono],
             $texto
         );
     }

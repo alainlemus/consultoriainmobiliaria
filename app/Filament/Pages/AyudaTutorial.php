@@ -184,6 +184,81 @@ class AyudaTutorial extends Page implements HasInfolists
                             ->state('Al tocar un marcador se despliega el detalle con las fotos que el asesor tomó durante la visita.'),
                     ]),
 
+                Section::make('WhatsApp — Configuración')
+                    ->description('Conectar y gestionar la sesión de WhatsApp')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->collapsible()
+                    ->collapsed()
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('wa1')
+                            ->label('Conectar WhatsApp por primera vez')
+                            ->icon('heroicon-o-qr-code')
+                            ->state('Ve a Configuración → WhatsApp Configuración → "Nueva sesión". Escribe un nombre (ej. negocio) y presiona Crear. Espera unos segundos y aparecerá el botón "Ver QR". Escanéalo con WhatsApp (Dispositivos vinculados → Vincular dispositivo).'),
+                        TextEntry::make('wa2')
+                            ->label('Estado de la sesión')
+                            ->icon('heroicon-o-signal')
+                            ->state('Una sesión conectada muestra "Sesión en uso" en verde. Si aparece el botón "Ver QR" nuevamente, significa que se desconectó y hay que volver a escanear.'),
+                        TextEntry::make('wa3')
+                            ->label('Refrescar QR vencido')
+                            ->icon('heroicon-o-arrow-path')
+                            ->state('El QR expira en ~60 segundos. Si ves un código borroso o error, usa el botón "Refrescar QR" para generar uno nuevo y escanéalo de inmediato.'),
+                        TextEntry::make('wa4')
+                            ->label('Cambiar de número de teléfono')
+                            ->icon('heroicon-o-device-phone-mobile')
+                            ->state('Desconecta la sesión actual con el botón "Desconectar". Luego crea una nueva sesión con otro nombre o edita el "Session ID" en la sección de configuración antes de crear la sesión.'),
+                        TextEntry::make('wa5')
+                            ->label('Webhook — Auto-detectar hostname')
+                            ->icon('heroicon-o-globe-alt')
+                            ->state('Después de cada deploy el hostname del contenedor cambia. Usa el botón "Auto-detectar hostname" y luego "Guardar y actualizar webhook" para que WhatsApp siga enviando mensajes al servidor correcto. Sin este paso el chatbot no recibirá mensajes.'),
+                        TextEntry::make('wa6')
+                            ->label('¿Por qué se desconecta la sesión?')
+                            ->icon('heroicon-o-exclamation-triangle')
+                            ->state('WhatsApp puede cerrar sesiones remotas por inactividad prolongada, reinicio del servidor o actualización de la app en el teléfono. Si el chatbot deja de responder, verifica primero el estado de la sesión aquí.'),
+                    ]),
+
+                Section::make('WhatsApp — Chatbot y Flujo')
+                    ->description('Configurar el chatbot conversacional')
+                    ->icon('heroicon-o-cpu-chip')
+                    ->collapsible()
+                    ->collapsed()
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('cb1')
+                            ->label('¿Qué hace el chatbot?')
+                            ->icon('heroicon-o-information-circle')
+                            ->state('Cuando alguien escribe por WhatsApp al número conectado, el chatbot inicia un flujo de preguntas configurado por ti. Al completarlo crea automáticamente un prospecto en el CRM con los datos capturados.'),
+                        TextEntry::make('cb2')
+                            ->label('Activar o desactivar el chatbot')
+                            ->icon('heroicon-o-power')
+                            ->state('Ve a Configuración → Flujo del Chatbot. El toggle "Chatbot activo" en la parte superior activa o desactiva el flujo completo. Si está inactivo, los mensajes se reciben pero no se responden automáticamente.'),
+                        TextEntry::make('cb3')
+                            ->label('Editar textos del flujo')
+                            ->icon('heroicon-o-pencil-square')
+                            ->state('Cada paso tiene un campo "Mensaje del bot". Edítalo libremente. Puedes usar las variables {nombre} (nombre del prospecto capturado), {servicio} (opción elegida) y {menu} (lista de opciones del menú de servicios).'),
+                        TextEntry::make('cb4')
+                            ->label('Reordenar los pasos')
+                            ->icon('heroicon-o-bars-3')
+                            ->state('Arrastra los pasos con el ícono ⠿ a la izquierda de cada tarjeta para cambiar el orden. El número de "Orden" se actualiza solo. Guarda al terminar.'),
+                        TextEntry::make('cb5')
+                            ->label('Agregar un paso nuevo')
+                            ->icon('heroicon-o-plus-circle')
+                            ->state('Presiona "+ Agregar paso" al final de la lista. Define el tipo de dato a capturar (texto, email, teléfono, CURP, menú de opciones) y escribe el mensaje que el bot enviará.'),
+                        TextEntry::make('cb6')
+                            ->label('Menú de servicios (opciones)')
+                            ->icon('heroicon-o-list-bullet')
+                            ->state('Los pasos de tipo "Menú de opciones" muestran una lista numerada al prospecto. Agrega o edita las opciones en la sección "Opciones del menú" de ese paso. El prospecto responde con el número correspondiente.'),
+                        TextEntry::make('cb7')
+                            ->label('Campo CURP — opcional')
+                            ->icon('heroicon-o-identification')
+                            ->state('Cada paso puede marcarse como "¿Requiere CURP?" para vincular esa captura al campo CURP del prospecto. Solo debe existir un paso con esa marca activa.'),
+                        TextEntry::make('cb8')
+                            ->label('¿Cuándo se crea el prospecto?')
+                            ->icon('heroicon-o-user-plus')
+                            ->columnSpanFull()
+                            ->state('El prospecto se crea en el CRM únicamente cuando el contacto completa TODOS los pasos del flujo. Si abandona la conversación a mitad, la sesión expira en 30 minutos y no se guarda ningún dato. Esto evita prospectos incompletos.'),
+                    ]),
+
                 Section::make('API Móvil')
                     ->description('Gestión técnica de la app')
                     ->icon('heroicon-o-signal')

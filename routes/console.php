@@ -28,3 +28,14 @@ Schedule::command('reportes:enviar --tipo=semanal')
 // Mensual: último día del mes a las 8 PM (cubre el mes actual)
 Schedule::command('reportes:enviar --tipo=mensual')
     ->lastDayOfMonth('20:00');
+
+// ── Actualización automática de la UMA ────────────────────────────────────
+// La UMA se publica el 1 de febrero. Corremos el cron todos los martes
+// de enero y febrero para garantizar que capturamos la actualización
+// en cuanto INEGI la publique en su API o sitio web.
+Schedule::command('uma:actualizar --forzar')
+    ->weekly()
+    ->mondays()
+    ->at('06:00')
+    ->when(fn () => in_array(now()->month, [1, 2]));
+
