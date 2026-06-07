@@ -92,7 +92,7 @@ class ChatbotPasosSeeder extends Seeder
             ],
             [
                 'clave'         => 'situacion_laboral',
-                'tipo'          => 'seleccion',
+                'tipo'          => 'condicional',
                 'etiqueta'      => 'Situación laboral',
                 'mensaje'       => "¿Cuál es tu situación laboral? 💼\n\n1️⃣  Trabajador IMSS (INFONAVIT)\n2️⃣  Trabajador ISSSTE (FOVISSSTE)\n3️⃣  Independiente / otro",
                 'opciones'      => [
