@@ -201,6 +201,18 @@ class WhatsappChatbotService
             }
             $conv->setDato('curp', $curp);
 
+        // Paso sueldo_precal: si omite, saltar TODA la precalificación
+        } elseif ($paso->clave === 'sueldo_precal' && $omitir) {
+            $conv->setDato('sueldo_precal', null);
+            $conv->save();
+            $pasoMensaje = ChatbotPaso::porClave('mensaje_libre');
+            if ($pasoMensaje) {
+                $this->ejecutarPaso($pasoMensaje, $conv);
+            } else {
+                $this->avanzarAlSiguiente($conv, $paso);
+            }
+            return;
+
         // Paso sueldo_precal: validar número > 1000
         } elseif ($paso->clave === 'sueldo_precal' && ! $omitir) {
             $num = (float) preg_replace('/[^0-9.]/', '', $mensaje);
