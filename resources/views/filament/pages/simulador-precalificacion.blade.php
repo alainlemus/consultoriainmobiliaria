@@ -43,8 +43,35 @@
                 @endif
 
                 {{-- Tarjetas principales --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    {{-- Monto crédito --}}
+                @isset($r['precio_inmueble_deseado'])
+                    @if ($r['alcanza'])
+                        <div class="rounded-lg bg-success-50 border border-success-300 p-4 mb-4 dark:bg-success-900/20 dark:border-success-700 flex items-start gap-3">
+                            <span class="text-2xl leading-none">✓</span>
+                            <div>
+                                <p class="font-semibold text-success-700 dark:text-success-400">
+                                    El crédito <strong>alcanza</strong> para el inmueble deseado de {{ \App\Filament\Pages\SimuladorPrecalificacion::fmt($r['precio_inmueble_deseado']) }}
+                                </p>
+                                <p class="text-sm text-success-600 dark:text-success-300 mt-0.5">
+                                    Excedente disponible: <strong>{{ \App\Filament\Pages\SimuladorPrecalificacion::fmt($r['diferencia']) }}</strong>
+                                </p>
+                            </div>
+                        </div>
+                    @else
+                        <div class="rounded-lg bg-danger-50 border border-danger-300 p-4 mb-4 dark:bg-danger-900/20 dark:border-danger-700 flex items-start gap-3">
+                            <span class="text-2xl leading-none">✗</span>
+                            <div>
+                                <p class="font-semibold text-danger-700 dark:text-danger-400">
+                                    El crédito <strong>no alcanza</strong> para el inmueble deseado de {{ \App\Filament\Pages\SimuladorPrecalificacion::fmt($r['precio_inmueble_deseado']) }}
+                                </p>
+                                <p class="text-sm text-danger-600 dark:text-danger-300 mt-0.5">
+                                    Diferencia faltante: <strong>{{ \App\Filament\Pages\SimuladorPrecalificacion::fmt(abs($r['diferencia'])) }}</strong>
+                                </p>
+                            </div>
+                        </div>
+                    @endif
+                @endisset
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">                    {{-- Monto crédito --}}
                     <div class="rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700 p-4 text-center">
                         <p class="text-xs font-medium text-primary-500 uppercase tracking-wide mb-1">Monto del crédito</p>
                         <p class="text-2xl font-bold text-primary-700 dark:text-primary-300">
@@ -125,6 +152,20 @@
                                 <td class="px-4 py-2 text-success-700 dark:text-success-300">Honorarios estimados (8%)</td>
                                 <td class="px-4 py-2 text-right font-semibold text-success-700 dark:text-success-300">{{ \App\Filament\Pages\SimuladorPrecalificacion::fmt($r['honorarios'] ?? 0) }}</td>
                             </tr>
+                            @isset($r['precio_inmueble_deseado'])
+                            <tr class="border-t-2 border-gray-300 dark:border-gray-500 bg-gray-100 dark:bg-gray-700">
+                                <td class="px-4 py-2 font-semibold text-gray-800 dark:text-gray-100">Precio del inmueble deseado</td>
+                                <td class="px-4 py-2 text-right font-bold text-gray-900 dark:text-white">{{ \App\Filament\Pages\SimuladorPrecalificacion::fmt($r['precio_inmueble_deseado']) }}</td>
+                            </tr>
+                            <tr class="{{ $r['alcanza'] ? 'bg-green-100 dark:bg-green-900/40' : 'bg-red-100 dark:bg-red-900/40' }}">
+                                <td class="px-4 py-2 font-bold {{ $r['alcanza'] ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200' }}">
+                                    {{ $r['alcanza'] ? '✓ Excedente disponible' : '✗ Diferencia faltante' }}
+                                </td>
+                                <td class="px-4 py-2 text-right font-bold {{ $r['alcanza'] ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200' }}">
+                                    {{ \App\Filament\Pages\SimuladorPrecalificacion::fmt(abs($r['diferencia'])) }}
+                                </td>
+                            </tr>
+                            @endisset
                         </tbody>
                     </table>
                 </div>
@@ -145,7 +186,7 @@
 
                 {{-- Aviso legal --}}
                 <p class="mt-4 text-xs text-gray-400 dark:text-gray-500 italic">
-                    * Los resultados son una estimación orientativa basada en VSM {{ number_format(\App\Filament\Pages\SimuladorPrecalificacion::VSM_MENSUAL, 2) }} mensual (UMA 2024).
+                    * Los resultados son una estimación orientativa basada en UMA mensual ${{ number_format(\App\Services\UmaService::getUmaMensual(), 2) }} ({{ \App\Services\UmaService::getVigencia() }}).
                     El monto definitivo lo determina el portal oficial de FOVISSSTE con la CURP del acreditado.
                 </p>
 

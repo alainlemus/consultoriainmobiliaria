@@ -4,6 +4,8 @@ namespace App\Filament\Resources\ExpedienteResource\Pages;
 
 use App\Filament\Resources\ExpedienteResource;
 use App\Mail\SolicitudTestimonio;
+use App\Models\EtapaTramite;
+use App\Models\SeguimientoExpediente;
 use App\Models\TestimonioToken;
 use Filament\Actions;
 use Filament\Actions\Action;
@@ -72,6 +74,53 @@ class EditExpediente extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            // ── Avanzar etapa (solo super_admin, oculto en última etapa) ─────
+            Action::make('avanzar_etapa')
+                ->label(function () {
+                    $siguiente = $this->siguienteEtapa();
+                    return $siguiente
+                        ? 'Avanzar → ' . preg_replace('/^\d+\.\s*/', '', $siguiente->nombre)
+                        : 'Avanzar etapa';
+                })
+                ->icon('heroicon-o-arrow-right-circle')
+                ->color('success')
+                ->visible(function () {
+                    if (! auth()->user()?->hasRole('super_admin')) return false;
+                    return $this->siguienteEtapa() !== null;
+                })
+                ->requiresConfirmation()
+                ->modalHeading(fn () => 'Avanzar a: ' . ($this->siguienteEtapa()?->nombre ?? ''))
+                ->modalDescription('Se registrará automáticamente en la bitácora de seguimiento.')
+                ->modalSubmitActionLabel('Sí, avanzar')
+                ->action(function () {
+                    $etapaAnterior  = $this->record->etapa;
+                    $siguienteEtapa = $this->siguienteEtapa();
+
+                    if (! $siguienteEtapa) {
+                        Notification::make()->title('Ya está en la última etapa')->warning()->send();
+                        return;
+                    }
+
+                    $this->record->update(['etapa_tramite_id' => $siguienteEtapa->id]);
+
+                    SeguimientoExpediente::create([
+                        'expediente_id'     => $this->record->id,
+                        'usuario_id'        => auth()->id(),
+                        'tipo'              => 'cambio_etapa',
+                        'descripcion'       => 'Avance de etapa: "' . ($etapaAnterior?->nombre ?? '—') . '" → "' . $siguienteEtapa->nombre . '"',
+                        'etapa_anterior_id' => $etapaAnterior?->id,
+                        'etapa_nueva_id'    => $siguienteEtapa->id,
+                    ]);
+
+                    Notification::make()
+                        ->title('Etapa avanzada')
+                        ->body('Ahora en: ' . preg_replace('/^\d+\.\s*/', '', $siguienteEtapa->nombre))
+                        ->success()
+                        ->send();
+
+                    $this->redirect(ExpedienteResource::getUrl('edit', ['record' => $this->record]));
+                }),
+
             // ── Solicitar Testimonio ─────────────────────────────────────────
             Action::make('solicitar_testimonio')
                 ->label('Solicitar Testimonio')
@@ -212,5 +261,16 @@ class EditExpediente extends EditRecord
                     $this->redirect(ExpedienteResource::getUrl('index'));
                 }),
         ];
+    }
+
+    // ── Helper: obtiene la siguiente etapa del trámite ───────────────────────
+    private function siguienteEtapa(): ?EtapaTramite
+    {
+        $etapaActual = $this->record->etapa;
+
+        return EtapaTramite::where('tipo_tramite_id', $this->record->tipo_tramite_id)
+            ->where('orden', '>', $etapaActual?->orden ?? 0)
+            ->orderBy('orden')
+            ->first();
     }
 }

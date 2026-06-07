@@ -103,8 +103,8 @@ class ContactoResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            \Filament\Schemas\Components\Section::make('Datos de contacto')
-                ->description('Información básica del prospecto.')
+            \Filament\Schemas\Components\Section::make('Datos del Prospecto')
+                ->description('Información de contacto y gestión.')
                 ->schema([
                     Forms\Components\TextInput::make('nombre')
                         ->label('Nombre')->required()->maxLength(255)
@@ -136,14 +136,6 @@ class ContactoResource extends Resource
                             'asesoria'   => 'Asesoría personalizada',
                             'otro'       => 'Otro',
                         ]),
-                    Forms\Components\Textarea::make('mensaje')
-                        ->label('Mensaje')->rows(3)->columnSpanFull()
-                        ->hint('Mensaje del prospecto (sitio web, WhatsApp u otro canal)'),
-                ])->columns(2),
-
-            \Filament\Schemas\Components\Section::make('Gestión del Prospecto')
-                ->description('Controla el avance del prospecto.')
-                ->schema([
                     Forms\Components\Select::make('estado_prospecto')
                         ->label('Estado del prospecto')
                         ->options([
@@ -177,7 +169,6 @@ class ContactoResource extends Resource
                         ])
                         ->default('nuevo')
                         ->hidden(),
-                    // Origen — automático al crear, solo lectura al editar
                     Forms\Components\Select::make('origen')
                         ->label('Origen')
                         ->options([
@@ -201,8 +192,6 @@ class ContactoResource extends Resource
                             ? 'El origen no se puede cambiar una vez creado el prospecto.'
                             : null
                         ),
-
-                    // Asesor asignado — auto si es asesor, seleccionable si es super_admin
                     Forms\Components\Select::make('asesor_id')
                         ->label('Asesor asignado')
                         ->options(User::where('activo', true)->role('asesor')->pluck('name', 'id'))
@@ -215,7 +204,6 @@ class ContactoResource extends Resource
                             $livewire instanceof \Filament\Resources\Pages\EditRecord
                         ))
                         ->visible(fn () => Auth::user()?->hasAnyRole(['super_admin', 'asesor'])),
-
                     Forms\Components\DatePicker::make('fecha_primer_contacto')
                         ->label('Fecha primer contacto')
                         ->default(now())
@@ -223,6 +211,9 @@ class ContactoResource extends Resource
                         ->validationMessages([
                             'before_or_equal' => 'La fecha de primer contacto no puede ser futura.',
                         ]),
+                    Forms\Components\Textarea::make('mensaje')
+                        ->label('Mensaje')->rows(3)->columnSpanFull()
+                        ->hint('Mensaje del prospecto (sitio web, WhatsApp u otro canal)'),
                     Forms\Components\Textarea::make('notas')
                         ->label('Notas internas')->rows(3)->columnSpanFull(),
                 ])->columns(2),
@@ -360,13 +351,17 @@ class ContactoResource extends Resource
                         'primary' => 'campo',
                         'success' => 'referido',
                         'warning' => 'whatsapp',
+                        'info'    => 'admin',
+                        'info'    => 'asesor',
                     ])
-                    ->formatStateUsing(fn ($state) => match($state) {
+                    ->formatStateUsing(fn ($state, $record) => match($state) {
                         'sitio_web' => 'Sitio web',
                         'campo'     => 'Campo',
                         'referido'  => 'Referido',
                         'whatsapp'  => 'WhatsApp',
                         'app_movil' => '📱 App móvil',
+                        'admin'     => 'CRM — ' . ($record->asesor?->name ?? 'Admin'),
+                        'asesor'    => 'CRM — ' . ($record->asesor?->name ?? 'Asesor'),
                         default     => 'Otro',
                     }),
                 Tables\Columns\BadgeColumn::make('estado_prospecto')
@@ -423,21 +418,14 @@ class ContactoResource extends Resource
                         default     => $state ?? '—',
                     })
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('modalidad_cierre')
-                    ->label('Modalidad')
-                    ->placeholder('—')
-                    ->formatStateUsing(fn ($state) => match($state) {
-                        'telefono'         => 'Teléfono',
-                        'cita_oficina'     => 'Cita en oficina',
-                        'visita_domicilio' => 'Visita domicilio',
-                        'whatsapp'         => 'WhatsApp',
-                        default            => '—',
-                    })
-                    ->toggleable(),
                 Tables\Columns\TextColumn::make('asesor.name')
-                    ->label('Asesor')->toggleable(),
+                    ->label('Asesor')
+                    ->placeholder('Sin asesor asignado')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('monto_credito_estimado')
-                    ->label('Monto estimado')->money('MXN')->toggleable(),
+                    ->label('Monto estimado')->money('MXN')
+                    ->placeholder('No cuenta con monto estimado')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha')->dateTime('d M Y H:i')->sortable(),
             ])

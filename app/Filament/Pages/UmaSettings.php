@@ -31,8 +31,8 @@ class UmaSettings extends Page
     protected static string|\BackedEnum|null $navigationIcon  = 'heroicon-o-calculator';
     protected static ?string $navigationLabel                 = 'UMA';
     protected static ?string $title                           = 'Valor de la UMA';
-    protected static string|\UnitEnum|null $navigationGroup   = 'Configuración del sitio';
-    protected static ?int    $navigationSort                   = 45;
+    protected static string|\UnitEnum|null $navigationGroup   = 'Configuración CRM';
+    protected static ?int    $navigationSort                   = 10;
     protected string $view = 'filament.pages.uma-settings';
 
     public ?array $data = [];

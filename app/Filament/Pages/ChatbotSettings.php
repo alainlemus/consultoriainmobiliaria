@@ -30,8 +30,8 @@ class ChatbotSettings extends Page implements HasTable
     protected static string|\BackedEnum|null $navigationIcon  = 'heroicon-o-chat-bubble-bottom-center-text';
     protected static ?string $navigationLabel = 'Flujo del Chatbot';
     protected static ?string $title           = 'Configuración del Chatbot WhatsApp';
-    protected static string|\UnitEnum|null $navigationGroup  = 'Configuración del sitio';
-    protected static ?int $navigationSort     = 51;
+    protected static string|\UnitEnum|null $navigationGroup  = 'Configuración CRM';
+    protected static ?int $navigationSort     = 30;
     protected string $view = 'filament.pages.chatbot-settings';
 
     public function table(Table $table): Table

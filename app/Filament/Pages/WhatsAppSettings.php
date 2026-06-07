@@ -20,8 +20,8 @@ class WhatsAppSettings extends Page
     protected static string|\BackedEnum|null $navigationIcon  = 'heroicon-o-chat-bubble-left-ellipsis';
     protected static ?string $navigationLabel = 'WhatsApp Configuración';
     protected static ?string $title           = 'Configuración WhatsApp';
-    protected static string|\UnitEnum|null $navigationGroup  = 'Configuración del sitio';
-    protected static ?int $navigationSort     = 50;
+    protected static string|\UnitEnum|null $navigationGroup  = 'Configuración CRM';
+    protected static ?int $navigationSort     = 20;
     protected string $view = 'filament.pages.whatsapp-settings';
 
     public ?array $data = [];

@@ -42,6 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->passwordReset()
+            ->maxContentWidth(\Filament\Support\Enums\Width::Full)
             ->theme(asset('css/filament/admin/theme.css'))
             ->colors([
                 'primary' => Color::hex('#B8960C'),
