@@ -162,14 +162,26 @@ class DocumentoController extends Controller
             abort(404, 'Archivo no encontrado.');
         }
 
-        $path     = Storage::disk(self::DISK)->path($doc->ruta_archivo);
-        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
-        $nombre   = $doc->nombre ?? basename($doc->ruta_archivo);
+        $path   = Storage::disk(self::DISK)->path($doc->ruta_archivo);
+        $nombre = $doc->nombre ?? basename($doc->ruta_archivo);
+
+        // Detección de MIME por extensión (más fiable que mime_content_type())
+        $ext      = strtolower(pathinfo($doc->ruta_archivo, PATHINFO_EXTENSION));
+        $mimeMap  = [
+            'pdf'  => 'application/pdf',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'webp' => 'image/webp',
+            'heic' => 'image/heic',
+        ];
+        $mimeType = $mimeMap[$ext] ?? (mime_content_type($path) ?: 'application/octet-stream');
 
         return response()->file($path, [
             'Content-Type'        => $mimeType,
             'Content-Disposition' => 'inline; filename="' . $nombre . '"',
             'Cache-Control'       => 'private, max-age=300',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 

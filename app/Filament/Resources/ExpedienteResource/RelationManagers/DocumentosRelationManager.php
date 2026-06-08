@@ -145,9 +145,31 @@ class DocumentosRelationManager extends RelationManager
                         $esPdf  = str_ends_with($nombre, '.pdf');
 
                         if ($esPdf) {
-                            $html = '<iframe src="' . e($url) . '" style="width:100%;height:70vh;border:none;border-radius:6px;" title="Documento PDF"></iframe>';
+                            // Botón principal + embed <object> (más fiable que <iframe> para PDFs)
+                            $html = '
+                                <div style="display:flex;flex-direction:column;gap:10px;">
+                                    <div style="text-align:center;">
+                                        <a href="' . e($url) . '" target="_blank" rel="noopener"
+                                           style="display:inline-flex;align-items:center;gap:6px;
+                                                  background:#2563eb;color:#fff;padding:9px 20px;
+                                                  border-radius:8px;text-decoration:none;
+                                                  font-size:14px;font-weight:600;letter-spacing:.01em;">
+                                            ↗&nbsp; Abrir PDF en nueva pestaña
+                                        </a>
+                                    </div>
+                                    <object data="' . e($url) . '" type="application/pdf"
+                                            style="width:100%;height:65vh;border:none;border-radius:6px;background:#f3f4f6;">
+                                        <p style="text-align:center;color:#6b7280;padding:32px;font-size:14px;">
+                                            Tu navegador no puede mostrar el PDF en línea.<br>
+                                            <a href="' . e($url) . '" target="_blank"
+                                               style="color:#2563eb;">Haz clic aquí para abrirlo</a>.
+                                        </p>
+                                    </object>
+                                </div>';
                         } else {
-                            $html = '<img src="' . e($url) . '" alt="Documento" style="max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:6px;object-fit:contain;">';
+                            $html = '<img src="' . e($url) . '" alt="Documento"
+                                         style="max-width:100%;max-height:70vh;display:block;
+                                                margin:0 auto;border-radius:6px;object-fit:contain;">';
                         }
 
                         return new \Illuminate\Support\HtmlString($html);

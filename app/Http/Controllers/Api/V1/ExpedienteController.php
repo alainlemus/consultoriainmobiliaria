@@ -15,7 +15,7 @@ class ExpedienteController extends Controller
     {
         $user  = $request->user();
         $query = Expediente::with([
-            'contacto:id,nombre,email,telefono,estado_prospecto',
+            'contacto:id,nombre,foto',   // foto incluida para que el accessor foto_url funcione
             'tipoTramite:id,nombre',
             'etapa:id,nombre',
         ]);
@@ -47,7 +47,7 @@ class ExpedienteController extends Controller
         $exp = $this->findForUser($request, $id);
 
         $exp->load([
-            'contacto:id,nombre,email,telefono,estado_prospecto',
+            'contacto',   // modelo completo — incluye accessors foto_url y simulador_screenshot_url
             'tipoTramite:id,nombre',
             'etapa:id,nombre',
             'documentos',

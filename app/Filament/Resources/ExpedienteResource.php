@@ -204,6 +204,7 @@ class ExpedienteResource extends Resource
                                 ->options(Contacto::pluck('nombre', 'id'))
                                 ->searchable()
                                 ->nullable()
+                                ->live()
                                 ->hint('Opcional — vincula con el prospecto del sitio web'),
                             Forms\Components\Select::make('uso_credito')
                                 ->label('Uso del crédito')
@@ -342,10 +343,77 @@ class ExpedienteResource extends Resource
                         ])->columns(2),
 
                     // ── TAB 2: ACREDITADO ─────────────────────────────────
-                    Tabs\Tab::make('Acreditado')
-                        ->icon('heroicon-o-user')
-                        ->schema([
-                            Forms\Components\TextInput::make('acreditado_nombre')
+                     Tabs\Tab::make('Acreditado')
+                         ->icon('heroicon-o-user')
+                         ->schema([
+                            // ── Datos del prospecto (readonly) ────────────────
+                            \Filament\Schemas\Components\Section::make('Datos del prospecto')
+                                ->description('Información registrada durante la etapa de prospección. Solo lectura.')
+                                ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => (bool) $get('contacto_id'))
+                                ->columnSpanFull()
+                                ->collapsible()
+                                ->schema([
+                                    Forms\Components\Placeholder::make('_prospecto_info')
+                                        ->label('')
+                                        ->columnSpanFull()
+                                        ->content(function ($record): \Illuminate\Support\HtmlString {
+                                            $c = $record?->contacto;
+                                            if (! $c) return new \Illuminate\Support\HtmlString('');
+
+                                            $fotoHtml = $c->foto_url
+                                                ? "<img src='{$c->foto_url}' style='width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;' />"
+                                                : "<div style='width:72px;height:72px;border-radius:50%;background:#1c1917;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#d97706;'>" . strtoupper(substr($c->nombre ?? '?', 0, 1)) . "</div>";
+
+                                            $servicio = strtoupper($c->servicio ?? '');
+                                            $row = fn(string $lbl, ?string $val) => $val
+                                                ? "<tr><td style='padding:4px 12px 4px 0;font-size:13px;color:#6b7280;white-space:nowrap;font-weight:600;'>{$lbl}</td><td style='padding:4px 0;font-size:13px;color:#111827;'>" . e($val) . "</td></tr>"
+                                                : '';
+
+                                            $tabla  = '<table style="border-collapse:collapse;width:100%;">';
+                                            $tabla .= $row('Teléfono', $c->telefono);
+                                            $tabla .= $row('Correo',   $c->email);
+                                            $tabla .= $row('CURP',     $c->curp);
+                                            $tabla .= $row('NSS',      $c->nss);
+                                            $tabla .= $row('Servicio', $servicio ?: null);
+
+                                            if ($servicio === 'FOVISSSTE') {
+                                                $tabla .= $row('Estado (crédito)',    $c->estado_uso_credito);
+                                                $tabla .= $row('Municipio (crédito)', $c->municipio_uso_credito);
+                                                $tabla .= $row('Estado (residencia)', $c->estado_residencia);
+                                                if ($c->regimen_pensionario) {
+                                                    $label = $c->regimen_pensionario === 'decimo_transitorio' ? 'Décimo Transitorio' : 'Cuenta Individual';
+                                                    $tabla .= $row('Régimen', $label);
+                                                }
+                                                $tabla .= $row('Discapacidad', $c->tiene_discapacidad ? 'Sí' : 'No');
+                                            }
+
+                                            if ($servicio === 'INFONAVIT') {
+                                                $tabla .= $row('Estado (crédito)',    $c->estado_uso_credito);
+                                                $tabla .= $row('Municipio (crédito)', $c->municipio_uso_credito);
+                                            }
+
+                                            $tabla .= '</table>';
+
+                                            $screenshotHtml = '';
+                                            if ($c->simulador_screenshot_url) {
+                                                $lbl = $servicio === 'INFONAVIT' ? 'Mi Cuenta INFONAVIT' : 'Simulador FOVISSSTE';
+                                                $screenshotHtml = "<div style='margin-top:16px;'>"
+                                                    . "<p style='font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;'>Captura {$lbl}</p>"
+                                                    . "<a href='{$c->simulador_screenshot_url}' target='_blank' rel='noopener'>"
+                                                    . "<img src='{$c->simulador_screenshot_url}' style='max-width:100%;max-height:300px;border-radius:8px;border:1px solid #e5e7eb;object-fit:contain;' /></a>"
+                                                    . "</div>";
+                                            }
+
+                                            return new \Illuminate\Support\HtmlString(
+                                                "<div style='display:flex;gap:20px;align-items:flex-start;'>"
+                                                . "<div style='flex-shrink:0;'>{$fotoHtml}</div>"
+                                                . "<div style='flex:1;'>{$tabla}{$screenshotHtml}</div>"
+                                                . "</div>"
+                                            );
+                                        }),
+                                ]),
+
+                             Forms\Components\TextInput::make('acreditado_nombre')
                                 ->label('Nombre completo')
                                 ->required()
                                 ->maxLength(255)
