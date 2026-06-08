@@ -35,6 +35,7 @@ class WhatsAppSettings extends Page
     public function mount(): void
     {
         $this->form->fill([
+            'whatsapp_habilitado' => (bool) setting('whatsapp_habilitado', true),
             'owa_session_id'   => setting('owa_session_id', config('services.openwa.session')),
             'owa_telefono'     => setting('owa_telefono'),
             'owa_webhook_host' => setting('owa_webhook_host'),
@@ -49,6 +50,26 @@ class WhatsAppSettings extends Page
     {
         return $schema
             ->schema([
+                \Filament\Schemas\Components\Section::make('Control de envíos')
+                    ->description('Desactiva para bloquear todos los mensajes de WhatsApp (útil en pruebas). El cambio aplica de inmediato.')
+                    ->schema([
+                        Forms\Components\Toggle::make('whatsapp_habilitado')
+                            ->label('Envío de mensajes activo')
+                            ->helperText('Si está apagado, ningún mensaje será enviado a prospectos ni expedientes.')
+                            ->onColor('success')
+                            ->offColor('danger')
+                            ->live()
+                            ->afterStateUpdated(function (bool $state) {
+                                Configuracion::set('whatsapp_habilitado', $state ? '1' : '0');
+                                Notification::make()
+                                    ->title($state
+                                        ? 'Mensajes WhatsApp activados.'
+                                        : 'Mensajes WhatsApp desactivados. No se enviará ningún mensaje.')
+                                    ->success()
+                                    ->send();
+                            }),
+                    ]),
+
                 \Filament\Schemas\Components\Section::make('Sesión activa')
                     ->description('Sesión de OpenWA que recibe y envía mensajes. Cámbiala si conectas un nuevo teléfono.')
                     ->schema([

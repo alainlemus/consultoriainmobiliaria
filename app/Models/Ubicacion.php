@@ -16,6 +16,8 @@ class Ubicacion extends Model
         'latitud',
         'longitud',
         'tipo',
+        'nombre_lugar',
+        'direccion',
         'notas',
         'municipio',
         'estado',

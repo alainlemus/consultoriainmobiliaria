@@ -23,14 +23,16 @@ class UbicacionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'contacto_id' => ['nullable', 'exists:contactos,id'],
-            'latitud'     => ['required', 'numeric', 'between:-90,90'],
-            'longitud'    => ['required', 'numeric', 'between:-180,180'],
-            'tipo'        => ['nullable', 'in:visita_cliente,propiedad'],
-            'notas'       => ['nullable', 'string'],
-            'municipio'   => ['nullable', 'string', 'max:100'],
-            'estado'      => ['nullable', 'string', 'max:100'],
-            'visitado_en' => ['nullable', 'date'],
+            'contacto_id'  => ['nullable', 'exists:contactos,id'],
+            'latitud'      => ['required', 'numeric', 'between:-90,90'],
+            'longitud'     => ['required', 'numeric', 'between:-180,180'],
+            'tipo'         => ['nullable', 'in:visita_cliente,propiedad,escuela'],
+            'nombre_lugar' => ['nullable', 'string', 'max:200'],
+            'direccion'    => ['nullable', 'string', 'max:500'],
+            'notas'        => ['nullable', 'string'],
+            'municipio'    => ['nullable', 'string', 'max:100'],
+            'estado'       => ['nullable', 'string', 'max:100'],
+            'visitado_en'  => ['nullable', 'date'],
         ]);
 
         $ubicacion = Ubicacion::create([
@@ -159,7 +161,7 @@ class UbicacionController extends Controller
         $query = Ubicacion::with([
             'contacto:id,nombre,estado_prospecto',
             'fotos:id,ubicacion_id',
-        ])->select(['id', 'user_id', 'contacto_id', 'latitud', 'longitud', 'tipo', 'notas', 'municipio', 'estado', 'visitado_en']);
+        ])->select(['id', 'user_id', 'contacto_id', 'latitud', 'longitud', 'tipo', 'nombre_lugar', 'direccion', 'notas', 'municipio', 'estado', 'visitado_en']);
 
         if (! $user->hasRole('super_admin')) {
             $query->where('user_id', $user->id);
@@ -168,16 +170,18 @@ class UbicacionController extends Controller
         $puntos = $query->latest('visitado_en')->limit(500)->get()
             ->map(function (Ubicacion $u) {
                 return [
-                    'id'          => $u->id,
-                    'latitud'     => $u->latitud,
-                    'longitud'    => $u->longitud,
-                    'tipo'        => $u->tipo,
-                    'notas'       => $u->notas,
-                    'municipio'   => $u->municipio,
-                    'estado'      => $u->estado,
-                    'visitado_en' => $u->visitado_en,
-                    'contacto_id' => $u->contacto_id,
-                    'contacto'    => $u->contacto?->nombre,
+                    'id'           => $u->id,
+                    'latitud'      => $u->latitud,
+                    'longitud'     => $u->longitud,
+                    'tipo'         => $u->tipo,
+                    'nombre_lugar' => $u->nombre_lugar,
+                    'direccion'    => $u->direccion,
+                    'notas'        => $u->notas,
+                    'municipio'    => $u->municipio,
+                    'estado'       => $u->estado,
+                    'visitado_en'  => $u->visitado_en,
+                    'contacto_id'  => $u->contacto_id,
+                    'contacto'     => $u->contacto?->nombre,
                      'fotos'       => $u->fotos->map(fn ($f) => [
                          'id'  => $f->id,
                          // URL firmada válida 1 hora — Image en RN puede cargarla sin headers

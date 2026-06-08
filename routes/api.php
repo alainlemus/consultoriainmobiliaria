@@ -59,10 +59,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/perfil/foto',      [AuthController::class, 'subirFotoPerfil']);
 
         // Prospectos / Contactos
-        Route::get('/contactos',          [ContactoController::class, 'index']);
-        Route::post('/contactos',         [ContactoController::class, 'store']);
-        Route::get('/contactos/{id}',     [ContactoController::class, 'show']);
-        Route::put('/contactos/{id}',     [ContactoController::class, 'update']);
+        Route::get('/contactos',                              [ContactoController::class, 'index']);
+        Route::post('/contactos',                             [ContactoController::class, 'store']);
+        Route::get('/contactos/{id}',                        [ContactoController::class, 'show']);
+        Route::put('/contactos/{id}',                        [ContactoController::class, 'update']);
+        Route::post('/contactos/{id}/foto',                  [ContactoController::class, 'uploadFoto']);
+        Route::post('/contactos/{id}/simulador-screenshot',  [ContactoController::class, 'uploadSimuladorScreenshot']);
 
         // Expedientes
         Route::get('/expedientes',        [ExpedienteController::class, 'index']);

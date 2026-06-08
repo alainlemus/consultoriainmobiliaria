@@ -112,6 +112,20 @@ class ContactoResource extends Resource
                             'required' => 'El nombre del prospecto es obligatorio.',
                             'max'      => 'El nombre no puede superar los 255 caracteres.',
                         ]),
+                    Forms\Components\TextInput::make('curp')
+                        ->label('CURP (opcional)')
+                        ->nullable()
+                        ->maxLength(18)
+                        ->placeholder('LOHA850101HDFPLN02')
+                        ->columnSpanFull(),
+                    Forms\Components\FileUpload::make('foto')
+                        ->label('Foto del prospecto')
+                        ->image()
+                        ->disk('public')
+                        ->directory('contactos/fotos')
+                        ->imagePreviewHeight('120')
+                        ->nullable()
+                        ->columnSpanFull(),
                     Forms\Components\TextInput::make('telefono')
                         ->label('Teléfono')->required()->tel()
                         ->regex('/^\d{10}$/')->maxLength(10)
@@ -135,7 +149,15 @@ class ContactoResource extends Resource
                             'escrituras' => 'Escrituración',
                             'asesoria'   => 'Asesoría personalizada',
                             'otro'       => 'Otro',
-                        ]),
+                        ])
+                        ->live(),
+                    Forms\Components\TextInput::make('nss')
+                        ->label('NSS (Número de Seguridad Social)')
+                        ->nullable()
+                        ->maxLength(15)
+                        ->placeholder('12345678901')
+                        ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => strtolower((string)($get('servicio') ?? '')) === 'infonavit')
+                        ->columnSpanFull(),
                     Forms\Components\Select::make('estado_prospecto')
                         ->label('Estado del prospecto')
                         ->options([
@@ -244,90 +266,88 @@ class ContactoResource extends Resource
                         ->hint('Ej: vive en col. Magisterio, disponible de 6pm en adelante, ya revisó su crédito FOVISSSTE'),
                 ])->columns(2)->collapsible(),
 
-            \Filament\Schemas\Components\Section::make('Precalificación')
-                ->description('Datos del simulador FOVISSSTE / portal INFONAVIT.')
+            // ── Precalificación FOVISSSTE ────────────────────────────────
+            \Filament\Schemas\Components\Section::make('Precalificación FOVISSSTE')
+                ->description('Datos del simulador FOVISSSTE para estimar el crédito disponible.')
+                ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => strtolower((string)($get('servicio') ?? '')) === 'fovissste')
                 ->schema([
-                    Forms\Components\TextInput::make('curp')
-                        ->label('CURP')
-                        ->nullable()
-                        ->maxLength(18)->minLength(18)
-                        ->regex('/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i')
-                        ->validationMessages([
-                            'regex' => 'La CURP no tiene el formato correcto (ej: LOHA850101HDFPLN02).',
-                            'min'   => 'La CURP debe tener exactamente 18 caracteres.',
-                            'max'   => 'La CURP debe tener exactamente 18 caracteres.',
-                        ])
-                        ->live(onBlur: true)
-                        ->afterStateUpdated(fn (\Filament\Schemas\Components\Utilities\Set $set, ?string $state) => $set('curp', strtoupper($state ?? '')))
-                        ->dehydrated(true)
-                        ->placeholder('LOHA850101HDFPLN02'),
-                    Forms\Components\DatePicker::make('fecha_nacimiento')
-                        ->label('Fecha de nacimiento')->before('today')
-                        ->validationMessages([
-                            'before' => 'La fecha de nacimiento debe ser anterior a hoy.',
-                        ]),
-                    Forms\Components\TextInput::make('antiguedad_laboral')
-                        ->label('Antigüedad laboral (años)')
-                        ->numeric()->minValue(0)->maxValue(50)
-                        ->validationMessages([
-                            'min' => 'La antigüedad no puede ser negativa.',
-                            'max' => 'La antigüedad no puede superar los 50 años.',
-                        ]),
-                    Forms\Components\TextInput::make('salario_mensual')
-                        ->label('Salario mensual')->numeric()->prefix('$')->minValue(0)
-                        ->validationMessages([
-                            'min' => 'El salario no puede ser negativo.',
-                        ]),
-                    Forms\Components\Select::make('tipo_credito_interes')
-                        ->label('Tipo de crédito')
+                    Forms\Components\Select::make('estado_uso_credito')
+                        ->label('Estado donde usará el crédito')
+                        ->options(self::estadosMexico())
+                        ->searchable()->nullable(),
+                    Forms\Components\TextInput::make('municipio_uso_credito')
+                        ->label('Municipio donde usará el crédito')
+                        ->nullable()->maxLength(100),
+                    Forms\Components\Select::make('estado_residencia')
+                        ->label('Estado de residencia actual')
+                        ->options(self::estadosMexico())
+                        ->searchable()->nullable(),
+                    Forms\Components\Select::make('regimen_pensionario')
+                        ->label('Régimen pensionario')
                         ->options([
-                            'fovissste' => 'FOVISSSTE',
-                            'infonavit' => 'INFONAVIT',
-                            'ambos'     => 'Ambos',
-                            'otro'      => 'Otro',
-                        ]),
-                    Forms\Components\TextInput::make('monto_credito_estimado')
-                        ->label('Monto de crédito estimado')->numeric()->prefix('$')->minValue(0)
-                        ->validationMessages([
-                            'min' => 'El monto estimado no puede ser negativo.',
-                        ]),
-                    Forms\Components\TextInput::make('subcuenta_vivienda')
-                        ->label('Subcuenta de vivienda')->numeric()->prefix('$')->minValue(0)
-                        ->validationMessages([
-                            'min' => 'La subcuenta de vivienda no puede ser negativa.',
-                        ]),
-
-                    Forms\Components\Select::make('resultado_precalificacion')
-                        ->label('Resultado de precalificación')
-                        ->options([
-                            'pendiente'    => '⏳ Pendiente',
-                            'aprobado'     => '✅ Aprobado',
-                            'condicional'  => '⚠️ Condicional',
-                            'no_califica'  => '❌ No califica',
+                            'decimo_transitorio' => 'Décimo Transitorio (anterior a 2007)',
+                            'cuenta_individual'  => 'Cuenta Individual (posterior a 2007)',
                         ])
-                        ->nullable()
-                        ->placeholder('Sin evaluar')
-                        ->columnSpanFull(),
+                        ->nullable()->placeholder('Seleccionar régimen'),
+                    Forms\Components\Toggle::make('tiene_discapacidad')
+                        ->label('¿Tiene alguna discapacidad?')
+                        ->default(false),
 
-                    Forms\Components\Placeholder::make('acceso_simulador')
-                        ->label('Simuladores oficiales')->columnSpanFull()
+                    Forms\Components\Placeholder::make('link_fovissste')
+                        ->label('Simulador oficial')->columnSpanFull()
                         ->content(function (\Filament\Schemas\Components\Utilities\Get $get): \Illuminate\Support\HtmlString {
                             $curp = strtoupper(trim($get('curp') ?? ''));
                             $hint = $curp
                                 ? "<span class='text-xs text-gray-500 ml-2'>CURP: <strong>{$curp}</strong></span>"
-                                : "<span class='text-xs text-gray-400 ml-2'>Captura la CURP arriba primero</span>";
+                                : "<span class='text-xs text-gray-400 ml-2'>Captura la CURP en los datos del prospecto</span>";
                             return new \Illuminate\Support\HtmlString(
                                 '<div class="flex flex-wrap gap-3 items-center">'
-                                .'<a href="https://inscripcioncontinua.fovissste.gob.mx/simulador/" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-green-700 hover:bg-green-800 transition-colors shadow-sm">Simulador FOVISSSTE</a>'
-                                .'<a href="https://micuenta.infonavit.org.mx/" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-700 hover:bg-red-800 transition-colors shadow-sm">Portal INFONAVIT</a>'
+                                .'<a href="https://inscripcioncontinua.fovissste.gob.mx/simulador/" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-green-700 hover:bg-green-800 transition-colors shadow-sm">Abrir Simulador FOVISSSTE</a>'
                                 .$hint.'</div>'
                             );
                         }),
 
-                    Forms\Components\Textarea::make('notas_precalificacion')
-                        ->label('Resultado de la precalificación')
-                        ->rows(4)->columnSpanFull()
-                        ->helperText('Pega aquí el resultado del simulador o anota el monto aprobado.'),
+                    Forms\Components\FileUpload::make('simulador_screenshot')
+                        ->label('Captura del simulador')
+                        ->image()->disk('public')->directory('contactos/simulador')
+                        ->imagePreviewHeight('220')->nullable()
+                        ->helperText('Captura de pantalla del resultado del Simulador FOVISSSTE.')
+                        ->columnSpanFull(),
+                ])->columns(2)->collapsible(),
+
+            // ── Precalificación INFONAVIT ────────────────────────────────
+            \Filament\Schemas\Components\Section::make('Precalificación INFONAVIT')
+                ->description('Datos para estimar el crédito INFONAVIT del prospecto.')
+                ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => strtolower((string)($get('servicio') ?? '')) === 'infonavit')
+                ->schema([
+                    Forms\Components\Select::make('estado_uso_credito')
+                        ->label('Estado donde usará el crédito')
+                        ->options(self::estadosMexico())
+                        ->searchable()->nullable(),
+                    Forms\Components\TextInput::make('municipio_uso_credito')
+                        ->label('Municipio donde usará el crédito')
+                        ->nullable()->maxLength(100),
+
+                    Forms\Components\Placeholder::make('link_infonavit')
+                        ->label('Portal oficial')->columnSpanFull()
+                        ->content(function (\Filament\Schemas\Components\Utilities\Get $get): \Illuminate\Support\HtmlString {
+                            $nss = trim($get('nss') ?? '');
+                            $hint = $nss
+                                ? "<span class='text-xs text-gray-500 ml-2'>NSS: <strong>{$nss}</strong></span>"
+                                : "<span class='text-xs text-gray-400 ml-2'>Captura el NSS en los datos del prospecto</span>";
+                            return new \Illuminate\Support\HtmlString(
+                                '<div class="flex flex-wrap gap-3 items-center">'
+                                .'<a href="https://micuenta.infonavit.org.mx/" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-700 hover:bg-red-800 transition-colors shadow-sm">Abrir Mi Cuenta INFONAVIT</a>'
+                                .$hint.'</div>'
+                            );
+                        }),
+
+                    Forms\Components\FileUpload::make('simulador_screenshot')
+                        ->label('Captura del portal')
+                        ->image()->disk('public')->directory('contactos/simulador')
+                        ->imagePreviewHeight('220')->nullable()
+                        ->helperText('Captura de pantalla del resultado de Mi Cuenta INFONAVIT.')
+                        ->columnSpanFull(),
                 ])->columns(2)->collapsible(),
         ]);
     }
@@ -338,6 +358,12 @@ class ContactoResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('foto_url')
+                    ->label('')
+                    ->circular()
+                    ->defaultImageUrl(fn () => null)
+                    ->width(36)->height(36)
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('nombre')
                     ->label('Nombre')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('telefono')
@@ -390,41 +416,14 @@ class ContactoResource extends Resource
                     ->placeholder('—')
                     ->sortable()
                     ->toggleable(),
-                Tables\Columns\BadgeColumn::make('resultado_precalificacion')
-                    ->label('Precalif.')
-                    ->colors([
-                        'gray'    => 'pendiente',
-                        'success' => 'aprobado',
-                        'warning' => 'condicional',
-                        'danger'  => 'no_califica',
-                    ])
-                    ->formatStateUsing(fn ($state) => match($state) {
-                        'pendiente'   => '⏳ Pendiente',
-                        'aprobado'    => '✅ Aprobado',
-                        'condicional' => '⚠️ Condicional',
-                        'no_califica' => '❌ No califica',
-                        default       => '—',
-                    })
+                Tables\Columns\TextColumn::make('simulador_screenshot')
+                    ->label('Captura')
+                    ->formatStateUsing(fn ($state) => $state ? '📸 Sí' : '—')
                     ->placeholder('—')
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('tipo_credito_interes')
-                    ->label('Tipo crédito')
-                    ->placeholder('—')
-                    ->formatStateUsing(fn ($state) => match($state) {
-                        'infonavit' => 'INFONAVIT',
-                        'fovissste' => 'FOVISSSTE',
-                        'ambos'     => 'Ambos',
-                        'otro'      => 'Otro',
-                        default     => $state ?? '—',
-                    })
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('asesor.name')
                     ->label('Asesor')
                     ->placeholder('Sin asesor asignado')
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('monto_credito_estimado')
-                    ->label('Monto estimado')->money('MXN')
-                    ->placeholder('No cuenta con monto estimado')
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha')->dateTime('d M Y H:i')->sortable(),
@@ -601,6 +600,46 @@ class ContactoResource extends Resource
             'create' => Pages\CreateContacto::route('/create'),
             'view'   => Pages\ViewContacto::route('/{record}'),
             'edit'   => Pages\EditContacto::route('/{record}/edit'),
+        ];
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static function estadosMexico(): array
+    {
+        return [
+            'Aguascalientes'     => 'Aguascalientes',
+            'Baja California'    => 'Baja California',
+            'Baja California Sur'=> 'Baja California Sur',
+            'Campeche'           => 'Campeche',
+            'Chiapas'            => 'Chiapas',
+            'Chihuahua'          => 'Chihuahua',
+            'Ciudad de México'   => 'Ciudad de México',
+            'Coahuila'           => 'Coahuila',
+            'Colima'             => 'Colima',
+            'Durango'            => 'Durango',
+            'Guanajuato'         => 'Guanajuato',
+            'Guerrero'           => 'Guerrero',
+            'Hidalgo'            => 'Hidalgo',
+            'Jalisco'            => 'Jalisco',
+            'México'             => 'Estado de México',
+            'Michoacán'          => 'Michoacán',
+            'Morelos'            => 'Morelos',
+            'Nayarit'            => 'Nayarit',
+            'Nuevo León'         => 'Nuevo León',
+            'Oaxaca'             => 'Oaxaca',
+            'Puebla'             => 'Puebla',
+            'Querétaro'          => 'Querétaro',
+            'Quintana Roo'       => 'Quintana Roo',
+            'San Luis Potosí'    => 'San Luis Potosí',
+            'Sinaloa'            => 'Sinaloa',
+            'Sonora'             => 'Sonora',
+            'Tabasco'            => 'Tabasco',
+            'Tamaulipas'         => 'Tamaulipas',
+            'Tlaxcala'           => 'Tlaxcala',
+            'Veracruz'           => 'Veracruz',
+            'Yucatán'            => 'Yucatán',
+            'Zacatecas'          => 'Zacatecas',
         ];
     }
 }

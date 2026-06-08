@@ -11,6 +11,16 @@ use App\Services\WhatsAppService;
 class ContactoObserver
 {
     /**
+     * Antes de crear: auto-completar fecha_primer_contacto si no se envió.
+     */
+    public function creating(Contacto $contacto): void
+    {
+        if (empty($contacto->fecha_primer_contacto)) {
+            $contacto->fecha_primer_contacto = now()->toDateString();
+        }
+    }
+
+    /**
      * Al crear: notificar al asesor asignado (si hay) y a todos los super_admin.
      */
     public function created(Contacto $contacto): void
