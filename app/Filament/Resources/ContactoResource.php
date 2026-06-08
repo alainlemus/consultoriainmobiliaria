@@ -143,12 +143,12 @@ class ContactoResource extends Resource
                     Forms\Components\Select::make('servicio')
                         ->label('Servicio de interés')
                         ->options([
-                            'infonavit'  => 'Crédito INFONAVIT',
-                            'fovissste'  => 'Crédito FOVISSSTE',
-                            'avaluo'     => 'Avalúo',
-                            'escrituras' => 'Escrituración',
-                            'asesoria'   => 'Asesoría personalizada',
-                            'otro'       => 'Otro',
+                            'INFONAVIT'              => 'Crédito INFONAVIT',
+                            'FOVISSSTE'              => 'Crédito FOVISSSTE',
+                            'AVALUO'                 => 'Avalúo',
+                            'ESCRITURACION'          => 'Escrituración',
+                            'ASESORIA_PERSONALIZADA' => 'Asesoría personalizada',
+                            'OTRO'                   => 'Otro',
                         ])
                         ->live(),
                     Forms\Components\TextInput::make('nss')
@@ -171,17 +171,6 @@ class ContactoResource extends Resource
                         ])
                         ->default('nuevo')
                         ->hint('Actualiza conforme avance el proceso'),
-                    Forms\Components\Select::make('estado_ubicacion')
-                        ->label('Estado / Ubicación')
-                        ->options([
-                            'Hidalgo'          => 'Hidalgo',
-                            'Veracruz'         => 'Veracruz',
-                            'Tamaulipas'       => 'Tamaulipas',
-                            'San Luis Potosí'  => 'San Luis Potosí',
-                            'Otro'             => 'Otro',
-                        ])
-                        ->searchable()
-                        ->nullable(),
                     Forms\Components\Select::make('estado')
                         ->label('Estado (interno)')
                         ->options([

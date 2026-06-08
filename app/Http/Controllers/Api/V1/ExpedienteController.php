@@ -28,6 +28,10 @@ class ExpedienteController extends Controller
             $query->where('estado', $estado);
         }
 
+        if ($etapa = $request->input('etapa')) {
+            $query->whereHas('etapa', fn ($q) => $q->where('nombre', $etapa));
+        }
+
         $perPage = min((int) $request->input('per_page', 20), 100);
         $result  = $query->latest()->paginate($perPage);
 
