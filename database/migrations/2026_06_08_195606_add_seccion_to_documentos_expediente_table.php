@@ -25,13 +25,23 @@ return new class extends Migration
             DB::statement('ALTER TABLE documentos_expediente DROP INDEX documentos_expediente_expediente_id_tipo_unique');
         }
 
-        // 3. Agregar nuevo unique (expediente_id, tipo, seccion)
-        $newUnique = DB::select("SHOW INDEX FROM documentos_expediente WHERE Key_name = 'documentos_expediente_tipo_seccion_unique'");
-        if (empty($newUnique)) {
-            DB::statement('ALTER TABLE documentos_expediente ADD UNIQUE KEY documentos_expediente_tipo_seccion_unique (expediente_id, tipo(100), seccion)');
+        // 3. Extender tipo a 150 chars si todavía es más corto (necesario antes de crear el índice)
+        $cols = DB::select("SHOW COLUMNS FROM documentos_expediente LIKE 'tipo'");
+        if (! empty($cols)) {
+            preg_match('/varchar\((\d+)\)/i', $cols[0]->Type, $m);
+            if (! empty($m[1]) && (int) $m[1] < 150) {
+                DB::statement('ALTER TABLE documentos_expediente MODIFY tipo VARCHAR(150) NULL');
+            }
         }
 
-        // 4. Poblar seccion en registros existentes a partir de documento_requeridos
+        // 4. Agregar nuevo unique (expediente_id, tipo, seccion) — sin prefijo; requiere InnoDB DYNAMIC row format (MySQL 5.7.7+)
+        $newUnique = DB::select("SHOW INDEX FROM documentos_expediente WHERE Key_name = 'documentos_expediente_tipo_seccion_unique'");
+        if (empty($newUnique)) {
+            DB::statement('ALTER TABLE documentos_expediente ROW_FORMAT=DYNAMIC');
+            DB::statement('ALTER TABLE documentos_expediente ADD UNIQUE KEY documentos_expediente_tipo_seccion_unique (expediente_id, tipo, seccion)');
+        }
+
+        // 5. Poblar seccion en registros existentes a partir de documento_requeridos
         DB::statement("
             UPDATE documentos_expediente de
             JOIN documento_requeridos dr ON dr.nombre = de.tipo
