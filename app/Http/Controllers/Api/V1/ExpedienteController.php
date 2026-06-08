@@ -54,12 +54,13 @@ class ExpedienteController extends Controller
         ]);
 
         // Documentos ya subidos al expediente
+        // Clave compuesta seccion|tipo para evitar colisiones entre secciones
         $docSubidos = $exp->documentos->map(fn ($d) => [
             ...$d->toArray(),
             'tipo_documento' => $d->tipo,
             'url'            => null,
             'tiene_archivo'  => (bool) $d->ruta_archivo,
-        ])->keyBy('tipo_documento');
+        ])->keyBy(fn ($d) => ($d['seccion'] ?? '') . '|' . $d['tipo_documento']);
 
         // Checklist completo del tipo de trámite (documentos requeridos)
         $requeridos = DocumentoRequerido::where('tipo_tramite_id', $exp->tipo_tramite_id)
@@ -69,7 +70,9 @@ class ExpedienteController extends Controller
 
         // Mezclar: para cada requerido, si ya existe un doc subido se usa ese, si no se crea entrada vacía
         $checklist = $requeridos->map(function ($req) use ($docSubidos) {
-            $subido = $docSubidos->get($req->nombre);
+            // Buscar por clave exacta seccion|tipo, con fallback a solo tipo (uploads legacy sin seccion)
+            $subido = $docSubidos->get($req->seccion . '|' . $req->nombre)
+                   ?? $docSubidos->get('|' . $req->nombre);
             if ($subido) {
                 return array_merge($subido, ['seccion' => $req->seccion, 'orden' => $req->orden, 'obligatorio' => $req->obligatorio]);
             }
@@ -88,10 +91,10 @@ class ExpedienteController extends Controller
             ];
         });
 
-        // Documentos subidos que no están en el checklist (tipos personalizados)
-        $tiposRequeridos = $requeridos->pluck('nombre')->toArray();
+        // Documentos subidos que no están en el checklist (tipos personalizados / legacy sin sección)
+        $tiposRequeridos = $requeridos->map(fn ($r) => $r->seccion . '|' . $r->nombre)->toArray();
         $extrasSubidos   = $exp->documentos
-            ->filter(fn ($d) => ! in_array($d->tipo, $tiposRequeridos))
+            ->filter(fn ($d) => ! in_array(($d->seccion ?? '') . '|' . $d->tipo, $tiposRequeridos))
             ->map(fn ($d) => [
                 ...$d->toArray(),
                 'tipo_documento' => $d->tipo,

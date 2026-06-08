@@ -39,6 +39,22 @@ class EditContacto extends EditRecord
 
         $actions = [];
 
+        // Botón Ver Screenshot (solo si tiene imagen y es super_admin)
+        if (Auth::user()->hasRole('super_admin') && $record->simulador_screenshot) {
+            $actions[] = Actions\Action::make('ver_screenshot')
+                ->label('Ver captura')
+                ->icon('heroicon-o-photo')
+                ->color('info')
+                ->modalHeading('Captura del simulador')
+                ->modalContent(fn () => new \Illuminate\Support\HtmlString(
+                    '<div class="flex justify-center p-4">'
+                    . '<img src="' . e($record->simulador_screenshot_url) . '" '
+                    . 'class="max-w-full rounded-lg shadow-md" style="max-height:80vh;" /></div>'
+                ))
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel('Cerrar');
+        }
+
         // Botones de descarga de contratos (solo si hay expediente linked y solo super_admin)
         if (Auth::user()->hasRole('super_admin')) {
             $expediente = Expediente::where('contacto_id', $record->id)->first();

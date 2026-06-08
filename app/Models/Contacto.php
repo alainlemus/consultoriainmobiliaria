@@ -41,13 +41,13 @@ class Contacto extends Model
 
     public function getFotoUrlAttribute(): ?string
     {
-        return $this->foto ? Storage::url($this->foto) : null;
+        return $this->foto ? Storage::disk('public')->url($this->foto) : null;
     }
 
     public function getSimuladorScreenshotUrlAttribute(): ?string
     {
         return $this->simulador_screenshot
-            ? Storage::url($this->simulador_screenshot)
+            ? Storage::disk('public')->url($this->simulador_screenshot)
             : null;
     }
 

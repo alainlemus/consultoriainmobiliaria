@@ -67,7 +67,8 @@ class DocumentoController extends Controller
 
         $request->validate([
             'archivo'        => ['required', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,heic,webp'],
-            'tipo_documento' => ['required', 'string', 'max:100'],
+            'tipo_documento' => ['required', 'string', 'max:150'],
+            'seccion'        => ['nullable', 'string', 'in:acreditado,vendedor,vivienda,otros'],
             'notas'          => ['nullable', 'string'],
         ]);
 
@@ -75,10 +76,12 @@ class DocumentoController extends Controller
         $ext     = $archivo->getClientOriginalExtension();
         $nombre  = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
         $ruta    = "expedientes/{$expedienteId}/docs/{$nombre}";
+        $seccion = $request->input('seccion');
 
-        // Si ya existe un doc de este tipo, borrar el archivo anterior
+        // Si ya existe un doc de este tipo+sección, borrar el archivo anterior
         $existente = DocumentoExpediente::where('expediente_id', $expedienteId)
             ->where('tipo', $request->tipo_documento)
+            ->where('seccion', $seccion)
             ->first();
         if ($existente?->ruta_archivo) {
             Storage::disk(self::DISK)->delete($existente->ruta_archivo);
@@ -91,7 +94,11 @@ class DocumentoController extends Controller
         );
 
         $doc = DocumentoExpediente::updateOrCreate(
-            ['expediente_id' => $expedienteId, 'tipo' => $request->tipo_documento],
+            [
+                'expediente_id' => $expedienteId,
+                'tipo'          => $request->tipo_documento,
+                'seccion'       => $seccion,
+            ],
             [
                 // Usamos el nombre descriptivo del documento, no el nombre técnico del archivo
                 'nombre'       => $request->tipo_documento,

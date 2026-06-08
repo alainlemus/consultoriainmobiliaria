@@ -358,8 +358,9 @@ class ContactoResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('foto_url')
+                Tables\Columns\ImageColumn::make('foto')
                     ->label('')
+                    ->disk('public')
                     ->circular()
                     ->defaultImageUrl(fn () => null)
                     ->width(36)->height(36)
