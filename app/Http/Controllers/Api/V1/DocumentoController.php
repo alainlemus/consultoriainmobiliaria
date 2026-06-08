@@ -93,7 +93,8 @@ class DocumentoController extends Controller
         $doc = DocumentoExpediente::updateOrCreate(
             ['expediente_id' => $expedienteId, 'tipo' => $request->tipo_documento],
             [
-                'nombre'       => $archivo->getClientOriginalName(),
+                // Usamos el nombre descriptivo del documento, no el nombre técnico del archivo
+                'nombre'       => $request->tipo_documento,
                 'estado'       => 'pendiente',
                 'notas'        => $request->input('notas'),
                 'ruta_archivo' => $ruta,
@@ -163,7 +164,9 @@ class DocumentoController extends Controller
         }
 
         $path   = Storage::disk(self::DISK)->path($doc->ruta_archivo);
-        $nombre = $doc->nombre ?? basename($doc->ruta_archivo);
+
+        // Nombre de descarga: derivado del archivo real (tiene extensión correcta)
+        $nombreDescarga = basename($doc->ruta_archivo);
 
         // Detección de MIME por extensión (más fiable que mime_content_type())
         $ext      = strtolower(pathinfo($doc->ruta_archivo, PATHINFO_EXTENSION));
@@ -178,9 +181,9 @@ class DocumentoController extends Controller
         $mimeType = $mimeMap[$ext] ?? (mime_content_type($path) ?: 'application/octet-stream');
 
         return response()->file($path, [
-            'Content-Type'        => $mimeType,
-            'Content-Disposition' => 'inline; filename="' . $nombre . '"',
-            'Cache-Control'       => 'private, max-age=300',
+            'Content-Type'           => $mimeType,
+            'Content-Disposition'    => 'inline; filename="' . $nombreDescarga . '"',
+            'Cache-Control'          => 'private, max-age=300',
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }
@@ -242,7 +245,7 @@ class DocumentoController extends Controller
         );
 
         $doc->update([
-            'nombre'       => $archivo->getClientOriginalName(),
+            // No se sobreescribe 'nombre': conserva el nombre descriptivo asignado al subir
             'ruta_archivo' => $ruta,
             'estado'       => 'pendiente',
         ]);
