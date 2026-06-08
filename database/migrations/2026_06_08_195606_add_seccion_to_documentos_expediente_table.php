@@ -9,8 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // tipo y seccion ya existen (el primer intento parcial los creó)
-        // Solo completamos lo que faltó: reemplazar el unique y poblar seccion
+        // 0. Agregar columna seccion si no existe todavía
+        $hasSecccion = DB::select("SHOW COLUMNS FROM documentos_expediente LIKE 'seccion'");
+        if (empty($hasSecccion)) {
+            DB::statement('ALTER TABLE documentos_expediente ADD COLUMN seccion VARCHAR(50) NULL AFTER tipo');
+        }
 
         // 1. Crear índice simple en expediente_id para que el FK tenga soporte
         //    cuando quitemos el unique que lo respaldaba
