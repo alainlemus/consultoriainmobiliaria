@@ -15,7 +15,7 @@
         <script type="application/json" id="ubicaciones-data">{!! $this->getUbicacionesJson() !!}</script>
 
         {{-- Stats --}}
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-4 flex items-center gap-3">
                 <div class="rounded-full p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
                     <x-filament::icon icon="heroicon-o-map-pin" class="w-5 h-5" />
@@ -41,6 +41,15 @@
                 <div>
                     <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['props'] }}</p>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Propiedades</p>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-4 flex items-center gap-3">
+                <div class="rounded-full p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+                    <x-filament::icon icon="heroicon-o-academic-cap" class="w-5 h-5" />
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['escuelas'] }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Escuelas</p>
                 </div>
             </div>
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-4 flex items-center gap-3">
@@ -75,6 +84,11 @@
                     class="text-xs font-medium px-3 py-1.5 rounded-full transition">
                     🏢 Propiedades
                 </button>
+                <button @click="setFiltroTipo('escuela')"
+                    :class="filtroTipo === 'escuela' ? 'bg-blue-600 text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'"
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    🏫 Escuelas
+                </button>
             </div>
 
             {{-- Asesor (solo super_admin) --}}
@@ -106,6 +120,9 @@
             </div>
             <div class="flex items-center gap-1.5">
                 <span class="inline-block w-3 h-3 rounded-full bg-purple-600"></span> Propiedad
+            </div>
+            <div class="flex items-center gap-1.5">
+                <span class="inline-block w-3 h-3 rounded-full bg-blue-500"></span> Escuela
             </div>
             <p class="ml-auto text-gray-400 dark:text-gray-500">Haz clic en un marcador para ver detalles · Zoom con scroll</p>
         </div>
@@ -142,8 +159,10 @@
             },
 
             iconoPara(tipo) {
-                const color  = tipo === 'visita_cliente' ? '#f59e0b' : '#7c3aed';
-                const emoji  = tipo === 'visita_cliente' ? '🏠' : '🏢';
+                const colores = { visita_cliente: '#f59e0b', propiedad: '#7c3aed', escuela: '#3b82f6' };
+                const emojis  = { visita_cliente: '🏠', propiedad: '🏢', escuela: '🏫' };
+                const color   = colores[tipo] ?? '#6b7280';
+                const emoji   = emojis[tipo]  ?? '📍';
                 return L.divIcon({
                     className: '',
                     html: `<div style="
@@ -172,7 +191,7 @@
                 this.marcadoresFiltrados.forEach(u => {
                     const m = L.marker([u.latitud, u.longitud], { icon: this.iconoPara(u.tipo) });
 
-                    const tipoLabel = u.tipo === 'visita_cliente' ? 'Visita cliente' : 'Propiedad';
+                    const tipoLabel = { visita_cliente: 'Visita cliente', propiedad: 'Propiedad', escuela: 'Escuela' }[u.tipo] ?? u.tipo;
 
                     // Crear popup con elemento DOM real (evita sanitización de Leaflet)
                     const popupEl = document.createElement('div');
@@ -187,6 +206,12 @@
                         const p = document.createElement('p');
                         p.style.cssText = 'margin:2px 0;color:#374151';
                         p.innerHTML = `<b>Cliente:</b> ${u.contacto}`;
+                        popupEl.appendChild(p);
+                    }
+                    if (u.nombre_lugar) {
+                        const p = document.createElement('p');
+                        p.style.cssText = 'margin:2px 0;color:#374151';
+                        p.innerHTML = `<b>Nombre:</b> ${u.nombre_lugar}`;
                         popupEl.appendChild(p);
                     }
                     if (u.asesor) {
