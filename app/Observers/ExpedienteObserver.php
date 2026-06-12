@@ -163,6 +163,34 @@ class ExpedienteObserver
     {
         if (! $expediente->tipo_tramite_id) return;
 
+        // Fuente primaria: tabla documento_requeridos (catálogo en BD)
+        $requeridos = \App\Models\DocumentoRequerido::where('tipo_tramite_id', $expediente->tipo_tramite_id)
+            ->orderBy('seccion')
+            ->orderBy('orden')
+            ->get();
+
+        if ($requeridos->isEmpty()) {
+            // Fallback: catálogo hardcodeado en el modelo (legacy)
+            $this->sincronizarChecklistLegacy($expediente);
+            return;
+        }
+
+        $tiposExistentes = $expediente->documentos()->pluck('tipo')->toArray();
+
+        foreach ($requeridos as $req) {
+            if (! in_array($req->nombre, $tiposExistentes)) {
+                $expediente->documentos()->create([
+                    'tipo'    => $req->nombre,
+                    'nombre'  => $req->nombre,
+                    'seccion' => $req->seccion,
+                    'estado'  => 'pendiente',
+                ]);
+            }
+        }
+    }
+
+    private function sincronizarChecklistLegacy(Expediente $expediente): void
+    {
         $catalogo = DocumentoExpediente::catalogoPara(
             $expediente->tipo_tramite_id,
             $expediente->vivienda_tipo

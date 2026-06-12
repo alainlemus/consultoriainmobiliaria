@@ -56,6 +56,23 @@ class DocumentosRelationManager extends RelationManager
             ->heading('Checklist de documentos')
             ->description('Marca cada documento conforme sea recibido. Los documentos se generan automáticamente según el tipo de trámite e inmueble.')
             ->columns([
+                Tables\Columns\TextColumn::make('seccion')
+                    ->label('Sección')
+                    ->badge()
+                    ->color(fn (?string $state) => match($state) {
+                        'acreditado' => 'primary',
+                        'vendedor'   => 'warning',
+                        'vivienda'   => 'success',
+                        default      => 'gray',
+                    })
+                    ->formatStateUsing(fn (?string $state) => match($state) {
+                        'acreditado' => 'Acreditado',
+                        'vendedor'   => 'Vendedor',
+                        'vivienda'   => 'Vivienda',
+                        default      => 'Otros',
+                    })
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('nombre')
                     ->label('Documento')
                     ->searchable()
@@ -88,8 +105,16 @@ class DocumentosRelationManager extends RelationManager
                     ->placeholder('—')
                     ->limit(35),
             ])
-            ->defaultSort('nombre')
+            ->defaultSort('seccion')
             ->filters([
+                Tables\Filters\SelectFilter::make('seccion')
+                    ->label('Sección')
+                    ->options([
+                        'acreditado' => 'Acreditado',
+                        'vendedor'   => 'Vendedor',
+                        'vivienda'   => 'Vivienda',
+                    ]),
+
                 Tables\Filters\SelectFilter::make('estado')
                     ->label('Estado')
                     ->options([
@@ -98,7 +123,69 @@ class DocumentosRelationManager extends RelationManager
                         'no_aplica' => 'No aplica',
                     ]),
             ])
-            ->headerActions([])
+            ->headerActions([
+                // Re-sincronizar checklist (solo super_admin) — útil para expedientes creados antes de la migración
+                \Filament\Actions\Action::make('resincronizar')
+                    ->label('Re-sincronizar checklist')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin') ?? false)
+                    ->requiresConfirmation()
+                    ->modalHeading('Re-sincronizar checklist de documentos')
+                    ->modalDescription(
+                        'Esto eliminará los documentos pendientes (sin archivo subido) que no pertenezcan al catálogo actual, ' .
+                        'y creará los documentos faltantes según el tipo de trámite. ' .
+                        'Los documentos con archivo subido NO se eliminan.'
+                    )
+                    ->action(function () {
+                        $expediente = $this->getOwnerRecord();
+
+                        if (! $expediente->tipo_tramite_id) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Sin tipo de trámite asignado')
+                                ->warning()->send();
+                            return;
+                        }
+
+                        $requeridos = \App\Models\DocumentoRequerido::where('tipo_tramite_id', $expediente->tipo_tramite_id)
+                            ->orderBy('seccion')->orderBy('orden')->get();
+
+                        if ($requeridos->isEmpty()) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Sin documentos requeridos para este tipo de trámite')
+                                ->warning()->send();
+                            return;
+                        }
+
+                        $nombresRequeridos = $requeridos->pluck('nombre')->toArray();
+
+                        // Eliminar filas legacy sin archivo que no pertenecen al catálogo actual
+                        $eliminados = $expediente->documentos()
+                            ->whereNull('ruta_archivo')
+                            ->whereNotIn('tipo', $nombresRequeridos)
+                            ->delete();
+
+                        // Crear filas faltantes del catálogo actual
+                        $tiposExistentes = $expediente->documentos()->pluck('tipo')->toArray();
+                        $creados = 0;
+
+                        foreach ($requeridos as $req) {
+                            if (! in_array($req->nombre, $tiposExistentes)) {
+                                $expediente->documentos()->create([
+                                    'tipo'    => $req->nombre,
+                                    'nombre'  => $req->nombre,
+                                    'seccion' => $req->seccion,
+                                    'estado'  => 'pendiente',
+                                ]);
+                                $creados++;
+                            }
+                        }
+
+                        \Filament\Notifications\Notification::make()
+                            ->title("Checklist actualizado — {$creados} creados, {$eliminados} legacy eliminados")
+                            ->success()->send();
+                    }),
+            ])
             ->actions([
                 // Acciones rápidas de estado (un clic, sin modal)
                 \Filament\Actions\Action::make('marcar_recibido')
