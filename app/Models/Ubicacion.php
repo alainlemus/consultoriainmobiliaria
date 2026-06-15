@@ -16,6 +16,8 @@ class Ubicacion extends Model
         'latitud',
         'longitud',
         'tipo',
+        'semaforo',
+        'semaforo_notas',
         'nombre_lugar',
         'direccion',
         'notas',
@@ -44,4 +46,11 @@ class Ubicacion extends Model
     {
         return $this->hasMany(UbicacionFoto::class);
     }
+
+    /** Maestros/contactos vinculados a esta escuela */
+    public function contactosEscuela(): HasMany
+    {
+        return $this->hasMany(Contacto::class, 'escuela_id');
+    }
 }
+

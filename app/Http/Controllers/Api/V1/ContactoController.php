@@ -68,6 +68,8 @@ class ContactoController extends Controller
             'origen'                  => ['nullable', 'string', 'max:80'],
             'curp'                    => ['nullable', 'string', 'max:18'],
             'nss'                     => ['nullable', 'string', 'max:15'],
+            // Escuela vinculada (maestros FOVISSSTE)
+            'escuela_id'              => ['nullable', 'exists:ubicaciones,id'],
             // Precalificación (FOVISSSTE / INFONAVIT)
             'estado_uso_credito'      => ['nullable', 'string', 'max:100'],
             'municipio_uso_credito'   => ['nullable', 'string', 'max:100'],
@@ -100,6 +102,9 @@ class ContactoController extends Controller
             ->select(['id', 'folio', 'estado', 'tipo_tramite_id', 'created_at'])
             ->first();
 
+        // Incluir escuela vinculada con su semáforo
+        $contacto->load(['escuela:id,nombre_lugar,municipio,estado,semaforo,semaforo_notas,latitud,longitud']);
+
         $data = $contacto->toArray();
         $data['expediente_activo'] = $expediente;
 
@@ -122,6 +127,8 @@ class ContactoController extends Controller
             'notas'                   => ['nullable', 'string'],
             'curp'                    => ['nullable', 'string', 'max:18'],
             'nss'                     => ['nullable', 'string', 'max:15'],
+            // Escuela vinculada (maestros FOVISSSTE)
+            'escuela_id'              => ['nullable', 'exists:ubicaciones,id'],
             // Precalificación (FOVISSSTE / INFONAVIT)
             'estado_uso_credito'      => ['nullable', 'string', 'max:100'],
             'municipio_uso_credito'   => ['nullable', 'string', 'max:100'],

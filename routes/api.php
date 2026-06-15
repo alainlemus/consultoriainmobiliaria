@@ -80,9 +80,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/reemplazar',         [DocumentoController::class, 'reemplazar']);
 
         // Ubicaciones GPS
-        Route::post('/ubicaciones',              [UbicacionController::class, 'store']);
-        Route::get('/ubicaciones/mapa',          [UbicacionController::class, 'mapa']);
-        Route::post('/ubicaciones/{id}/fotos',   [UbicacionController::class, 'subirFotos']);
+        Route::post('/ubicaciones',                    [UbicacionController::class, 'store']);
+        Route::get('/ubicaciones/mapa',                [UbicacionController::class, 'mapa']);
+        Route::post('/ubicaciones/{id}/fotos',         [UbicacionController::class, 'subirFotos']);
+        Route::patch('/ubicaciones/{id}/semaforo',     [UbicacionController::class, 'actualizarSemaforo']);
+
+        // Escuelas — buscador para vincular prospectos
+        Route::get('/escuelas',                        [UbicacionController::class, 'escuelas']);
 
         // Sync offline batch
         Route::post('/sync',              [SyncController::class, 'batch']);

@@ -49,17 +49,19 @@ class MapaVisitas extends Page
         }
 
         $ubicaciones = $query->get()->map(fn (Ubicacion $u) => [
-            'id'           => $u->id,
-            'latitud'      => $u->latitud,
-            'longitud'     => $u->longitud,
-            'tipo'         => $u->tipo,
-            'nombre_lugar' => $u->nombre_lugar,
-            'notas'        => $u->notas,
-            'visitado_en'  => $u->visitado_en?->format('d/m/Y H:i'),
-            'contacto'     => $u->contacto?->nombre,
-            'asesor'       => $u->user?->name,
-            'asesor_id'    => $u->user_id,
-            'fotos'        => $u->fotos->map(fn ($f) => [
+            'id'             => $u->id,
+            'latitud'        => $u->latitud,
+            'longitud'       => $u->longitud,
+            'tipo'           => $u->tipo,
+            'semaforo'       => $u->semaforo,
+            'semaforo_notas' => $u->semaforo_notas,
+            'nombre_lugar'   => $u->nombre_lugar,
+            'notas'          => $u->notas,
+            'visitado_en'    => $u->visitado_en?->format('d/m/Y H:i'),
+            'contacto'       => $u->contacto?->nombre,
+            'asesor'         => $u->user?->name,
+            'asesor_id'      => $u->user_id,
+            'fotos'          => $u->fotos->map(fn ($f) => [
                 'id'  => $f->id,
                 'url' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
             ])->values(),

@@ -124,6 +124,11 @@
             <div class="flex items-center gap-1.5">
                 <span class="inline-block w-3 h-3 rounded-full bg-blue-500"></span> Escuela
             </div>
+            <span class="text-gray-300 dark:text-gray-600">|</span>
+            <span class="font-medium text-gray-500 dark:text-gray-400">Semáforo escuelas:</span>
+            <div class="flex items-center gap-1">🟢 <span>Hay clientes</span></div>
+            <div class="flex items-center gap-1">🟡 <span>Sin clientes</span></div>
+            <div class="flex items-center gap-1">🔴 <span>Acceso denegado</span></div>
             <p class="ml-auto text-gray-400 dark:text-gray-500">Haz clic en un marcador para ver detalles · Zoom con scroll</p>
         </div>
 
@@ -158,11 +163,21 @@
                 this.renderMarcadores();
             },
 
-            iconoPara(tipo) {
+            iconoPara(tipo, semaforo) {
                 const colores = { visita_cliente: '#f59e0b', propiedad: '#7c3aed', escuela: '#3b82f6' };
                 const emojis  = { visita_cliente: '🏠', propiedad: '🏢', escuela: '🏫' };
                 const color   = colores[tipo] ?? '#6b7280';
                 const emoji   = emojis[tipo]  ?? '📍';
+
+                // Para escuelas: anillo de color del semáforo alrededor del icono
+                const semaforoColor = tipo === 'escuela'
+                    ? ({ verde: '#22c55e', amarillo: '#f59e0b', rojo: '#ef4444' }[semaforo] ?? '#f59e0b')
+                    : null;
+
+                const borderStyle = semaforoColor
+                    ? `border: 3px solid ${semaforoColor}; box-shadow: 0 0 0 2px ${semaforoColor}44, 0 2px 8px rgba(0,0,0,0.3);`
+                    : 'border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);';
+
                 return L.divIcon({
                     className: '',
                     html: `<div style="
@@ -170,8 +185,7 @@
                         width:36px;height:36px;border-radius:50%;
                         display:flex;align-items:center;justify-content:center;
                         font-size:18px;
-                        box-shadow:0 2px 8px rgba(0,0,0,0.3);
-                        border:2px solid white;
+                        ${borderStyle}
                     ">${emoji}</div>`,
                     iconSize:   [36, 36],
                     iconAnchor: [18, 18],
@@ -189,7 +203,7 @@
                 const bounds = [];
 
                 this.marcadoresFiltrados.forEach(u => {
-                    const m = L.marker([u.latitud, u.longitud], { icon: this.iconoPara(u.tipo) });
+                    const m = L.marker([u.latitud, u.longitud], { icon: this.iconoPara(u.tipo, u.semaforo) });
 
                     const tipoLabel = { visita_cliente: 'Visita cliente', propiedad: 'Propiedad', escuela: 'Escuela' }[u.tipo] ?? u.tipo;
 
@@ -201,6 +215,22 @@
                     titulo.style.cssText = 'font-weight:700;font-size:14px;margin:0 0 6px;color:#111827';
                     titulo.textContent = tipoLabel;
                     popupEl.appendChild(titulo);
+
+                    // Semáforo (solo escuelas)
+                    if (u.tipo === 'escuela' && u.semaforo) {
+                        const semaforoEmoji = { verde: '🟢', amarillo: '🟡', rojo: '🔴' }[u.semaforo] ?? '🟡';
+                        const semaforoLabel = { verde: 'Hay maestros clientes', amarillo: 'Sin clientes aún', rojo: 'Acceso denegado' }[u.semaforo] ?? '';
+                        const ps = document.createElement('p');
+                        ps.style.cssText = 'margin:2px 0 6px;color:#374151;font-weight:600';
+                        ps.textContent = `${semaforoEmoji} ${semaforoLabel}`;
+                        popupEl.appendChild(ps);
+                        if (u.semaforo_notas) {
+                            const pn = document.createElement('p');
+                            pn.style.cssText = 'margin:2px 0 4px;color:#6b7280;font-size:11px;font-style:italic';
+                            pn.textContent = u.semaforo_notas;
+                            popupEl.appendChild(pn);
+                        }
+                    }
 
                     if (u.contacto) {
                         const p = document.createElement('p');

@@ -13,6 +13,8 @@ class Contacto extends Model
         'nombre', 'telefono', 'email', 'servicio', 'mensaje', 'estado', 'notas',
         // CRM
         'asesor_id', 'origen', 'curp', 'nss', 'foto',
+        // Escuela vinculada (maestros FOVISSSTE)
+        'escuela_id',
         // Precalificación (FOVISSSTE / INFONAVIT)
         'estado_uso_credito', 'municipio_uso_credito', 'estado_residencia',
         'regimen_pensionario', 'tiene_discapacidad', 'simulador_screenshot',
@@ -54,6 +56,12 @@ class Contacto extends Model
     public function asesor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'asesor_id');
+    }
+
+    /** Escuela a la que pertenece este prospecto (solo maestros) */
+    public function escuela(): BelongsTo
+    {
+        return $this->belongsTo(Ubicacion::class, 'escuela_id');
     }
 
     public function expedientes(): HasMany
