@@ -142,10 +142,38 @@ class AuthController extends Controller
     }
 
     /**
-     * GET /api/v1/asesores
-     * Lista de asesores activos para el filtro en la app.
-     * Solo accesible por super_admin.
+     * POST /api/v1/auth/solicitar-cancelacion
+     *
+     * Apple App Store requiere que toda app con cuentas permita eliminarla.
+     * En lugar de borrar datos (que afectaría expedientes activos), desactivamos
+     * la cuenta y notificamos al super_admin para que la gestione.
+     *
+     * Lo que hace:
+     * - Marca al usuario como activo = false
+     * - Revoca todos sus tokens de Sanctum (cierra sesión en todos los dispositivos)
+     * - Notifica a los super_admin
+     *
+     * El super_admin puede reactivar la cuenta desde el CRM si fue un error.
      */
+    public function solicitarCancelacion(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Desactivar cuenta
+        $user->update(['activo' => false]);
+
+        // Revocar todos los tokens — cierra sesión en todos los dispositivos
+        $user->tokens()->delete();
+
+        // Notificar a super_admins
+        User::role('super_admin')->get()->each(function ($admin) use ($user) {
+            $admin->notify(new \App\Notifications\CuentaCancelada($user));
+        });
+
+        return response()->json([
+            'message' => 'Tu cuenta ha sido desactivada. Todos tus datos se conservan y un administrador procesará tu solicitud en los próximos días hábiles.',
+        ]);
+    }
     public function asesores(Request $request): JsonResponse
     {
         if (! $request->user()?->hasRole('super_admin')) {

@@ -58,11 +58,12 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
 
         // Auth
-        Route::post('/auth/logout',           [AuthController::class, 'logout']);
-        Route::get('/auth/me',                [AuthController::class, 'me']);
-        Route::put('/auth/perfil',            [AuthController::class, 'updatePerfil']);
-        Route::post('/auth/perfil/foto',      [AuthController::class, 'subirFotoPerfil']);
-        Route::get('/auth/asesores',          [AuthController::class, 'asesores']);
+        Route::post('/auth/logout',                [AuthController::class, 'logout']);
+        Route::get('/auth/me',                     [AuthController::class, 'me']);
+        Route::put('/auth/perfil',                 [AuthController::class, 'updatePerfil']);
+        Route::post('/auth/perfil/foto',           [AuthController::class, 'subirFotoPerfil']);
+        Route::get('/auth/asesores',               [AuthController::class, 'asesores']);
+        Route::post('/auth/solicitar-cancelacion', [AuthController::class, 'solicitarCancelacion']);
 
         // Prospectos / Contactos
         Route::get('/contactos',                              [ContactoController::class, 'index']);
