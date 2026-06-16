@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AnuncioResource\Pages;
 use App\Models\Anuncio;
+use Filament\Actions;
 use Filament\Forms;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
@@ -161,7 +162,7 @@ class AnuncioResource extends Resource
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->actions([
-                Tables\Actions\Action::make('retirar')
+                \Filament\Actions\Action::make('retirar')
                     ->label('Marcar retirado')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
@@ -169,18 +170,18 @@ class AnuncioResource extends Resource
                     ->visible(fn (Anuncio $record) => $record->estado === 'activo')
                     ->action(fn (Anuncio $record) => $record->update(['estado' => 'retirado'])),
 
-                Tables\Actions\Action::make('reactivar')
+                \Filament\Actions\Action::make('reactivar')
                     ->label('Reactivar')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(fn (Anuncio $record) => $record->estado === 'retirado')
                     ->action(fn (Anuncio $record) => $record->update(['estado' => 'activo'])),
 
-                Tables\Actions\EditAction::make(),
+                \Filament\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('retirar_bulk')
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\BulkAction::make('retirar_bulk')
                         ->label('Marcar como retirados')
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
@@ -198,3 +199,4 @@ class AnuncioResource extends Resource
         ];
     }
 }
+
