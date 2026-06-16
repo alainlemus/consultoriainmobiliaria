@@ -211,6 +211,8 @@ class UbicacionController extends Controller
 
         if (! $user->hasRole('super_admin')) {
             $query->where('user_id', $user->id);
+        } elseif ($asesorId = $request->input('asesor_id')) {
+            $query->where('user_id', (int) $asesorId);
         }
 
         $puntos = $query->latest('visitado_en')->limit(500)->get()

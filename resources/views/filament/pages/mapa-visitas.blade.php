@@ -11,18 +11,20 @@
 
     <div class="space-y-6" x-data="mapaVisitas()" x-init="init()">
 
-        {{-- JSON de ubicaciones — type application/json es ignorado por Livewire morph --}}
+        {{-- JSON de ubicaciones --}}
         <script type="application/json" id="ubicaciones-data">{!! $this->getUbicacionesJson() !!}</script>
+        {{-- JSON de anuncios --}}
+        <script type="application/json" id="anuncios-data">{!! $this->getAnunciosJson() !!}</script>
 
-        {{-- Stats --}}
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {{-- Stats: ahora 6 columnas con anuncios --}}
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-4 flex items-center gap-3">
                 <div class="rounded-full p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
                     <x-filament::icon icon="heroicon-o-map-pin" class="w-5 h-5" />
                 </div>
                 <div>
                     <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['total'] }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Total registros</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Total visitas</p>
                 </div>
             </div>
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-4 flex items-center gap-3">
@@ -61,14 +63,23 @@
                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ $esSuperAdmin ? 'Asesores activos' : 'Asesor' }}</p>
                 </div>
             </div>
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-4 flex items-center gap-3">
+                <div class="rounded-full p-2 bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400">
+                    <x-filament::icon icon="heroicon-o-megaphone" class="w-5 h-5" />
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['anuncios'] }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Anuncios activos</p>
+                </div>
+            </div>
         </div>
 
         {{-- Filtros --}}
         <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-4 flex flex-wrap gap-3 items-center">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por:</span>
 
-            {{-- Tipo --}}
-            <div class="flex gap-2">
+            {{-- Tipo visitas --}}
+            <div class="flex gap-2 flex-wrap">
                 <button @click="setFiltroTipo('todos')"
                     :class="filtroTipo === 'todos' ? 'bg-gray-800 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
                     class="text-xs font-medium px-3 py-1.5 rounded-full transition">
@@ -88,6 +99,11 @@
                     :class="filtroTipo === 'escuela' ? 'bg-blue-600 text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'"
                     class="text-xs font-medium px-3 py-1.5 rounded-full transition">
                     🏫 Escuelas
+                </button>
+                <button @click="toggleAnuncios()"
+                    :class="mostrarAnuncios ? 'bg-orange-500 text-white' : 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'"
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    📢 Anuncios
                 </button>
             </div>
 
@@ -124,6 +140,9 @@
             <div class="flex items-center gap-1.5">
                 <span class="inline-block w-3 h-3 rounded-full bg-blue-500"></span> Escuela
             </div>
+            <div class="flex items-center gap-1.5">
+                <span class="inline-block w-3 h-3 rounded-full bg-orange-500"></span> Anuncio
+            </div>
             <span class="text-gray-300 dark:text-gray-600">|</span>
             <span class="font-medium text-gray-500 dark:text-gray-400">Semáforo escuelas:</span>
             <div class="flex items-center gap-1">🟢 <span>Hay clientes</span></div>
@@ -139,14 +158,18 @@
 
     <script>
     function mapaVisitas() {
-        const datos = JSON.parse(document.getElementById('ubicaciones-data').textContent);
+        const datos    = JSON.parse(document.getElementById('ubicaciones-data').textContent);
+        const anuncios = JSON.parse(document.getElementById('anuncios-data').textContent);
         return {
             mapa:                null,
             todos:               datos,
+            todosAnuncios:       anuncios,
             marcadoresFiltrados: datos,
-            filtroTipo:         'todos',
-            filtroAsesor:       '',
-            capas:              [],
+            filtroTipo:          'todos',
+            filtroAsesor:        '',
+            mostrarAnuncios:     true,
+            capas:               [],
+            capasAnuncios:       [],
 
             init() {
                 this.$nextTick(() => this.iniciarMapa());
@@ -161,6 +184,7 @@
                 }).addTo(this.mapa);
 
                 this.renderMarcadores();
+                this.renderAnuncios();
             },
 
             iconoPara(tipo, semaforo) {
@@ -301,6 +325,103 @@
                     return pasaTipo && pasaAsesor;
                 });
                 this.renderMarcadores();
+            },
+
+            toggleAnuncios() {
+                this.mostrarAnuncios = !this.mostrarAnuncios;
+                this.renderAnuncios();
+            },
+
+            renderAnuncios() {
+                // Limpiar capa anterior
+                this.capasAnuncios.forEach(c => this.mapa.removeLayer(c));
+                this.capasAnuncios = [];
+
+                if (!this.mostrarAnuncios) return;
+
+                const TIPO_EMOJI = {
+                    lona: '📢', hoja_tienda: '🏪', hoja_poste: '📌', volante: '📄', otro: '📣'
+                };
+
+                this.todosAnuncios.forEach(a => {
+                    const emoji   = TIPO_EMOJI[a.tipo] ?? '📣';
+                    const opacity = a.estado === 'retirado' ? 0.4 : 1;
+
+                    const icon = L.divIcon({
+                        className: '',
+                        html: `<div style="
+                            background:#f97316;
+                            width:34px;height:34px;border-radius:50%;
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:17px;
+                            box-shadow:0 2px 8px rgba(0,0,0,0.3);
+                            border:2px solid white;
+                            opacity:${opacity};
+                        ">${emoji}</div>`,
+                        iconSize:   [34, 34],
+                        iconAnchor: [17, 17],
+                        popupAnchor:[0, -20],
+                    });
+
+                    const m = L.marker([a.latitud, a.longitud], { icon });
+
+                    const popupEl = document.createElement('div');
+                    popupEl.style.cssText = 'font-family:sans-serif;font-size:13px;min-width:180px;max-width:260px;';
+
+                    const titulo = document.createElement('p');
+                    titulo.style.cssText = 'font-weight:700;font-size:14px;margin:0 0 4px;color:#111827';
+                    titulo.textContent = `${emoji} Anuncio — ${(a.tipo || '').replace('_', ' ')}`;
+                    popupEl.appendChild(titulo);
+
+                    if (a.estado === 'retirado') {
+                        const badge = document.createElement('span');
+                        badge.style.cssText = 'display:inline-block;background:#fee2e2;color:#dc2626;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;margin-bottom:6px';
+                        badge.textContent = 'RETIRADO';
+                        popupEl.appendChild(badge);
+                    }
+
+                    if (a.asesor) {
+                        const p = document.createElement('p');
+                        p.style.cssText = 'margin:2px 0;color:#374151';
+                        p.innerHTML = `<b>Asesor:</b> ${a.asesor}`;
+                        popupEl.appendChild(p);
+                    }
+                    if (a.direccion || a.colonia) {
+                        const p = document.createElement('p');
+                        p.style.cssText = 'margin:2px 0;color:#374151';
+                        p.textContent = [a.direccion, a.colonia, a.municipio].filter(Boolean).join(', ');
+                        popupEl.appendChild(p);
+                    }
+                    if (a.descripcion) {
+                        const p = document.createElement('p');
+                        p.style.cssText = 'margin:4px 0 2px;color:#6b7280;font-style:italic';
+                        p.textContent = `"${a.descripcion}"`;
+                        popupEl.appendChild(p);
+                    }
+                    if (a.colocado_en) {
+                        const p = document.createElement('p');
+                        p.style.cssText = 'margin:4px 0 0;color:#9ca3af;font-size:11px';
+                        p.textContent = `📅 Colocado: ${a.colocado_en}`;
+                        popupEl.appendChild(p);
+                    }
+
+                    if (a.fotos && a.fotos.length > 0) {
+                        const grid = document.createElement('div');
+                        grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:8px';
+                        a.fotos.forEach(f => {
+                            const img = document.createElement('img');
+                            img.src = f.url;
+                            img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:pointer;';
+                            img.addEventListener('click', () => window.open(f.url, '_blank'));
+                            grid.appendChild(img);
+                        });
+                        popupEl.appendChild(grid);
+                    }
+
+                    m.bindPopup(popupEl, { maxWidth: 300 });
+                    m.addTo(this.mapa);
+                    this.capasAnuncios.push(m);
+                });
             },
         };
     }

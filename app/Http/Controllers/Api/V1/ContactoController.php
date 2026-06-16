@@ -12,7 +12,8 @@ class ContactoController extends Controller
 {
     /**
      * GET /api/v1/contactos
-     * Asesor: solo sus propios contactos. super_admin: todos.
+     * Asesor: solo sus propios contactos.
+     * super_admin: todos, con filtro opcional ?asesor_id=N
      */
     public function index(Request $request): JsonResponse
     {
@@ -20,8 +21,13 @@ class ContactoController extends Controller
         $query = Contacto::query()->with('asesor:id,name');
 
         if (! $user->hasRole('super_admin')) {
+            // Asesor: siempre ve solo los suyos
             $query->where('asesor_id', $user->id);
+        } elseif ($asesorId = $request->input('asesor_id')) {
+            // Super admin con filtro explícito
+            $query->where('asesor_id', (int) $asesorId);
         }
+        // Super admin sin filtro → ve todos
 
         // Excluir prospectos que ya pasaron a expediente (igual que el CRM)
         $query->whereNotIn('estado_prospecto', ['convertido', 'descartado'])

@@ -15,14 +15,19 @@ class ExpedienteController extends Controller
     {
         $user  = $request->user();
         $query = Expediente::with([
-            'contacto:id,nombre,foto',   // foto incluida para que el accessor foto_url funcione
+            'contacto:id,nombre,foto',
             'tipoTramite:id,nombre',
             'etapa:id,nombre',
         ]);
 
         if (! $user->hasRole('super_admin')) {
+            // Asesor: siempre ve solo los suyos
             $query->where('asesor_id', $user->id);
+        } elseif ($asesorId = $request->input('asesor_id')) {
+            // Super admin con filtro explícito
+            $query->where('asesor_id', (int) $asesorId);
         }
+        // Super admin sin filtro → ve todos
 
         if ($estado = $request->input('estado')) {
             $query->where('estado', $estado);
@@ -118,13 +123,20 @@ class ExpedienteController extends Controller
         return response()->json(['data' => $data]);
     }
 
+    /** Valores válidos del enum estado — sincronizados con la BD */
+    private const ESTADOS_VALIDOS = [
+        'en_proceso', 'documentacion', 'en_catastro', 'pre_avaluo',
+        'cuv_generada', 'avaluo_cerrado', 'en_notaria',
+        'firmado', 'cerrado', 'pausado', 'cancelado',
+    ];
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
             'contacto_id'      => ['required', 'exists:contactos,id'],
             'tipo_tramite_id'  => ['required', 'exists:tipo_tramites,id'],
             'etapa_tramite_id' => ['nullable', 'exists:etapa_tramites,id'],
-            'estado'           => ['nullable', 'in:en_proceso,documentacion,autorizado,escrituracion,cerrado,cancelado'],
+            'estado'           => ['nullable', 'in:' . implode(',', self::ESTADOS_VALIDOS)],
             'monto_credito'    => ['nullable', 'numeric', 'min:0'],
             'honorarios_monto' => ['nullable', 'numeric', 'min:0'],
             'notas_internas'   => ['nullable', 'string'],
@@ -149,7 +161,7 @@ class ExpedienteController extends Controller
         $exp = $this->findForUser($request, $id);
 
         $data = $request->validate([
-            'estado'           => ['nullable', 'in:en_proceso,documentacion,autorizado,escrituracion,cerrado,cancelado'],
+            'estado'           => ['nullable', 'in:' . implode(',', self::ESTADOS_VALIDOS)],
             'etapa_tramite_id' => ['nullable', 'exists:etapa_tramites,id'],
             'monto_credito'    => ['nullable', 'numeric', 'min:0'],
             'honorarios_monto' => ['nullable', 'numeric', 'min:0'],

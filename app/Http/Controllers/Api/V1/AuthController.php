@@ -140,4 +140,24 @@ class AuthController extends Controller
         // No revelar si el correo existe o no (seguridad)
         return response()->json(['message' => 'Si ese correo está registrado, recibirás un enlace en breve.']);
     }
+
+    /**
+     * GET /api/v1/asesores
+     * Lista de asesores activos para el filtro en la app.
+     * Solo accesible por super_admin.
+     */
+    public function asesores(Request $request): JsonResponse
+    {
+        if (! $request->user()?->hasRole('super_admin')) {
+            return response()->json(['data' => []]);
+        }
+
+        $asesores = User::role('asesor')
+            ->where('activo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email'])
+            ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email]);
+
+        return response()->json(['data' => $asesores]);
+    }
 }

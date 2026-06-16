@@ -2,209 +2,114 @@
 
 namespace App\Observers;
 
-use App\Models\Comision;
-use App\Models\DocumentoExpediente;
 use App\Models\Expediente;
-use App\Models\User;
-use App\Notifications\ExpedienteCerrado;
-use App\Notifications\EtapaExpedienteCambiada;
-use App\Notifications\NuevoExpedienteCreado;
-use App\Services\WhatsAppService;
+use App\Notifications\PagoExpedienteRecibido;
+use App\Support\DiasHabiles;
 
+/**
+ * Observer de Expediente.
+ *
+ * Calcula automáticamente las fechas derivadas del proceso FOVISSSTE
+ * para que el asesor no tenga que contarlas manualmente:
+ *
+ * - fecha_limite_firma       = clg_fecha_solicitud + 30 días hábiles (paso 19)
+ * - fecha_esperada_pago      = fecha_envio_guarda_valores + 20 días hábiles (paso 20)
+ *
+ * También:
+ * - Genera la contraseña del portal FOVISSSTE desde el CURP (paso 4-J)
+ * - Notifica al asesor y cierra el expediente cuando pago_recibido = true (paso 20)
+ */
 class ExpedienteObserver
 {
-    public function created(Expediente $expediente): void
+    public function saving(Expediente $exp): void
     {
-        $this->sincronizarChecklist($expediente);
-
-        if ($expediente->contacto_id) {
-            \App\Models\Contacto::where('id', $expediente->contacto_id)
-                ->whereNotIn('estado_prospecto', ['convertido', 'descartado'])
-                ->update(['estado_prospecto' => 'convertido']);
-        }
-
-        // WhatsApp al asesor: nuevo expediente asignado
-        if ($expediente->asesor?->telefono) {
-            $folio   = $expediente->folio ?? "#{$expediente->id}";
-            $cliente = $expediente->acreditado_nombre;
-            WhatsAppService::sendText(
-                $expediente->asesor->telefono,
-                "📂 *Nuevo expediente asignado*\n\n" .
-                "Folio: *{$folio}*\n" .
-                "Cliente: {$cliente}\n\n" .
-                "Entra al CRM para ver los detalles y comenzar el trámite."
-            );
-        }
-
-        // WhatsApp al acreditado: confirmación de inicio de trámite
-        if ($expediente->acreditado_telefono) {
-            $folio   = $expediente->folio ?? "#{$expediente->id}";
-            $cliente = $expediente->acreditado_nombre;
-            WhatsAppService::sendText(
-                $expediente->acreditado_telefono,
-                "¡Hola *{$cliente}*! 🏠\n\n" .
-                "Tu trámite ha sido iniciado con el folio *{$folio}*.\n\n" .
-                "Tu asesor estará en contacto contigo para guiarte en cada etapa del proceso. ¡Bienvenido!"
-            );
-        }
-
-        User::role('super_admin')
-            ->get()
-            ->each(fn (User $admin) => $admin->notify(new NuevoExpedienteCreado($expediente)));
+        $this->calcularFechaLimiteFirma($exp);
+        $this->calcularFechaEsperadaPago($exp);
+        $this->calcularPortalFovisssteNotas($exp);
+        $this->cerrarAlRecibirPago($exp);
     }
 
-    public function updated(Expediente $expediente): void
+    public function saved(Expediente $exp): void
     {
-        if ($expediente->wasChanged(['tipo_tramite_id', 'vivienda_tipo'])) {
-            $this->sincronizarChecklist($expediente);
-        }
+        $this->notificarPagoRecibido($exp);
+    }
 
-        // Notificar al asesor si la etapa cambia
-        if ($expediente->wasChanged('etapa_tramite_id') && $expediente->asesor) {
-            $etapaAnterior  = $expediente->getOriginal('etapa_tramite_id');
-            $nombreAnterior = \App\Models\EtapaTramite::find($etapaAnterior)?->nombre ?? 'Anterior';
-            $nombreNueva    = \App\Models\EtapaTramite::find($expediente->etapa_tramite_id)?->nombre ?? 'Nueva etapa';
+    // ── fecha_limite_firma: clg_fecha_solicitud + 30 días hábiles ────────────
 
-            // Push notification al asesor
-            $expediente->asesor->notify(new EtapaExpedienteCambiada(
-                expediente:    $expediente,
-                etapaAnterior: $nombreAnterior,
-                etapaNueva:    $nombreNueva,
-            ));
-
-            // WhatsApp al asesor si tiene teléfono
-            $this->notificarAsesorWhatsApp($expediente, $nombreAnterior, $nombreNueva);
-
-            // WhatsApp al acreditado para informarle del avance
-            $this->notificarAcreditadoWhatsApp($expediente, $nombreNueva);
-        }
-
-        // Generar comisión al cerrar expediente y notificar al asesor
+    private function calcularFechaLimiteFirma(Expediente $exp): void
+    {
         if (
-            $expediente->wasChanged('estado') &&
-            $expediente->estado === 'cerrado' &&
-            $expediente->asesor_id &&
-            $expediente->honorarios_monto > 0 &&
-            $expediente->honorarios_pagados === true
+            $exp->clg_fecha_solicitud &&
+            $exp->isDirty(['clg_fecha_solicitud', 'clg_solicitado']) &&
+            ! $exp->fecha_firma
         ) {
-            $existe = Comision::where('expediente_id', $expediente->id)->exists();
-
-            if (! $existe) {
-                $porcentaje    = (float) ($expediente->honorarios_porcentaje ?? 0);
-                $montoBase     = (float) $expediente->honorarios_monto;
-                $montoComision = $porcentaje > 0
-                    ? round($montoBase * $porcentaje / 100, 2)
-                    : $montoBase;
-
-                Comision::create([
-                    'expediente_id'       => $expediente->id,
-                    'asesor_id'           => $expediente->asesor_id,
-                    'monto_base'          => $montoBase,
-                    'porcentaje_comision' => $porcentaje,
-                    'monto_comision'      => $montoComision,
-                    'estado'              => 'pendiente',
-                    'fecha_generacion'    => now()->toDateString(),
-                ]);
-            }
-
-            $expediente->asesor?->notify(new ExpedienteCerrado($expediente));
-
-            // WhatsApp de cierre al asesor
-            if ($expediente->asesor?->telefono) {
-                $folio   = $expediente->folio ?? "#{$expediente->id}";
-                $cliente = $expediente->acreditado_nombre;
-                WhatsAppService::sendText(
-                    $expediente->asesor->telefono,
-                    "🎉 *¡Expediente cerrado!*\n\n" .
-                    "Folio: *{$folio}*\n" .
-                    "Cliente: {$cliente}\n\n" .
-                    "La comisión ha sido generada. ¡Felicidades!"
-                );
-            }
+            $exp->fecha_limite_firma = DiasHabiles::agregar(
+                \Carbon\Carbon::parse($exp->clg_fecha_solicitud),
+                30
+            )->toDateString();
         }
     }
 
-    private function notificarAsesorWhatsApp(Expediente $expediente, string $etapaAnterior, string $etapaNueva): void
+    // ── fecha_esperada_pago: fecha_envio_guarda_valores + 20 días hábiles ────
+
+    private function calcularFechaEsperadaPago(Expediente $exp): void
     {
-        $telefono = $expediente->asesor?->telefono;
-        if (! $telefono) return;
-
-        $folio   = $expediente->folio ?? "#{$expediente->id}";
-        $cliente = $expediente->acreditado_nombre;
-
-        WhatsAppService::sendText(
-            $telefono,
-            "📋 *Expediente actualizado*\n\n" .
-            "Folio: *{$folio}*\n" .
-            "Cliente: {$cliente}\n\n" .
-            "Etapa anterior: {$etapaAnterior}\n" .
-            "Nueva etapa: *{$etapaNueva}*"
-        );
-    }
-
-    private function notificarAcreditadoWhatsApp(Expediente $expediente, string $etapaNueva): void
-    {
-        $telefono = $expediente->acreditado_telefono;
-        if (! $telefono) return;
-
-        $folio   = $expediente->folio ?? "#{$expediente->id}";
-        $cliente = $expediente->acreditado_nombre;
-
-        WhatsAppService::sendText(
-            $telefono,
-            "Hola *{$cliente}* 👋\n\n" .
-            "Tu trámite *{$folio}* ha avanzado a la etapa:\n" .
-            "➡️ *{$etapaNueva}*\n\n" .
-            "Si tienes dudas, comunícate con tu asesor."
-        );
-    }
-
-    private function sincronizarChecklist(Expediente $expediente): void
-    {
-        if (! $expediente->tipo_tramite_id) return;
-
-        // Fuente primaria: tabla documento_requeridos (catálogo en BD)
-        $requeridos = \App\Models\DocumentoRequerido::where('tipo_tramite_id', $expediente->tipo_tramite_id)
-            ->orderBy('seccion')
-            ->orderBy('orden')
-            ->get();
-
-        if ($requeridos->isEmpty()) {
-            // Fallback: catálogo hardcodeado en el modelo (legacy)
-            $this->sincronizarChecklistLegacy($expediente);
-            return;
+        if (
+            $exp->fecha_envio_guarda_valores &&
+            $exp->isDirty('fecha_envio_guarda_valores') &&
+            ! $exp->pago_recibido
+        ) {
+            $exp->fecha_esperada_pago = DiasHabiles::agregar(
+                \Carbon\Carbon::parse($exp->fecha_envio_guarda_valores),
+                20
+            )->toDateString();
         }
+    }
 
-        $tiposExistentes = $expediente->documentos()->pluck('tipo')->toArray();
+    // ── portal_fovissste_notas: contraseña = primeros 10 dígitos CURP ────────
 
-        foreach ($requeridos as $req) {
-            if (! in_array($req->nombre, $tiposExistentes)) {
-                $expediente->documentos()->create([
-                    'tipo'    => $req->nombre,
-                    'nombre'  => $req->nombre,
-                    'seccion' => $req->seccion,
-                    'estado'  => 'pendiente',
-                ]);
+    private function calcularPortalFovisssteNotas(Expediente $exp): void
+    {
+        if (
+            $exp->acreditado_curp &&
+            $exp->isDirty(['acreditado_curp', 'portal_fovissste_activado']) &&
+            empty($exp->portal_fovissste_notas)
+        ) {
+            $curp = strtoupper(trim($exp->acreditado_curp));
+            if (strlen($curp) >= 10) {
+                $contrasena = substr($curp, 0, 10);
+                $exp->portal_fovissste_notas =
+                    "Contraseña sugerida portal: {$contrasena}\n" .
+                    "El acreditado debe validar el correo de activación (puede llegar a spam o no deseado).";
             }
         }
     }
 
-    private function sincronizarChecklistLegacy(Expediente $expediente): void
+    // ── Cerrar expediente al marcar pago_recibido ─────────────────────────────
+
+    private function cerrarAlRecibirPago(Expediente $exp): void
     {
-        $catalogo = DocumentoExpediente::catalogoPara(
-            $expediente->tipo_tramite_id,
-            $expediente->vivienda_tipo
-        );
+        if ($exp->isDirty('pago_recibido') && $exp->pago_recibido) {
+            // Auto-rellenar fecha si no se ingresó
+            if (empty($exp->fecha_pago_recibido)) {
+                $exp->fecha_pago_recibido = now()->toDateString();
+            }
+            // Cambiar estado a cerrado automáticamente
+            if ($exp->estado !== 'cerrado') {
+                $exp->estado = 'cerrado';
+            }
+        }
+    }
 
-        $tiposExistentes = $expediente->documentos()->pluck('tipo')->toArray();
+    // ── Notificar al asesor (después de guardar para tener el id) ─────────────
 
-        foreach ($catalogo as $item) {
-            if (! in_array($item['tipo'], $tiposExistentes)) {
-                $expediente->documentos()->create([
-                    'tipo'   => $item['tipo'],
-                    'nombre' => $item['nombre'],
-                    'estado' => 'pendiente',
-                ]);
+    private function notificarPagoRecibido(Expediente $exp): void
+    {
+        // Solo si acaba de marcar pago_recibido = true en este save
+        if ($exp->wasChanged('pago_recibido') && $exp->pago_recibido) {
+            $asesor = $exp->asesor;
+            if ($asesor) {
+                $asesor->notify(new PagoExpedienteRecibido($exp));
             }
         }
     }

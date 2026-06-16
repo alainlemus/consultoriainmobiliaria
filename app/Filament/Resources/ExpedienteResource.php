@@ -79,7 +79,11 @@ class ExpedienteResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $query = static::getModel()::whereIn('estado', ['en_proceso', 'aprobado', 'firmado']);
+        $query = static::getModel()::whereIn('estado', [
+            'en_proceso', 'documentacion', 'en_catastro',
+            'pre_avaluo', 'cuv_generada', 'avaluo_cerrado',
+            'en_notaria', 'firmado',
+        ]);
 
         if (Auth::check() && Auth::user()->hasRole('asesor')) {
             $query->where('asesor_id', Auth::id());
@@ -505,7 +509,7 @@ class ExpedienteResource extends Resource
                                 ->maxLength(5)
                                 ->validationMessages(['regex' => 'El código postal debe tener exactamente 5 dígitos.'])
                                 ->hint('5 dígitos numéricos'),
-                            Forms\Components\Placeholder::make('acceso_simulador_exp')
+                             Forms\Components\Placeholder::make('acceso_simulador_exp')
                                 ->label('Consultar crédito disponible')
                                 ->columnSpanFull()
                                 ->content(function (\Filament\Schemas\Components\Utilities\Get $get): \Illuminate\Support\HtmlString {
@@ -531,6 +535,24 @@ class ExpedienteResource extends Resource
                                         . '</div>'
                                     );
                                 }),
+
+                            // ── Portal FOVISSSTE (Paso 4-J) ───────────────────
+                            \Filament\Schemas\Components\Section::make('Portal FOVISSSTE — Inscripción al portal de activación continua')
+                                ->description('Paso 4-J: generación de cuenta en el portal con CURP, correo y celular del acreditado')
+                                ->columnSpanFull()
+                                ->collapsible()
+                                ->collapsed(fn ($record) => !$record?->portal_fovissste_activado)
+                                ->schema([
+                                    Forms\Components\Toggle::make('portal_fovissste_activado')
+                                        ->label('Portal FOVISSSTE activado')
+                                        ->helperText('Contraseña: primeros 10 dígitos del CURP en mayúsculas. El acreditado debe validar el correo (puede llegar a spam).')
+                                        ->columnSpanFull(),
+                                    Forms\Components\Textarea::make('portal_fovissste_notas')
+                                        ->label('Notas del portal')
+                                        ->rows(2)
+                                        ->placeholder('Ej: correo validado el 15/06/2026, contraseña temporal cambiada')
+                                        ->columnSpanFull(),
+                                ]),
                         ])->columns(2),
 
                     // ── TAB 3: VENDEDOR ───────────────────────────────────
@@ -591,6 +613,24 @@ class ExpedienteResource extends Resource
                                 ->label('Requiere acta de matrimonio')
                                 ->hint('Activar si el vendedor está casado bajo sociedad conyugal')
                                 ->columnSpanFull(),
+
+                            // ── Situación fiscal del vendedor (Paso 16) ───────
+                            \Filament\Schemas\Components\Section::make('Situación fiscal del vendedor')
+                                ->description('Exención de ISR en la venta de vivienda')
+                                ->columnSpanFull()
+                                ->collapsible()
+                                ->schema([
+                                    Forms\Components\Toggle::make('vendedor_exencion_isr')
+                                        ->label('¿Aplica exención de ISR?')
+                                        ->helperText('El vendedor NO ha vendido otra propiedad en los últimos 3 años')
+                                        ->reactive()
+                                        ->columnSpanFull(),
+                                    Forms\Components\Toggle::make('vendedor_requiere_avaluo_referido')
+                                        ->label('¿Requiere avalúo referido?')
+                                        ->helperText('Si el vendedor sí vendió antes de 3 años, requiere avalúo referido (tiene costo adicional)')
+                                        ->visible(fn ($get) => !$get('vendedor_exencion_isr'))
+                                        ->columnSpanFull(),
+                                ]),
                         ])->columns(2),
 
                     // ── TAB 4: VIVIENDA ───────────────────────────────────
@@ -607,8 +647,20 @@ class ExpedienteResource extends Resource
                             Forms\Components\TextInput::make('vivienda_superficie')
                                 ->label('Superficie (m²)')
                                 ->numeric()
+                                ->suffix('m²')
                                 ->minValue(0)
-                                ->validationMessages(['min' => 'La superficie no puede ser negativa.']),
+                                ->validationMessages(['min' => 'La superficie no puede ser negativa.'])
+                                ->columnSpan(1),
+                            Forms\Components\TextInput::make('superficie_total_predio')
+                                ->label('Superficie total del predio (m²)')
+                                ->numeric()
+                                ->suffix('m²')
+                                ->helperText('Solo si se vende una fracción del predio')
+                                ->columnSpan(1),
+                            Forms\Components\Toggle::make('requiere_subdivision')
+                                ->label('¿Requiere subdivisión/apeo y deslinde?')
+                                ->helperText('Cuando la superficie del predio supera la regla 3:1 de FOVISSSTE')
+                                ->columnSpanFull(),
                             Forms\Components\TextInput::make('vivienda_calle')
                                 ->label('Calle')
                                 ->maxLength(255),
@@ -713,6 +765,98 @@ class ExpedienteResource extends Resource
                                 ->minValue(0)
                                 ->hint('Concepto 001 del talón (pensión base, sin bonos). Mín. $32,200.60 para crédito máximo.'),
                         ])->columns(2),
+
+                    // ── TAB 7: SEGUIMIENTO DEL PROCESO ────────────────────
+                    Tabs\Tab::make('Seguimiento')
+                        ->icon('heroicon-o-flag')
+                        ->schema([
+                            // ── Trámite ante catastro (Paso 10) ───────────────
+                            \Filament\Schemas\Components\Section::make('Trámite ante catastro (Paso 10)')
+                                ->columnSpanFull()
+                                ->collapsible()
+                                ->schema([
+                                    Forms\Components\Toggle::make('requiere_subdivision')
+                                        ->label('¿Requiere subdivisión?')
+                                        ->columnSpanFull(),
+                                ]),
+
+                            // ── CUV — Clave Única de Vivienda (Pasos 14-15) ───
+                            \Filament\Schemas\Components\Section::make('CUV — Clave Única de Vivienda (Pasos 14-15)')
+                                ->columnSpanFull()
+                                ->columns(3)
+                                ->collapsible()
+                                ->schema([
+                                    Forms\Components\TextInput::make('cuv')
+                                        ->label('CUV')
+                                        ->placeholder('Clave Única de Vivienda asignada por RUV')
+                                        ->columnSpan(2),
+                                    Forms\Components\DatePicker::make('cuv_fecha_pago')
+                                        ->label('Fecha de pago CUV')
+                                        ->columnSpan(1),
+                                    Forms\Components\Toggle::make('cuv_activa')
+                                        ->label('CUV activa (confirmada por SOFOM)')
+                                        ->columnSpanFull(),
+                                ]),
+
+                            // ── Instrucción notarial — SOFOM (Paso 18) ────────
+                            \Filament\Schemas\Components\Section::make('Instrucción notarial — SOFOM (Paso 18)')
+                                ->columnSpanFull()
+                                ->columns(2)
+                                ->collapsible()
+                                ->schema([
+                                    Forms\Components\Toggle::make('instruccion_notarial_recibida')
+                                        ->label('Instrucción notarial recibida')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('instruccion_notarial_fecha')
+                                        ->label('Fecha de recepción')
+                                        ->columnSpan(1),
+                                ]),
+
+                            // ── Notaría — CLG y firma (Paso 19) ───────────────
+                            \Filament\Schemas\Components\Section::make('Notaría — CLG y firma (Paso 19)')
+                                ->columnSpanFull()
+                                ->columns(2)
+                                ->collapsible()
+                                ->schema([
+                                    Forms\Components\Toggle::make('clg_solicitado')
+                                        ->label('CLG solicitado')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('clg_fecha_solicitud')
+                                        ->label('Fecha solicitud CLG')
+                                        ->columnSpan(1),
+                                    Forms\Components\Toggle::make('clg_recibido')
+                                        ->label('CLG recibido')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('fecha_limite_firma')
+                                        ->label('Fecha límite para firma')
+                                        ->helperText('30 días hábiles desde solicitud del CLG')
+                                        ->columnSpan(1),
+                                    Forms\Components\DatePicker::make('fecha_firma')
+                                        ->label('Fecha real de firma')
+                                        ->columnSpan(1),
+                                ]),
+
+                            // ── Guarda Valores y pago (Paso 20) ───────────────
+                            \Filament\Schemas\Components\Section::make('Guarda Valores y pago (Paso 20)')
+                                ->columnSpanFull()
+                                ->columns(2)
+                                ->collapsible()
+                                ->schema([
+                                    Forms\Components\DatePicker::make('fecha_envio_guarda_valores')
+                                        ->label('Envío a Guarda Valores FOVISSSTE')
+                                        ->columnSpan(1),
+                                    Forms\Components\DatePicker::make('fecha_esperada_pago')
+                                        ->label('Fecha esperada de pago')
+                                        ->helperText('20 días hábiles desde envío a Guarda Valores')
+                                        ->columnSpan(1),
+                                    Forms\Components\Toggle::make('pago_recibido')
+                                        ->label('Pago recibido')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('fecha_pago_recibido')
+                                        ->label('Fecha real del pago')
+                                        ->columnSpan(1),
+                                ]),
+                        ])->columnSpanFull(),
 
                 ])->columnSpanFull()->persistTabInQueryString(),
         ]);
