@@ -50,9 +50,7 @@ class User extends Authenticatable implements FilamentUser
             return false;
         }
 
-        return $this->hasRole(config('filament-shield.super_admin.name', 'super_admin'))
-            || $this->hasRole('admin')
-            || $this->hasRole('asesor');
+        return $this->roles()->exists();
     }
 
     public function expedientes(): HasMany
