@@ -127,7 +127,13 @@ class ExpedienteResource extends Resource
                                 ->options(TipoTramite::where('activo', true)->orderBy('orden')->pluck('nombre', 'id'))
                                 ->required()
                                 ->live()
-                                ->afterStateUpdated(fn (\Filament\Schemas\Components\Utilities\Set $set) => $set('etapa_tramite_id', null))
+                                ->afterStateUpdated(function (\Filament\Schemas\Components\Utilities\Set $set, $state) {
+                                    // Auto-seleccionar la primera etapa al cambiar el tipo de trámite
+                                    $primera = $state
+                                        ? \App\Models\EtapaTramite::where('tipo_tramite_id', $state)->orderBy('orden')->first()
+                                        : null;
+                                    $set('etapa_tramite_id', $primera?->id);
+                                })
                                 ->validationMessages([
                                     'required' => 'Debes seleccionar el tipo de trámite.',
                                 ]),
