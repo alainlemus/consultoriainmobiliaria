@@ -22,10 +22,7 @@ class ContactoResource extends Resource
 {
     public static function canViewAny(): bool
     {
-        return auth()->check() && (
-            auth()->user()->hasRole('super_admin') ||
-            auth()->user()->hasRole('asesor')
-        );
+        return auth()->check() && auth()->user()->can('ViewAny:Contacto');
     }
 
     protected static ?string $model = Contacto::class;
@@ -68,6 +65,7 @@ class ContactoResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
+        // Solo el asesor ve únicamente sus propios prospectos
         if (Auth::check() && Auth::user()->hasRole('asesor')) {
             $query->where('asesor_id', Auth::id());
         }

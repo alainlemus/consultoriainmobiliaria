@@ -69,7 +69,7 @@ class ExpedienteResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        // Asesores solo ven sus propios expedientes
+        // Solo el asesor ve únicamente sus propios expedientes
         if (Auth::check() && Auth::user()->hasRole('asesor')) {
             $query->where('asesor_id', Auth::id());
         }
@@ -871,9 +871,12 @@ public static function canDelete(Model $record): bool
     {
         $user = Auth::user();
         if (! $user) return false;
+        if (! $user->can('Update:Expediente')) return false;
         if ($user->hasRole('super_admin')) return true;
-        // Asesor solo puede editar sus propios expedientes
-        return $user->hasRole('asesor') && $record->asesor_id === $user->id;
+        // El asesor solo puede editar expedientes asignados a él
+        if ($user->hasRole('asesor')) return $record->asesor_id === $user->id;
+        // Cualquier otro rol con permiso (capturista, etc.) puede editar todos
+        return true;
     }
 
     public static function table(Table $table): Table

@@ -22,8 +22,7 @@ class Dashboard extends BaseDashboard
             return false;
         }
 
-        // El asesor no ve este dashboard, pero no debe recibir 403 —
-        // el middleware RedirectAsesorToExpedientes lo lleva a su propio dashboard.
+        // El asesor tiene su propio dashboard; el middleware ya lo redirige
         if (auth()->user()->hasRole('asesor')) {
             return false;
         }
