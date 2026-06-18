@@ -101,11 +101,26 @@ class ContactoResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
+            // ── Aviso de campos obligatorios (solo al crear) ──────────────
+            Forms\Components\Placeholder::make('_aviso_campos_requeridos')
+                ->label('')
+                ->columnSpanFull()
+                ->visible(fn ($livewire) => $livewire instanceof \App\Filament\Resources\ContactoResource\Pages\CreateContacto)
+                ->content(new \Illuminate\Support\HtmlString(
+                    '<div style="display:flex;align-items:flex-start;gap:10px;background:#fefce8;border:1px solid #fde047;border-radius:8px;padding:12px 16px;">'
+                    . '<svg xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;color:#ca8a04;margin-top:1px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>'
+                    . '<div>'
+                    . '<p style="font-size:13px;font-weight:600;color:#92400e;margin:0 0 4px 0;">Campos obligatorios <span style="color:#dc2626;">*</span></p>'
+                    . '<p style="font-size:12px;color:#78350f;margin:0;">Los campos marcados con <strong style="color:#dc2626;">*</strong> son obligatorios para guardar el prospecto: <strong>Nombre</strong> y <strong>Teléfono</strong>.</p>'
+                    . '</div>'
+                    . '</div>'
+                )),
+
             \Filament\Schemas\Components\Section::make('Datos del Prospecto')
                 ->description('Información de contacto y gestión.')
                 ->schema([
                     Forms\Components\TextInput::make('nombre')
-                        ->label('Nombre')->required()->maxLength(255)
+                        ->label('Nombre')->required()->live(onBlur: true)->maxLength(255)
                         ->validationMessages([
                             'required' => 'El nombre del prospecto es obligatorio.',
                             'max'      => 'El nombre no puede superar los 255 caracteres.',
@@ -125,7 +140,7 @@ class ContactoResource extends Resource
                         ->nullable()
                         ->columnSpanFull(),
                     Forms\Components\TextInput::make('telefono')
-                        ->label('Teléfono')->required()->tel()
+                        ->label('Teléfono')->required()->live(onBlur: true)->tel()
                         ->regex('/^\d{10}$/')->maxLength(10)
                         ->validationMessages([
                             'required' => 'El teléfono es obligatorio.',

@@ -101,12 +101,35 @@ class ExpedienteResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
+            // ── Aviso de campos obligatorios (solo al crear) ──────────────
+            Forms\Components\Placeholder::make('_aviso_campos_requeridos')
+                ->label('')
+                ->columnSpanFull()
+                ->visible(fn ($livewire) => $livewire instanceof \App\Filament\Resources\ExpedienteResource\Pages\CreateExpediente)
+                ->content(new \Illuminate\Support\HtmlString(
+                    '<div style="display:flex;align-items:flex-start;gap:10px;background:#fefce8;border:1px solid #fde047;border-radius:8px;padding:12px 16px;">'
+                    . '<svg xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;color:#ca8a04;margin-top:1px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>'
+                    . '<div>'
+                    . '<p style="font-size:13px;font-weight:600;color:#92400e;margin:0 0 4px 0;">Campos obligatorios <span style="color:#dc2626;">*</span></p>'
+                    . '<p style="font-size:12px;color:#78350f;margin:0;">Los campos marcados con <strong style="color:#dc2626;">*</strong> son obligatorios para guardar el expediente:</p>'
+                    . '<ul style="margin:6px 0 0 0;padding-left:16px;font-size:12px;color:#78350f;">'
+                    . '<li><strong>Tab Trámite:</strong> Tipo de Trámite, Asesor asignado, Uso del crédito</li>'
+                    . '<li><strong>Tab Acreditado:</strong> Nombre completo, Estado civil</li>'
+                    . '</ul>'
+                    . '</div>'
+                    . '</div>'
+                )),
+
             Tabs::make('Expediente')
                 ->tabs([
 
                     // ── TAB 1: TRÁMITE ────────────────────────────────────
                     Tabs\Tab::make('Trámite')
                         ->icon('heroicon-o-document-text')
+                        ->badge(fn ($livewire) => collect($livewire->getErrorBag()->keys())
+                            ->filter(fn ($k) => in_array($k, ['tipo_tramite_id', 'asesor_id', 'uso_credito']))
+                            ->count() ?: null)
+                        ->badgeColor('danger')
                         ->schema([
                             // ── Stepper de progreso ───────────────────────
                             SchemaView::make('filament.components.expediente-stepper')
@@ -205,6 +228,7 @@ class ExpedienteResource extends Resource
                                 ->options(User::where('activo', true)->pluck('name', 'id'))
                                 ->searchable()
                                 ->required()
+                                ->live(onBlur: true)
                                 ->hint('Asesor responsable del seguimiento')
                                 ->validationMessages([
                                     'required' => 'Debes asignar un asesor al expediente.',
@@ -355,6 +379,10 @@ class ExpedienteResource extends Resource
                     // ── TAB 2: ACREDITADO ─────────────────────────────────
                      Tabs\Tab::make('Acreditado')
                          ->icon('heroicon-o-user')
+                         ->badge(fn ($livewire) => collect($livewire->getErrorBag()->keys())
+                             ->filter(fn ($k) => in_array($k, ['acreditado_nombre', 'acreditado_estado_civil']))
+                             ->count() ?: null)
+                         ->badgeColor('danger')
                          ->schema([
                             // ── Datos del prospecto (readonly) ────────────────
                             \Filament\Schemas\Components\Section::make('Datos del prospecto')
@@ -426,6 +454,7 @@ class ExpedienteResource extends Resource
                              Forms\Components\TextInput::make('acreditado_nombre')
                                 ->label('Nombre completo')
                                 ->required()
+                                ->live(onBlur: true)
                                 ->maxLength(255)
                                 ->hint('Nombre como aparece en identificación oficial')
                                 ->validationMessages([
@@ -467,6 +496,7 @@ class ExpedienteResource extends Resource
                             Forms\Components\Select::make('acreditado_estado_civil')
                                 ->label('Estado civil')
                                 ->required()
+                                ->live(onBlur: true)
                                 ->options([
                                     'soltero'     => 'Soltero(a)',
                                     'casado'      => 'Casado(a)',
