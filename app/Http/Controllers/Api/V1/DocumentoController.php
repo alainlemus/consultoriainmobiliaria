@@ -118,12 +118,6 @@ class DocumentoController extends Controller
             Storage::disk(self::DISK)->delete($existente->ruta_archivo);
         }
 
-        Storage::disk(self::DISK)->putFileAs(
-            "expedientes/{$expedienteId}/docs",
-            $archivo,
-            $nombre
-        );
-
         $doc = DocumentoExpediente::updateOrCreate(
             [
                 'expediente_id' => $expedienteId,
