@@ -13,7 +13,15 @@ class ListExpedientes extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\Action::make('crear_desde_carpeta')
+                ->label('Nuevo desde carpeta')
+                ->icon('heroicon-o-folder-arrow-down')
+                ->color('primary')
+                ->url(ExpedienteResource::getUrl('crear-desde-carpeta')),
+
+            Actions\CreateAction::make()
+                ->label('Nuevo expediente')
+                ->icon('heroicon-o-plus'),
         ];
     }
 }

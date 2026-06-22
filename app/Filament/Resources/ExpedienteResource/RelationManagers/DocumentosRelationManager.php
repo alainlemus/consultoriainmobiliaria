@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ExpedienteResource\RelationManagers;
 
 use App\Models\DocumentoExpediente;
+use App\Services\CargaMasivaService;
 use Filament\Forms;
 use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -73,6 +74,23 @@ class DocumentosRelationManager extends RelationManager
                     })
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('categoria')
+                    ->label('Carpeta')
+                    ->badge()
+                    ->color(fn (?string $state) => match (true) {
+                        str_starts_with($state ?? '', 'sofom/') => 'warning',
+                        $state === 'sofom'                      => 'warning',
+                        $state === 'notaria'                    => 'danger',
+                        $state === 'acreditada'                 => 'primary',
+                        $state === 'vendedor'                   => 'info',
+                        $state === 'vivienda'                   => 'success',
+                        default                                 => 'gray',
+                    })
+                    ->formatStateUsing(fn (?string $state) => $state ? strtoupper($state) : '—')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: false)
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('nombre')
                     ->label('Documento')
                     ->searchable()
@@ -124,12 +142,159 @@ class DocumentosRelationManager extends RelationManager
                     ]),
             ])
             ->headerActions([
+                // ── Subir carpeta completa ────────────────────────────────
+                \Filament\Actions\Action::make('subir_carpeta')
+                    ->label('Subir carpeta')
+                    ->icon('heroicon-o-folder-arrow-down')
+                    ->color('primary')
+                    ->modalHeading('Subir carpeta de documentos')
+                    ->modalWidth('2xl')
+                    ->modalSubmitActionLabel('Subir y procesar')
+                    ->form([
+                        Forms\Components\Placeholder::make('_instrucciones')
+                            ->label('')
+                            ->columnSpanFull()
+                            ->content(new \Illuminate\Support\HtmlString(
+                                '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;font-size:13px;color:#1e40af;">'
+                                . '<strong>¿Cómo subir una carpeta completa?</strong><br>'
+                                . 'Selecciona todos los archivos dentro de la carpeta del acreditado.<br>'
+                                . 'Organiza los archivos en subcarpetas: <strong>ACREDITADA</strong>, <strong>VENDEDOR</strong>, <strong>VIVIENDA</strong>, <strong>SOFOM</strong>, <strong>NOTARIA</strong>.<br>'
+                                . 'El sistema detectará la sección automáticamente por el nombre de la carpeta.<br>'
+                                . '<em>Formatos aceptados: PDF, JPG, PNG — máx. 20 MB por archivo.</em>'
+                                . '</div>'
+                            )),
+
+                        Forms\Components\FileUpload::make('archivos')
+                            ->label('Archivos')
+                            ->multiple()
+                            ->disk('local')
+                            ->directory(fn () => 'tmp/carga_masiva/' . uniqid())
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+                            ->maxSize(20480)
+                            ->maxFiles(200)
+                            ->columnSpanFull()
+                            ->helperText('Selecciona múltiples archivos de una vez. En Mac: Cmd+A para seleccionar todos.')
+                            ->required(),
+
+                        Forms\Components\Textarea::make('rutas_relativas')
+                            ->label('Rutas relativas (una por línea)')
+                            ->columnSpanFull()
+                            ->rows(4)
+                            ->placeholder("ACREDITADA/CURP.pdf\nACREDITADA/INE.pdf\nVENDEDOR/CURP.pdf\nVIVIENDA/ESCRITURA.pdf")
+                            ->helperText('Indica la carpeta de cada archivo. Formato: CARPETA/nombre_archivo.pdf — una por línea, en el mismo orden que los archivos seleccionados.')
+                            ->required(),
+                    ])
+                    ->action(function (array $data) {
+                        $expediente = $this->getOwnerRecord();
+                        $archivosSubidos = $data['archivos'] ?? [];
+                        $rutasTexto      = $data['rutas_relativas'] ?? '';
+
+                        if (empty($archivosSubidos)) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('No se seleccionaron archivos')
+                                ->warning()->send();
+                            return;
+                        }
+
+                        // Parsear rutas relativas ingresadas
+                        $rutas = array_values(array_filter(
+                            array_map('trim', explode("\n", $rutasTexto))
+                        ));
+
+                        // Construir array de items para el servicio
+                        $items = [];
+                        foreach ($archivosSubidos as $idx => $rutaTmp) {
+                            $rutaAbsoluta = Storage::disk('local')->path($rutaTmp);
+                            if (! file_exists($rutaAbsoluta)) continue;
+
+                            $items[] = [
+                                'file'           => new \Illuminate\Http\UploadedFile(
+                                    $rutaAbsoluta,
+                                    basename($rutaTmp),
+                                    null,
+                                    null,
+                                    true // test mode = no validar existencia
+                                ),
+                                'ruta_relativa' => $rutas[$idx] ?? basename($rutaTmp),
+                            ];
+                        }
+
+                        if (empty($items)) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('No se pudieron leer los archivos subidos')
+                                ->danger()->send();
+                            return;
+                        }
+
+                        /** @var CargaMasivaService $servicio */
+                        $servicio  = app(CargaMasivaService::class);
+                        $resultado = $servicio->procesar($expediente, $items);
+
+                        // ── Pre-rellenar campos del expediente con datos extraídos ──
+                        $datosExtraidos = $resultado['datos_extraidos'];
+                        unset($datosExtraidos['_fuentes']);
+
+                        $camposExpediente = [
+                            'acreditado_nombre'        => $datosExtraidos['acreditado_nombre'] ?? $datosExtraidos['nombre'] ?? null,
+                            'acreditado_curp'          => $datosExtraidos['curp'] ?? null,
+                            'acreditado_rfc'           => $datosExtraidos['rfc'] ?? null,
+                            'acreditado_fecha_nacimiento' => $datosExtraidos['fecha_nacimiento'] ?? null,
+                            'vivienda_calle'           => $datosExtraidos['vivienda_calle'] ?? null,
+                            'vivienda_numero'          => $datosExtraidos['vivienda_numero'] ?? null,
+                            'vivienda_colonia'         => $datosExtraidos['vivienda_colonia'] ?? null,
+                            'vivienda_cp'              => $datosExtraidos['vivienda_cp'] ?? null,
+                            'vivienda_municipio'       => $datosExtraidos['vivienda_municipio'] ?? null,
+                            'vivienda_estado'          => $datosExtraidos['vivienda_estado'] ?? null,
+                            'vendedor_nombre'          => $datosExtraidos['vendedor_nombre'] ?? null,
+                            'cuv'                      => $datosExtraidos['cuv'] ?? null,
+                        ];
+
+                        $camposAActualizar = array_filter($camposExpediente, fn ($v) => ! is_null($v));
+
+                        // Solo actualizar campos que estén vacíos en el expediente
+                        $actualizacion = [];
+                        foreach ($camposAActualizar as $campo => $valor) {
+                            if (empty($expediente->$campo)) {
+                                $actualizacion[$campo] = $valor;
+                            }
+                        }
+
+                        if (! empty($actualizacion)) {
+                            $expediente->update($actualizacion);
+                        }
+
+                        // Limpiar archivos temporales
+                        foreach ($archivosSubidos as $rutaTmp) {
+                            Storage::disk('local')->delete($rutaTmp);
+                        }
+
+                        $camposRellenos = count($actualizacion);
+                        $msg = "Se subieron {$resultado['documentos_creados']} documentos";
+                        if ($resultado['documentos_actualizados'] > 0) {
+                            $msg .= ", {$resultado['documentos_actualizados']} actualizados";
+                        }
+                        if ($camposRellenos > 0) {
+                            $msg .= ". Se pre-rellenaron {$camposRellenos} campos del expediente con datos extraídos de los PDFs.";
+                        }
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Carga completada')
+                            ->body($msg)
+                            ->success()->send();
+                    }),
+
                 // Re-sincronizar checklist (solo super_admin) — útil para expedientes creados antes de la migración
                 \Filament\Actions\Action::make('resincronizar')
                     ->label('Re-sincronizar checklist')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
-                    ->visible(fn () => Auth::user()?->hasRole('super_admin') ?? false)
+                    ->visible(function () {
+                        if (! Auth::user()?->hasRole('super_admin')) return false;
+                        $expediente = $this->getOwnerRecord();
+                        if (! $expediente?->tipo_tramite_id) return false;
+                        // Ocultar si el expediente tiene documentos de carga masiva (con categoria)
+                        return ! $expediente->documentos()->whereNotNull('categoria')->exists();
+                    })
                     ->requiresConfirmation()
                     ->modalHeading('Re-sincronizar checklist de documentos')
                     ->modalDescription(
@@ -212,14 +377,13 @@ class DocumentosRelationManager extends RelationManager
                     ->action(fn ($record) => $record->update(['estado' => 'pendiente']))
                     ->requiresConfirmation(false),
 
-                // Ver comprobante en modal
                 \Filament\Actions\Action::make('ver_archivo')
                     ->label('Ver')
                     ->icon('heroicon-o-eye')
                     ->color('primary')
                     ->visible(fn ($record) => (bool) $record->ruta_archivo)
                     ->modalHeading(fn ($record) => 'Documento — ' . $record->nombre)
-                    ->modalWidth('3xl')
+                    ->modalWidth('7xl')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Cerrar')
                     ->modalContent(function ($record) {
@@ -232,7 +396,6 @@ class DocumentosRelationManager extends RelationManager
                         $esPdf  = str_ends_with($nombre, '.pdf');
 
                         if ($esPdf) {
-                            // Botón principal + embed <object> (más fiable que <iframe> para PDFs)
                             $html = '
                                 <div style="display:flex;flex-direction:column;gap:10px;">
                                     <div style="text-align:center;">
@@ -245,7 +408,7 @@ class DocumentosRelationManager extends RelationManager
                                         </a>
                                     </div>
                                     <object data="' . e($url) . '" type="application/pdf"
-                                            style="width:100%;height:65vh;border:none;border-radius:6px;background:#f3f4f6;">
+                                            style="width:100%;height:85vh;border:none;border-radius:6px;background:#f3f4f6;">
                                         <p style="text-align:center;color:#6b7280;padding:32px;font-size:14px;">
                                             Tu navegador no puede mostrar el PDF en línea.<br>
                                             <a href="' . e($url) . '" target="_blank"
@@ -255,7 +418,7 @@ class DocumentosRelationManager extends RelationManager
                                 </div>';
                         } else {
                             $html = '<img src="' . e($url) . '" alt="Documento"
-                                         style="max-width:100%;max-height:70vh;display:block;
+                                         style="max-width:100%;max-height:85vh;display:block;
                                                 margin:0 auto;border-radius:6px;object-fit:contain;">';
                         }
 

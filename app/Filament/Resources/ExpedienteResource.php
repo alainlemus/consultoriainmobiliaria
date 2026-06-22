@@ -9,6 +9,7 @@ use App\Models\EtapaTramite;
 use App\Models\Expediente;
 use App\Models\TipoTramite;
 use App\Models\User;
+use App\Services\CargaMasivaService;
 use Filament\Forms;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\View as SchemaView;
@@ -21,6 +22,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ExpedienteResource extends Resource
 {
@@ -101,6 +103,22 @@ class ExpedienteResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
+            // ── Banner OCR en proceso ─────────────────────────────────────
+            Forms\Components\Placeholder::make('_banner_ocr')
+                ->label('')
+                ->columnSpanFull()
+                ->visible(fn ($record) => (bool) $record?->ocr_procesando)
+                ->content(new \Illuminate\Support\HtmlString(
+                    '<div style="display:flex;align-items:center;gap:12px;background:#fefce8;border:1px solid #fde047;border-radius:10px;padding:14px 18px;">'
+                    . '<svg style="width:22px;height:22px;flex-shrink:0;color:#ca8a04;animation:spin 1.5s linear infinite;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle style="opacity:.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path style="opacity:.75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>'
+                    . '<style>@keyframes spin{to{transform:rotate(360deg)}}</style>'
+                    . '<div>'
+                    . '<p style="font-size:13px;font-weight:700;color:#92400e;margin:0 0 2px 0;">🔍 Analizando documentos con IA...</p>'
+                    . '<p style="font-size:12px;color:#78350f;margin:0;">Los campos del expediente se rellenarán automáticamente en unos minutos. La página se actualiza sola.</p>'
+                    . '</div>'
+                    . '</div>'
+                )),
+
             // ── Aviso de campos obligatorios (solo al crear) ──────────────
             Forms\Components\Placeholder::make('_aviso_campos_requeridos')
                 ->label('')
@@ -572,24 +590,8 @@ class ExpedienteResource extends Resource
                                     );
                                 }),
 
-                            // ── Portal FOVISSSTE (Paso 4-J) ───────────────────
-                            \Filament\Schemas\Components\Section::make('Portal FOVISSSTE — Inscripción al portal de activación continua')
-                                ->description('Paso 4-J: generación de cuenta en el portal con CURP, correo y celular del acreditado')
-                                ->columnSpanFull()
-                                ->collapsible()
-                                ->collapsed(fn ($record) => !$record?->portal_fovissste_activado)
-                                ->schema([
-                                    Forms\Components\Toggle::make('portal_fovissste_activado')
-                                        ->label('Portal FOVISSSTE activado')
-                                        ->helperText('Contraseña: primeros 10 dígitos del CURP en mayúsculas. El acreditado debe validar el correo (puede llegar a spam).')
-                                        ->columnSpanFull(),
-                                    Forms\Components\Textarea::make('portal_fovissste_notas')
-                                        ->label('Notas del portal')
-                                        ->rows(2)
-                                        ->placeholder('Ej: correo validado el 15/06/2026, contraseña temporal cambiada')
-                                        ->columnSpanFull(),
-                                ]),
                         ])->columns(2),
+
 
                     // ── TAB 3: VENDEDOR ───────────────────────────────────
                     Tabs\Tab::make('Vendedor')
@@ -919,6 +921,15 @@ public static function canDelete(Model $record): bool
     {
         return $table
             ->columns([
+                Tables\Columns\IconColumn::make('ocr_procesando')
+                    ->label('')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-sparkles')
+                    ->falseIcon('')
+                    ->trueColor('warning')
+                    ->tooltip(fn ($record) => $record->ocr_procesando ? '🔍 Analizando documentos con IA...' : null)
+                    ->alignCenter()
+                    ->width('40px'),
                 Tables\Columns\TextColumn::make('folio')
                     ->label('Folio')
                     ->searchable()
@@ -1032,6 +1043,129 @@ public static function canDelete(Model $record): bool
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->actions([
+                // ── Subir documentos directo desde la lista ───────────────
+                \Filament\Actions\Action::make('subir_docs')
+                    ->label('Subir docs')
+                    ->icon('heroicon-o-folder-arrow-down')
+                    ->color('primary')
+                    ->modalHeading(fn ($record) => 'Subir documentos — ' . ($record->acreditado_nombre ?: $record->folio))
+                    ->modalWidth('2xl')
+                    ->modalSubmitActionLabel('Subir y procesar')
+                    ->visible(fn () => auth()->user()?->can('Create:DocumentoRequerido') || auth()->user()?->hasRole('super_admin'))
+                    ->form([
+                        Forms\Components\Placeholder::make('_info')
+                            ->label('')
+                            ->columnSpanFull()
+                            ->content(new \Illuminate\Support\HtmlString(
+                                '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;font-size:13px;color:#1e40af;">'
+                                . '<strong>Instrucciones</strong><br>'
+                                . '1. Selecciona todos los archivos de la carpeta del acreditado.<br>'
+                                . '2. En el campo de rutas, escribe la carpeta de cada archivo (una por línea):<br>'
+                                . '<code style="background:#dbeafe;padding:2px 6px;border-radius:4px;">ACREDITADA/CURP.pdf</code><br>'
+                                . '<code style="background:#dbeafe;padding:2px 6px;border-radius:4px;">VENDEDOR/INE.pdf</code><br>'
+                                . '<code style="background:#dbeafe;padding:2px 6px;border-radius:4px;">VIVIENDA/ESCRITURA.pdf</code><br><br>'
+                                . 'Carpetas válidas: <strong>ACREDITADA, VENDEDOR, VIVIENDA, SOFOM, NOTARIA, AVALUO, CATASTRO</strong><br>'
+                                . '<em>PDFs con texto: el sistema extrae datos automáticamente (CURP, SAT, Avalúo).</em>'
+                                . '</div>'
+                            )),
+
+                        Forms\Components\FileUpload::make('archivos')
+                            ->label('Archivos')
+                            ->multiple()
+                            ->disk('local')
+                            ->directory('tmp/carga_masiva')
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+                            ->maxSize(20480)
+                            ->maxFiles(200)
+                            ->columnSpanFull()
+                            ->required(),
+
+                        Forms\Components\Textarea::make('rutas_relativas')
+                            ->label('Rutas relativas (una por línea, mismo orden que los archivos)')
+                            ->columnSpanFull()
+                            ->rows(6)
+                            ->placeholder("ACREDITADA/CURP.pdf\nACREDITADA/INE.pdf\nACREDITADA/SAT 2026.pdf\nVENDEDOR/CURP.pdf\nVIVIENDA/ESCRITURA.pdf")
+                            ->required(),
+                    ])
+                    ->action(function (array $data, $record) {
+                        $expediente      = $record;
+                        $archivosSubidos = $data['archivos'] ?? [];
+                        $rutas           = array_values(array_filter(
+                            array_map('trim', explode("\n", $data['rutas_relativas'] ?? ''))
+                        ));
+
+                        if (empty($archivosSubidos)) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('No se seleccionaron archivos')->warning()->send();
+                            return;
+                        }
+
+                        $items = [];
+                        foreach ($archivosSubidos as $idx => $rutaTmp) {
+                            $rutaAbsoluta = Storage::disk('local')->path($rutaTmp);
+                            if (! file_exists($rutaAbsoluta)) continue;
+
+                            $items[] = [
+                                'file' => new \Illuminate\Http\UploadedFile(
+                                    $rutaAbsoluta, basename($rutaTmp), null, null, true
+                                ),
+                                'ruta_relativa' => $rutas[$idx] ?? basename($rutaTmp),
+                            ];
+                        }
+
+                        /** @var CargaMasivaService $servicio */
+                        $servicio  = app(CargaMasivaService::class);
+                        $resultado = $servicio->procesar($expediente, $items);
+
+                        // Pre-rellenar campos vacíos del expediente
+                        $extraidos = $resultado['datos_extraidos'];
+                        unset($extraidos['_fuentes']);
+
+                        $mapa = [
+                            'acreditado_nombre'           => $extraidos['acreditado_nombre'] ?? $extraidos['nombre'] ?? null,
+                            'acreditado_curp'             => $extraidos['curp'] ?? null,
+                            'acreditado_rfc'              => $extraidos['rfc'] ?? null,
+                            'acreditado_fecha_nacimiento' => $extraidos['fecha_nacimiento'] ?? null,
+                            'vivienda_calle'              => $extraidos['vivienda_calle'] ?? null,
+                            'vivienda_numero'             => $extraidos['vivienda_numero'] ?? null,
+                            'vivienda_colonia'            => $extraidos['vivienda_colonia'] ?? null,
+                            'vivienda_cp'                 => $extraidos['vivienda_cp'] ?? null,
+                            'vivienda_municipio'          => $extraidos['vivienda_municipio'] ?? null,
+                            'vivienda_estado'             => $extraidos['vivienda_estado'] ?? null,
+                            'vendedor_nombre'             => $extraidos['vendedor_nombre'] ?? null,
+                            'cuv'                         => $extraidos['cuv'] ?? null,
+                        ];
+
+                        $actualizacion = [];
+                        foreach (array_filter($mapa) as $campo => $valor) {
+                            if (empty($expediente->$campo)) {
+                                $actualizacion[$campo] = $valor;
+                            }
+                        }
+                        if (! empty($actualizacion)) {
+                            $expediente->update($actualizacion);
+                        }
+
+                        // Limpiar temporales
+                        foreach ($archivosSubidos as $rutaTmp) {
+                            Storage::disk('local')->delete($rutaTmp);
+                        }
+
+                        $camposRellenos = count($actualizacion);
+                        $msg = "{$resultado['documentos_creados']} documentos subidos";
+                        if ($resultado['documentos_actualizados'] > 0) {
+                            $msg .= ", {$resultado['documentos_actualizados']} actualizados";
+                        }
+                        if ($camposRellenos > 0) {
+                            $msg .= ". {$camposRellenos} campos del expediente pre-rellenados automáticamente.";
+                        }
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Documentos cargados')
+                            ->body($msg)
+                            ->success()->send();
+                    }),
+
                 \Filament\Actions\EditAction::make()
                     ->hidden(fn ($record) => Auth::user()?->hasRole('asesor')
                         && $record->etapa && $record->etapa->orden >= 5),
@@ -1060,9 +1194,10 @@ public static function canDelete(Model $record): bool
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListExpedientes::route('/'),
-            'create' => Pages\CreateExpediente::route('/create'),
-            'edit'   => Pages\EditExpediente::route('/{record}/edit'),
+            'index'               => Pages\ListExpedientes::route('/'),
+            'create'              => Pages\CreateExpediente::route('/create'),
+            'crear-desde-carpeta' => Pages\CrearDesdeCarptea::route('/crear-desde-carpeta'),
+            'edit'                => Pages\EditExpediente::route('/{record}/edit'),
         ];
     }
 }

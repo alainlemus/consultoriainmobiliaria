@@ -142,7 +142,67 @@ class AdminPanelProvider extends PanelProvider
         $panel->renderHook(
             PanelsRenderHook::BODY_END,
             fn (): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(
-                Blade::render('<x-env-ribbon />')
+                Blade::render('<x-env-ribbon />') .
+                // ── Sonido para notificaciones nuevas ──────────────────────
+                '<script>
+(function() {
+    function playDing() {
+        try {
+            var ctx = new (window.AudioContext || window.webkitAudioContext)();
+            var osc  = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            // Tono suave La5 (880 Hz) con fade out
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.6);
+        } catch(e) {}
+    }
+
+    // Observar el badge de la campana de notificaciones
+    // Usa MutationObserver en el contenedor del botón de notificaciones
+    function initSoundObserver() {
+        var lastCount = parseInt(localStorage.getItem("fi_notif_count") || "0");
+
+        var observer = new MutationObserver(function() {
+            // Buscar el badge de notificaciones no leídas
+            var badge = document.querySelector(".fi-topbar-database-notifications-btn .fi-badge");
+            var current = badge ? parseInt(badge.textContent.trim() || "0") : 0;
+
+            if (current > lastCount) {
+                playDing();
+            }
+            lastCount = current;
+            localStorage.setItem("fi_notif_count", lastCount);
+        });
+
+        var btn = document.querySelector(".fi-topbar-database-notifications-btn");
+        if (btn) {
+            observer.observe(btn, { childList: true, subtree: true, characterData: true });
+        } else {
+            // Reintentar si el panel aún no cargó el botón
+            setTimeout(initSoundObserver, 1500);
+        }
+    }
+
+    // Iniciar cuando el DOM esté listo
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initSoundObserver);
+    } else {
+        initSoundObserver();
+    }
+
+    // Reiniciar observer tras navegación Livewire (SPA)
+    document.addEventListener("livewire:navigated", function() {
+        setTimeout(initSoundObserver, 500);
+    });
+})();
+</script>'
             )
         );
 

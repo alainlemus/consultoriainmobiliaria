@@ -14,6 +14,7 @@ class DocumentoExpediente extends Model
         'tipo',
         'nombre',
         'seccion',
+        'categoria',
         'estado',
         'notas',
         'ruta_archivo',

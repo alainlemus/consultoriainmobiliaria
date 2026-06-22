@@ -46,6 +46,8 @@ class Expediente extends Model
         'fecha_envio_guarda_valores', 'fecha_esperada_pago', 'pago_recibido', 'fecha_pago_recibido',
         // CUV (pasos 14-15)
         'cuv', 'cuv_fecha_pago', 'cuv_activa',
+        // OCR / IA
+        'ocr_procesando',
         // Cónyuge (crédito conyugal / mancomunado)
         'conyuge_nombre', 'conyuge_curp', 'conyuge_rfc', 'conyuge_telefono',
         'conyuge_institucion', 'conyuge_numero_credito',
@@ -64,6 +66,7 @@ class Expediente extends Model
         'portal_fovissste_activado'          => 'boolean',
         'requiere_subdivision'               => 'boolean',
         'cuv_activa'                         => 'boolean',
+        'ocr_procesando'                     => 'boolean',
         'instruccion_notarial_recibida'      => 'boolean',
         'clg_solicitado'                     => 'boolean',
         'clg_recibido'                       => 'boolean',

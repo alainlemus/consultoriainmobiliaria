@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Expediente;
 use App\Notifications\PagoExpedienteRecibido;
 use App\Support\DiasHabiles;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Observer de Expediente.
@@ -25,13 +26,30 @@ class ExpedienteObserver
     {
         $this->calcularFechaLimiteFirma($exp);
         $this->calcularFechaEsperadaPago($exp);
-        $this->calcularPortalFovisssteNotas($exp);
         $this->cerrarAlRecibirPago($exp);
     }
 
     public function saved(Expediente $exp): void
     {
         $this->notificarPagoRecibido($exp);
+    }
+
+    // ── Borrar archivos físicos al eliminar el expediente ────────────────────
+
+    public function deleted(Expediente $exp): void
+    {
+        // Borrar cada archivo vinculado en documentos_expediente
+        $exp->documentos()->each(function ($doc) {
+            if ($doc->ruta_archivo && Storage::disk('local')->exists($doc->ruta_archivo)) {
+                Storage::disk('local')->delete($doc->ruta_archivo);
+            }
+        });
+
+        // Borrar la carpeta completa del expediente en disco
+        $carpeta = "expedientes/{$exp->id}";
+        if (Storage::disk('local')->exists($carpeta)) {
+            Storage::disk('local')->deleteDirectory($carpeta);
+        }
     }
 
     // ── fecha_limite_firma: clg_fecha_solicitud + 30 días hábiles ────────────
@@ -63,25 +81,6 @@ class ExpedienteObserver
                 \Carbon\Carbon::parse($exp->fecha_envio_guarda_valores),
                 20
             )->toDateString();
-        }
-    }
-
-    // ── portal_fovissste_notas: contraseña = primeros 10 dígitos CURP ────────
-
-    private function calcularPortalFovisssteNotas(Expediente $exp): void
-    {
-        if (
-            $exp->acreditado_curp &&
-            $exp->isDirty(['acreditado_curp', 'portal_fovissste_activado']) &&
-            empty($exp->portal_fovissste_notas)
-        ) {
-            $curp = strtoupper(trim($exp->acreditado_curp));
-            if (strlen($curp) >= 10) {
-                $contrasena = substr($curp, 0, 10);
-                $exp->portal_fovissste_notas =
-                    "Contraseña sugerida portal: {$contrasena}\n" .
-                    "El acreditado debe validar el correo de activación (puede llegar a spam o no deseado).";
-            }
         }
     }
 
