@@ -53,9 +53,25 @@ class DocumentosRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
+        // Determinar descripción contextual según etapa del expediente
+        $expediente  = $this->getOwnerRecord();
+        $etapaOrden  = $expediente?->etapa?->orden ?? 0;
+        $etapaNombre = $expediente?->etapa?->nombre ?? '';
+
+        // Categorías relevantes por etapa para el filtro sugerido
+        $descripcion = match (true) {
+            $etapaOrden === 1 => 'Etapa 1 — Sube los documentos del acreditado, vendedor y vivienda para avanzar.',
+            $etapaOrden === 2 => 'Etapa 2 — Verifica que todos los documentos requeridos estén recibidos.',
+            $etapaOrden === 3 => 'Etapa 3 — Agrega los documentos de catastro y el preavalúo.',
+            $etapaOrden === 4 => 'Etapa 4 — Sube los documentos de la carpeta SOFOM para enviar a la unidad de valuación.',
+            $etapaOrden === 5 => 'Etapa 5 — El expediente completo está en notaría. Agrega el avalúo cerrado e instrucción notarial.',
+            $etapaOrden >= 6 => 'Etapa 6+ — Documentos para firma y guarda valores.',
+            default           => 'Marca cada documento conforme sea recibido.',
+        };
+
         return $table
-            ->heading('Checklist de documentos')
-            ->description('Marca cada documento conforme sea recibido. Los documentos se generan automáticamente según el tipo de trámite e inmueble.')
+            ->heading('Documentos del expediente')
+            ->description($descripcion)
             ->columns([
                 Tables\Columns\TextColumn::make('seccion')
                     ->label('Sección')
@@ -123,8 +139,25 @@ class DocumentosRelationManager extends RelationManager
                     ->placeholder('—')
                     ->limit(35),
             ])
-            ->defaultSort('seccion')
+            ->defaultSort('categoria')
             ->filters([
+                Tables\Filters\SelectFilter::make('categoria')
+                    ->label('Carpeta')
+                    ->options(function () {
+                        return \App\Models\DocumentoExpediente::where('expediente_id', $this->getOwnerRecord()?->id)
+                            ->whereNotNull('categoria')
+                            ->pluck('categoria')
+                            ->map(fn ($c) => strtoupper($c))
+                            ->unique()
+                            ->sort()
+                            ->mapWithKeys(fn ($c) => [strtolower($c) => $c])
+                            ->toArray();
+                    })
+                    ->query(fn ($query, $data) => $data['value']
+                        ? $query->where('categoria', $data['value'])
+                        : $query
+                    ),
+
                 Tables\Filters\SelectFilter::make('seccion')
                     ->label('Sección')
                     ->options([

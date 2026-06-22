@@ -115,9 +115,132 @@ class ExpedienteResource extends Resource
                     . '<div>'
                     . '<p style="font-size:13px;font-weight:700;color:#92400e;margin:0 0 2px 0;">🔍 Analizando documentos con IA...</p>'
                     . '<p style="font-size:12px;color:#78350f;margin:0;">Los campos del expediente se rellenarán automáticamente en unos minutos. La página se actualiza sola.</p>'
-                    . '</div>'
-                    . '</div>'
+                    . '</div></div>'
                 )),
+
+            // ── Panel de siguiente paso (contextual por etapa) ────────────
+            Forms\Components\Placeholder::make('_panel_siguiente_paso')
+                ->label('')
+                ->columnSpanFull()
+                ->visible(fn ($record) => $record !== null && ! $record->ocr_procesando)
+                ->content(function ($record) {
+                    if (! $record || ! $record->etapa) return new \Illuminate\Support\HtmlString('');
+                    $etapa  = $record->etapa;
+                    $orden  = $etapa->orden;
+                    $nombre = $etapa->nombre;
+
+                    // Configuración por orden de etapa
+                    $config = match (true) {
+                        $orden === 1 => [
+                            'color'  => '#1d4ed8',
+                            'bg'     => '#eff6ff',
+                            'border' => '#93c5fd',
+                            'titulo' => '📋 Etapa 1 — Expediente iniciado',
+                            'pasos'  => [
+                                'Sube la carpeta con los documentos del acreditado (CURP, INE, SAT, talones)',
+                                'Captura los datos básicos del acreditado en el Tab "Acreditado"',
+                                'Si es compraventa, registra los datos del vendedor',
+                                'Registra la dirección de la vivienda en el Tab "Vivienda"',
+                            ],
+                            'avance' => 'Para avanzar a "Documentos completos": necesitas tener carpetas ACREDITADA + VENDEDOR + VIVIENDA cargadas.',
+                        ],
+                        $orden === 2 => [
+                            'color'  => '#15803d',
+                            'bg'     => '#f0fdf4',
+                            'border' => '#86efac',
+                            'titulo' => '✅ Etapa 2 — Documentos completos',
+                            'pasos'  => [
+                                'Verifica que todos los documentos del acreditado estén recibidos (INE, CURP, SAT, 3 talones, AFORE, SOFOM)',
+                                'Verifica documentos del vendedor (INE, CURP, SAT, CFE, acta nacimiento)',
+                                'Confirma la escritura, predial, agua y luz de la vivienda',
+                                'Envía documentación a SOFOM para validar el monto del crédito',
+                            ],
+                            'avance' => 'Para avanzar a "Trámites previos": inicia el trámite ante catastro del municipio.',
+                        ],
+                        $orden === 3 => [
+                            'color'  => '#b45309',
+                            'bg'     => '#fffbeb',
+                            'border' => '#fcd34d',
+                            'titulo' => '🏛️ Etapa 3 — Trámites previos',
+                            'pasos'  => [
+                                'Tramita avalúo catastral o cédula catastral ante el municipio (15 días hábiles)',
+                                'Si el predio requiere subdivisión: gestiona apeo y deslinde (activa el toggle en el Tab "Vivienda")',
+                                'Solicita el avalúo comercial a la unidad de valuación',
+                                'Al recibir el preavalúo, súbelo en los documentos — el sistema avanzará la etapa automáticamente',
+                            ],
+                            'avance' => 'Para avanzar a "Avalúo realizado": sube la carpeta SOFOM con los documentos del avalúo.',
+                        ],
+                        $orden === 4 => [
+                            'color'  => '#7e22ce',
+                            'bg'     => '#faf5ff',
+                            'border' => '#c4b5fd',
+                            'titulo' => '📊 Etapa 4 — Avalúo realizado',
+                            'pasos'  => [
+                                'Envía a SOFOM: talón actual, documentación de vivienda, documentos del vendedor',
+                                'SOFOM generará la CUV — regístrala abajo en esta misma pantalla',
+                                'Paga la CUV (transferencia) y envía comprobante a SOFOM',
+                                'Cuando SOFOM confirme la CUV activa, activa el toggle "CUV activa" abajo',
+                                'La unidad de valuación cierra el avalúo con vigencia de 6 meses',
+                            ],
+                            'avance' => 'Para avanzar a "En notaría": registra la CUV activa y envía el expediente completo a notaría.',
+                        ],
+                        $orden === 5 => [
+                            'color'  => '#0e7490',
+                            'bg'     => '#ecfeff',
+                            'border' => '#67e8f9',
+                            'titulo' => '⚖️ Etapa 5 — En notaría',
+                            'pasos'  => [
+                                'Envía a notaría: avalúo cerrado, carta de instrucción notarial, expediente completo (acreditado + vendedor + vivienda)',
+                                'Notaría tramita el CLG (Certificado de Libertad de Gravamen) — 30 días hábiles',
+                                'Registra abajo la fecha de solicitud del CLG',
+                                'Al recibir el CLG, activa el toggle "CLG recibido" y registra la fecha límite de firma',
+                            ],
+                            'avance' => 'Para avanzar a "Firma ante notario": CLG recibido y fecha de firma coordinada.',
+                        ],
+                        $orden === 6 => [
+                            'color'  => '#166534',
+                            'bg'     => '#f0fdf4',
+                            'border' => '#86efac',
+                            'titulo' => '✍️ Etapa 6 — Firma ante notario',
+                            'pasos'  => [
+                                'Notaría tiene el proyecto y el CLG — se formaliza la firma',
+                                'Registra abajo la fecha real de firma',
+                                'Envía el proyecto firmado a SOFOM y a Guarda Valores FOVISSSTE',
+                                'Registra abajo la fecha de envío a Guarda Valores',
+                            ],
+                            'avance' => 'Para avanzar a "Dispersión y cobro": confirma envío a Guarda Valores FOVISSSTE.',
+                        ],
+                        $orden >= 7 => [
+                            'color'  => '#374151',
+                            'bg'     => '#f9fafb',
+                            'border' => '#d1d5db',
+                            'titulo' => '💰 Etapa 7 — Dispersión y cobro',
+                            'pasos'  => [
+                                'FOVISSSTE realiza el pago en 20 días hábiles desde Guarda Valores',
+                                'Al recibir el pago, activa "Pago recibido" y registra la fecha',
+                                'El sistema generará la comisión automáticamente al cerrar el expediente',
+                                'Solicita el testimonio al cliente para completar el trámite',
+                            ],
+                            'avance' => 'Cambia el estado a "Cerrado" para generar la comisión del asesor.',
+                        ],
+                        default => null,
+                    };
+
+                    if (! $config) return new \Illuminate\Support\HtmlString('');
+
+                    $pasosList = implode('', array_map(
+                        fn ($p) => '<li style="margin-bottom:4px;">' . e($p) . '</li>',
+                        $config['pasos']
+                    ));
+
+                    return new \Illuminate\Support\HtmlString(
+                        '<div style="background:' . $config['bg'] . ';border:1px solid ' . $config['border'] . ';border-radius:10px;padding:14px 18px;margin-bottom:4px;">'
+                        . '<p style="font-size:14px;font-weight:700;color:' . $config['color'] . ';margin:0 0 8px 0;">' . $config['titulo'] . '</p>'
+                        . '<ul style="margin:0 0 8px 0;padding-left:20px;font-size:12px;color:#374151;line-height:1.7;">' . $pasosList . '</ul>'
+                        . '<p style="font-size:11px;font-weight:600;color:' . $config['color'] . ';margin:0;padding-top:6px;border-top:1px solid ' . $config['border'] . ';">→ ' . e($config['avance']) . '</p>'
+                        . '</div>'
+                    );
+                }),
 
             // ── Aviso de campos obligatorios (solo al crear) ──────────────
             Forms\Components\Placeholder::make('_aviso_campos_requeridos')
@@ -299,6 +422,95 @@ class ExpedienteResource extends Resource
                                 ->placeholder('Ej: Cliente confirmó que entregará el acta la próxima semana...')
                                 ->rows(3)
                                 ->columnSpanFull(),
+
+                            // ── Sección inline: CUV (visible desde etapa 4 en adelante) ──
+                            \Filament\Schemas\Components\Section::make('CUV — Clave Única de Vivienda')
+                                ->description('Generada por SOFOM una vez enviada la documentación completa (Pasos 14-15)')
+                                ->columnSpanFull()
+                                ->columns(3)
+                                ->collapsible()
+                                ->collapsed(fn ($record) => ! $record?->cuv && ! $record?->cuv_activa)
+                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 4)
+                                ->schema([
+                                    Forms\Components\TextInput::make('cuv')
+                                        ->label('CUV')
+                                        ->placeholder('Clave Única de Vivienda asignada por RUV')
+                                        ->columnSpan(2),
+                                    Forms\Components\DatePicker::make('cuv_fecha_pago')
+                                        ->label('Fecha de pago CUV')
+                                        ->columnSpan(1),
+                                    Forms\Components\Toggle::make('cuv_activa')
+                                        ->label('CUV activa (confirmada por SOFOM)')
+                                        ->columnSpanFull(),
+                                ]),
+
+                            // ── Sección inline: Instrucción notarial (visible desde etapa 4) ──
+                            \Filament\Schemas\Components\Section::make('Instrucción notarial — SOFOM (Paso 18)')
+                                ->description('Instrucción con condiciones crediticias y datos de pago al vendedor')
+                                ->columnSpanFull()
+                                ->columns(2)
+                                ->collapsible()
+                                ->collapsed(fn ($record) => ! $record?->instruccion_notarial_recibida)
+                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 4)
+                                ->schema([
+                                    Forms\Components\Toggle::make('instruccion_notarial_recibida')
+                                        ->label('Instrucción notarial recibida de SOFOM')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('instruccion_notarial_fecha')
+                                        ->label('Fecha de recepción')
+                                        ->columnSpan(1),
+                                ]),
+
+                            // ── Sección inline: CLG y firma (visible desde etapa 5) ──
+                            \Filament\Schemas\Components\Section::make('Notaría — CLG y firma (Paso 19)')
+                                ->description('Certificado de Libertad de Gravamen — 30 días hábiles para firma')
+                                ->columnSpanFull()
+                                ->columns(2)
+                                ->collapsible()
+                                ->collapsed(fn ($record) => ! $record?->clg_solicitado)
+                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 5)
+                                ->schema([
+                                    Forms\Components\Toggle::make('clg_solicitado')
+                                        ->label('CLG solicitado a notaría')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('clg_fecha_solicitud')
+                                        ->label('Fecha solicitud CLG')
+                                        ->columnSpan(1),
+                                    Forms\Components\Toggle::make('clg_recibido')
+                                        ->label('CLG recibido')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('fecha_limite_firma')
+                                        ->label('Fecha límite para firma')
+                                        ->helperText('30 días hábiles desde solicitud del CLG')
+                                        ->columnSpan(1),
+                                    Forms\Components\DatePicker::make('fecha_firma')
+                                        ->label('Fecha real de firma')
+                                        ->columnSpan(1),
+                                ]),
+
+                            // ── Sección inline: Guarda Valores y pago (visible desde etapa 6) ──
+                            \Filament\Schemas\Components\Section::make('Guarda Valores y pago (Paso 20)')
+                                ->description('Envío a FOVISSSTE — el pago llega en 20 días hábiles')
+                                ->columnSpanFull()
+                                ->columns(2)
+                                ->collapsible()
+                                ->collapsed(fn ($record) => ! $record?->fecha_envio_guarda_valores && ! $record?->pago_recibido)
+                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 6)
+                                ->schema([
+                                    Forms\Components\DatePicker::make('fecha_envio_guarda_valores')
+                                        ->label('Envío a Guarda Valores FOVISSSTE')
+                                        ->columnSpan(1),
+                                    Forms\Components\DatePicker::make('fecha_esperada_pago')
+                                        ->label('Fecha esperada de pago')
+                                        ->helperText('20 días hábiles desde envío a Guarda Valores')
+                                        ->columnSpan(1),
+                                    Forms\Components\Toggle::make('pago_recibido')
+                                        ->label('Pago recibido')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('fecha_pago_recibido')
+                                        ->label('Fecha real del pago')
+                                        ->columnSpan(1),
+                                ]),
 
                             // ── Montos del crédito ────────────────────────────
                             \Filament\Schemas\Components\Section::make('Montos del crédito')
@@ -805,97 +1017,6 @@ class ExpedienteResource extends Resource
                         ])->columns(2),
 
                     // ── TAB 7: SEGUIMIENTO DEL PROCESO ────────────────────
-                    Tabs\Tab::make('Seguimiento')
-                        ->icon('heroicon-o-flag')
-                        ->schema([
-                            // ── Trámite ante catastro (Paso 10) ───────────────
-                            \Filament\Schemas\Components\Section::make('Trámite ante catastro (Paso 10)')
-                                ->columnSpanFull()
-                                ->collapsible()
-                                ->schema([
-                                    Forms\Components\Toggle::make('requiere_subdivision')
-                                        ->label('¿Requiere subdivisión?')
-                                        ->columnSpanFull(),
-                                ]),
-
-                            // ── CUV — Clave Única de Vivienda (Pasos 14-15) ───
-                            \Filament\Schemas\Components\Section::make('CUV — Clave Única de Vivienda (Pasos 14-15)')
-                                ->columnSpanFull()
-                                ->columns(3)
-                                ->collapsible()
-                                ->schema([
-                                    Forms\Components\TextInput::make('cuv')
-                                        ->label('CUV')
-                                        ->placeholder('Clave Única de Vivienda asignada por RUV')
-                                        ->columnSpan(2),
-                                    Forms\Components\DatePicker::make('cuv_fecha_pago')
-                                        ->label('Fecha de pago CUV')
-                                        ->columnSpan(1),
-                                    Forms\Components\Toggle::make('cuv_activa')
-                                        ->label('CUV activa (confirmada por SOFOM)')
-                                        ->columnSpanFull(),
-                                ]),
-
-                            // ── Instrucción notarial — SOFOM (Paso 18) ────────
-                            \Filament\Schemas\Components\Section::make('Instrucción notarial — SOFOM (Paso 18)')
-                                ->columnSpanFull()
-                                ->columns(2)
-                                ->collapsible()
-                                ->schema([
-                                    Forms\Components\Toggle::make('instruccion_notarial_recibida')
-                                        ->label('Instrucción notarial recibida')
-                                        ->columnSpanFull(),
-                                    Forms\Components\DatePicker::make('instruccion_notarial_fecha')
-                                        ->label('Fecha de recepción')
-                                        ->columnSpan(1),
-                                ]),
-
-                            // ── Notaría — CLG y firma (Paso 19) ───────────────
-                            \Filament\Schemas\Components\Section::make('Notaría — CLG y firma (Paso 19)')
-                                ->columnSpanFull()
-                                ->columns(2)
-                                ->collapsible()
-                                ->schema([
-                                    Forms\Components\Toggle::make('clg_solicitado')
-                                        ->label('CLG solicitado')
-                                        ->columnSpanFull(),
-                                    Forms\Components\DatePicker::make('clg_fecha_solicitud')
-                                        ->label('Fecha solicitud CLG')
-                                        ->columnSpan(1),
-                                    Forms\Components\Toggle::make('clg_recibido')
-                                        ->label('CLG recibido')
-                                        ->columnSpanFull(),
-                                    Forms\Components\DatePicker::make('fecha_limite_firma')
-                                        ->label('Fecha límite para firma')
-                                        ->helperText('30 días hábiles desde solicitud del CLG')
-                                        ->columnSpan(1),
-                                    Forms\Components\DatePicker::make('fecha_firma')
-                                        ->label('Fecha real de firma')
-                                        ->columnSpan(1),
-                                ]),
-
-                            // ── Guarda Valores y pago (Paso 20) ───────────────
-                            \Filament\Schemas\Components\Section::make('Guarda Valores y pago (Paso 20)')
-                                ->columnSpanFull()
-                                ->columns(2)
-                                ->collapsible()
-                                ->schema([
-                                    Forms\Components\DatePicker::make('fecha_envio_guarda_valores')
-                                        ->label('Envío a Guarda Valores FOVISSSTE')
-                                        ->columnSpan(1),
-                                    Forms\Components\DatePicker::make('fecha_esperada_pago')
-                                        ->label('Fecha esperada de pago')
-                                        ->helperText('20 días hábiles desde envío a Guarda Valores')
-                                        ->columnSpan(1),
-                                    Forms\Components\Toggle::make('pago_recibido')
-                                        ->label('Pago recibido')
-                                        ->columnSpanFull(),
-                                    Forms\Components\DatePicker::make('fecha_pago_recibido')
-                                        ->label('Fecha real del pago')
-                                        ->columnSpan(1),
-                                ]),
-                        ])->columnSpanFull(),
-
                 ])->columnSpanFull()->persistTabInQueryString(),
         ]);
     }
