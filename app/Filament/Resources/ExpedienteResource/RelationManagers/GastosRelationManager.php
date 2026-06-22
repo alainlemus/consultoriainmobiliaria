@@ -131,7 +131,7 @@ class GastosRelationManager extends RelationManager
                     ->color('gray')
                     ->visible(fn ($record) => (bool) $record->comprobante_ruta)
                     ->modalHeading(fn ($record) => 'Comprobante — ' . $record->concepto)
-                    ->modalWidth('3xl')
+                    ->modalWidth('7xl')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Cerrar')
                     ->modalContent(function ($record) {
@@ -140,9 +140,9 @@ class GastosRelationManager extends RelationManager
                         $esPdf  = str_ends_with($nombre, '.pdf');
 
                         if ($esPdf) {
-                            $html = '<iframe src="' . e($url) . '" style="width:100%;height:70vh;border:none;border-radius:6px;" title="Comprobante PDF"></iframe>';
+                            $html = '<iframe src="' . e($url) . '" style="width:100%;height:85vh;border:none;border-radius:6px;" title="Comprobante PDF"></iframe>';
                         } else {
-                            $html = '<img src="' . e($url) . '" alt="Comprobante" style="max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:6px;object-fit:contain;">';
+                            $html = '<img src="' . e($url) . '" alt="Comprobante" style="max-width:100%;max-height:85vh;display:block;margin:0 auto;border-radius:6px;object-fit:contain;">';
                         }
 
                         return new \Illuminate\Support\HtmlString($html);

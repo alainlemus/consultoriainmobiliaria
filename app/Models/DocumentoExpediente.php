@@ -13,6 +13,8 @@ class DocumentoExpediente extends Model
         'expediente_id',
         'tipo',
         'nombre',
+        'seccion',
+        'categoria',
         'estado',
         'notas',
         'ruta_archivo',

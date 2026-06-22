@@ -29,6 +29,12 @@ class WhatsAppService
      */
     public static function sendText(string $phone, string $message): bool
     {
+        // ── Interruptor global: si está desactivado, no envía nada ──────────
+        if (! (bool) setting('whatsapp_habilitado', true)) {
+            Log::info("[WhatsApp] Envío DESACTIVADO — mensaje bloqueado para {$phone}");
+            return false;
+        }
+
         $chatId = static::formatChatId($phone);
 
         if (! $chatId) {

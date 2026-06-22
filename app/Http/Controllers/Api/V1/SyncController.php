@@ -71,14 +71,27 @@ class SyncController extends Controller
     private function crearContacto($user, array $datos): int
     {
         $contacto = Contacto::create([
-            'nombre'           => $datos['nombre']           ?? '',
-            'apellido_paterno' => $datos['apellido_paterno'] ?? '',
-            'apellido_materno' => $datos['apellido_materno'] ?? null,
-            'telefono'         => $datos['telefono']         ?? null,
-            'email'            => $datos['email']            ?? null,
-            'estado_prospecto' => $datos['estado_prospecto'] ?? 'nuevo',
-            'notas'            => $datos['notas']            ?? null,
-            'asesor_id'        => $user->id,
+            // Datos básicos
+            'nombre'                  => $datos['nombre']           ?? '',
+            'telefono'                => $datos['telefono']         ?? null,
+            'email'                   => $datos['email']            ?? null,
+            'curp'                    => isset($datos['curp']) ? strtoupper($datos['curp']) : null,
+            'nss'                     => $datos['nss']              ?? null,
+            'notas'                   => $datos['notas']            ?? null,
+            'estado_prospecto'        => $datos['estado_prospecto'] ?? 'nuevo',
+            'servicio'                => isset($datos['servicio'])  ? strtoupper($datos['servicio']) : null,
+            // Origen — siempre app_movil para operaciones sync
+            'origen'                  => $datos['origen']           ?? 'app_movil',
+            // Asesor asignado
+            'asesor_id'               => $user->id,
+            // Escuela vinculada (maestros FOVISSSTE)
+            'escuela_id'              => $datos['escuela_id']       ?? null,
+            // Precalificación FOVISSSTE / INFONAVIT
+            'estado_uso_credito'      => $datos['estado_uso_credito']      ?? null,
+            'municipio_uso_credito'   => $datos['municipio_uso_credito']   ?? null,
+            'estado_residencia'       => $datos['estado_residencia']       ?? null,
+            'regimen_pensionario'     => $datos['regimen_pensionario']     ?? null,
+            'tiene_discapacidad'      => $datos['tiene_discapacidad']      ?? false,
         ]);
         return $contacto->id;
     }
@@ -119,13 +132,18 @@ class SyncController extends Controller
     private function registrarUbicacion($user, array $datos): int
     {
         $ubicacion = Ubicacion::create([
-            'user_id'     => $user->id,
-            'contacto_id' => $datos['contacto_id'] ?? null,
-            'latitud'     => $datos['latitud'],
-            'longitud'    => $datos['longitud'],
-            'tipo'        => $datos['tipo']        ?? 'visita_cliente',
-            'notas'       => $datos['notas']       ?? null,
-            'visitado_en' => $datos['visitado_en'] ?? now(),
+            'user_id'      => $user->id,
+            'contacto_id'  => $datos['contacto_id']  ?? null,
+            'latitud'      => $datos['latitud']       ?? null,
+            'longitud'     => $datos['longitud']      ?? null,
+            'tipo'         => $datos['tipo']          ?? 'visita_cliente',
+            'semaforo'     => $datos['tipo'] === 'escuela' ? 'amarillo' : 'amarillo',
+            'nombre_lugar' => $datos['nombre_lugar']  ?? null,
+            'direccion'    => $datos['direccion']     ?? null,
+            'municipio'    => $datos['municipio']     ?? null,
+            'estado'       => $datos['estado']        ?? null,
+            'notas'        => $datos['notas']         ?? null,
+            'visitado_en'  => $datos['visitado_en']   ?? now(),
         ]);
         return $ubicacion->id;
     }

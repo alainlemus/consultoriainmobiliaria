@@ -9,6 +9,7 @@ use App\Models\EtapaTramite;
 use App\Models\Expediente;
 use App\Models\TipoTramite;
 use App\Models\User;
+use App\Services\CargaMasivaService;
 use Filament\Forms;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\View as SchemaView;
@@ -21,6 +22,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ExpedienteResource extends Resource
 {
@@ -69,7 +71,7 @@ class ExpedienteResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        // Asesores solo ven sus propios expedientes
+        // Solo el asesor ve únicamente sus propios expedientes
         if (Auth::check() && Auth::user()->hasRole('asesor')) {
             $query->where('asesor_id', Auth::id());
         }
@@ -79,7 +81,11 @@ class ExpedienteResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $query = static::getModel()::whereIn('estado', ['en_proceso', 'aprobado', 'firmado']);
+        $query = static::getModel()::whereIn('estado', [
+            'en_proceso', 'documentacion', 'en_catastro',
+            'pre_avaluo', 'cuv_generada', 'avaluo_cerrado',
+            'en_notaria', 'firmado',
+        ]);
 
         if (Auth::check() && Auth::user()->hasRole('asesor')) {
             $query->where('asesor_id', Auth::id());
@@ -97,12 +103,174 @@ class ExpedienteResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
+            // ── Banner OCR en proceso ─────────────────────────────────────
+            Forms\Components\Placeholder::make('_banner_ocr')
+                ->label('')
+                ->columnSpanFull()
+                ->visible(fn ($record) => (bool) $record?->ocr_procesando)
+                ->content(new \Illuminate\Support\HtmlString(
+                    '<div style="display:flex;align-items:center;gap:12px;background:#fefce8;border:1px solid #fde047;border-radius:10px;padding:14px 18px;">'
+                    . '<svg style="width:22px;height:22px;flex-shrink:0;color:#ca8a04;animation:spin 1.5s linear infinite;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle style="opacity:.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path style="opacity:.75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>'
+                    . '<style>@keyframes spin{to{transform:rotate(360deg)}}</style>'
+                    . '<div>'
+                    . '<p style="font-size:13px;font-weight:700;color:#92400e;margin:0 0 2px 0;">🔍 Analizando documentos con IA...</p>'
+                    . '<p style="font-size:12px;color:#78350f;margin:0;">Los campos del expediente se rellenarán automáticamente en unos minutos. La página se actualiza sola.</p>'
+                    . '</div></div>'
+                )),
+
+            // ── Panel de siguiente paso (contextual por etapa) ────────────
+            Forms\Components\Placeholder::make('_panel_siguiente_paso')
+                ->label('')
+                ->columnSpanFull()
+                ->visible(fn ($record) => $record !== null && ! $record->ocr_procesando)
+                ->content(function ($record) {
+                    if (! $record || ! $record->etapa) return new \Illuminate\Support\HtmlString('');
+                    $etapa  = $record->etapa;
+                    $orden  = $etapa->orden;
+                    $nombre = $etapa->nombre;
+
+                    // Configuración por orden de etapa
+                    $config = match (true) {
+                        $orden === 1 => [
+                            'color'  => '#1d4ed8',
+                            'bg'     => '#eff6ff',
+                            'border' => '#93c5fd',
+                            'titulo' => '📋 Etapa 1 — Expediente iniciado',
+                            'pasos'  => [
+                                'Sube la carpeta con los documentos del acreditado (CURP, INE, SAT, talones)',
+                                'Captura los datos básicos del acreditado en el Tab "Acreditado"',
+                                'Si es compraventa, registra los datos del vendedor',
+                                'Registra la dirección de la vivienda en el Tab "Vivienda"',
+                            ],
+                            'avance' => 'Para avanzar a "Documentos completos": necesitas tener carpetas ACREDITADA + VENDEDOR + VIVIENDA cargadas.',
+                        ],
+                        $orden === 2 => [
+                            'color'  => '#15803d',
+                            'bg'     => '#f0fdf4',
+                            'border' => '#86efac',
+                            'titulo' => '✅ Etapa 2 — Documentos completos',
+                            'pasos'  => [
+                                'Verifica que todos los documentos del acreditado estén recibidos (INE, CURP, SAT, 3 talones, AFORE, SOFOM)',
+                                'Verifica documentos del vendedor (INE, CURP, SAT, CFE, acta nacimiento)',
+                                'Confirma la escritura, predial, agua y luz de la vivienda',
+                                'Envía documentación a SOFOM para validar el monto del crédito',
+                            ],
+                            'avance' => 'Para avanzar a "Trámites previos": inicia el trámite ante catastro del municipio.',
+                        ],
+                        $orden === 3 => [
+                            'color'  => '#b45309',
+                            'bg'     => '#fffbeb',
+                            'border' => '#fcd34d',
+                            'titulo' => '🏛️ Etapa 3 — Trámites previos',
+                            'pasos'  => [
+                                'Tramita avalúo catastral o cédula catastral ante el municipio (15 días hábiles)',
+                                'Si el predio requiere subdivisión: gestiona apeo y deslinde (activa el toggle en el Tab "Vivienda")',
+                                'Solicita el avalúo comercial a la unidad de valuación',
+                                'Al recibir el preavalúo, súbelo en los documentos — el sistema avanzará la etapa automáticamente',
+                            ],
+                            'avance' => 'Para avanzar a "Avalúo realizado": sube la carpeta SOFOM con los documentos del avalúo.',
+                        ],
+                        $orden === 4 => [
+                            'color'  => '#7e22ce',
+                            'bg'     => '#faf5ff',
+                            'border' => '#c4b5fd',
+                            'titulo' => '📊 Etapa 4 — Avalúo realizado',
+                            'pasos'  => [
+                                'Envía a SOFOM: talón actual, documentación de vivienda, documentos del vendedor',
+                                'SOFOM generará la CUV — regístrala abajo en esta misma pantalla',
+                                'Paga la CUV (transferencia) y envía comprobante a SOFOM',
+                                'Cuando SOFOM confirme la CUV activa, activa el toggle "CUV activa" abajo',
+                                'La unidad de valuación cierra el avalúo con vigencia de 6 meses',
+                            ],
+                            'avance' => 'Para avanzar a "En notaría": registra la CUV activa y envía el expediente completo a notaría.',
+                        ],
+                        $orden === 5 => [
+                            'color'  => '#0e7490',
+                            'bg'     => '#ecfeff',
+                            'border' => '#67e8f9',
+                            'titulo' => '⚖️ Etapa 5 — En notaría',
+                            'pasos'  => [
+                                'Envía a notaría: avalúo cerrado, carta de instrucción notarial, expediente completo (acreditado + vendedor + vivienda)',
+                                'Notaría tramita el CLG (Certificado de Libertad de Gravamen) — 30 días hábiles',
+                                'Registra abajo la fecha de solicitud del CLG',
+                                'Al recibir el CLG, activa el toggle "CLG recibido" y registra la fecha límite de firma',
+                            ],
+                            'avance' => 'Para avanzar a "Firma ante notario": CLG recibido y fecha de firma coordinada.',
+                        ],
+                        $orden === 6 => [
+                            'color'  => '#166534',
+                            'bg'     => '#f0fdf4',
+                            'border' => '#86efac',
+                            'titulo' => '✍️ Etapa 6 — Firma ante notario',
+                            'pasos'  => [
+                                'Notaría tiene el proyecto y el CLG — se formaliza la firma',
+                                'Registra abajo la fecha real de firma',
+                                'Envía el proyecto firmado a SOFOM y a Guarda Valores FOVISSSTE',
+                                'Registra abajo la fecha de envío a Guarda Valores',
+                            ],
+                            'avance' => 'Para avanzar a "Dispersión y cobro": confirma envío a Guarda Valores FOVISSSTE.',
+                        ],
+                        $orden >= 7 => [
+                            'color'  => '#374151',
+                            'bg'     => '#f9fafb',
+                            'border' => '#d1d5db',
+                            'titulo' => '💰 Etapa 7 — Dispersión y cobro',
+                            'pasos'  => [
+                                'FOVISSSTE realiza el pago en 20 días hábiles desde Guarda Valores',
+                                'Al recibir el pago, activa "Pago recibido" y registra la fecha',
+                                'El sistema generará la comisión automáticamente al cerrar el expediente',
+                                'Solicita el testimonio al cliente para completar el trámite',
+                            ],
+                            'avance' => 'Cambia el estado a "Cerrado" para generar la comisión del asesor.',
+                        ],
+                        default => null,
+                    };
+
+                    if (! $config) return new \Illuminate\Support\HtmlString('');
+
+                    $pasosList = implode('', array_map(
+                        fn ($p) => '<li style="margin-bottom:4px;">' . e($p) . '</li>',
+                        $config['pasos']
+                    ));
+
+                    return new \Illuminate\Support\HtmlString(
+                        '<div style="background:' . $config['bg'] . ';border:1px solid ' . $config['border'] . ';border-radius:10px;padding:14px 18px;margin-bottom:4px;">'
+                        . '<p style="font-size:14px;font-weight:700;color:' . $config['color'] . ';margin:0 0 8px 0;">' . $config['titulo'] . '</p>'
+                        . '<ul style="margin:0 0 8px 0;padding-left:20px;font-size:12px;color:#374151;line-height:1.7;">' . $pasosList . '</ul>'
+                        . '<p style="font-size:11px;font-weight:600;color:' . $config['color'] . ';margin:0;padding-top:6px;border-top:1px solid ' . $config['border'] . ';">→ ' . e($config['avance']) . '</p>'
+                        . '</div>'
+                    );
+                }),
+
+            // ── Aviso de campos obligatorios (solo al crear) ──────────────
+            Forms\Components\Placeholder::make('_aviso_campos_requeridos')
+                ->label('')
+                ->columnSpanFull()
+                ->visible(fn ($livewire) => $livewire instanceof \App\Filament\Resources\ExpedienteResource\Pages\CreateExpediente)
+                ->content(new \Illuminate\Support\HtmlString(
+                    '<div style="display:flex;align-items:flex-start;gap:10px;background:#fefce8;border:1px solid #fde047;border-radius:8px;padding:12px 16px;">'
+                    . '<svg xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;flex-shrink:0;color:#ca8a04;margin-top:1px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>'
+                    . '<div>'
+                    . '<p style="font-size:13px;font-weight:600;color:#92400e;margin:0 0 4px 0;">Campos obligatorios <span style="color:#dc2626;">*</span></p>'
+                    . '<p style="font-size:12px;color:#78350f;margin:0;">Los campos marcados con <strong style="color:#dc2626;">*</strong> son obligatorios para guardar el expediente:</p>'
+                    . '<ul style="margin:6px 0 0 0;padding-left:16px;font-size:12px;color:#78350f;">'
+                    . '<li><strong>Tab Trámite:</strong> Tipo de Trámite, Asesor asignado, Uso del crédito</li>'
+                    . '<li><strong>Tab Acreditado:</strong> Nombre completo, Estado civil</li>'
+                    . '</ul>'
+                    . '</div>'
+                    . '</div>'
+                )),
+
             Tabs::make('Expediente')
                 ->tabs([
 
                     // ── TAB 1: TRÁMITE ────────────────────────────────────
                     Tabs\Tab::make('Trámite')
                         ->icon('heroicon-o-document-text')
+                        ->badge(fn ($livewire) => collect($livewire->getErrorBag()->keys())
+                            ->filter(fn ($k) => in_array($k, ['tipo_tramite_id', 'asesor_id', 'uso_credito']))
+                            ->count() ?: null)
+                        ->badgeColor('danger')
                         ->schema([
                             // ── Stepper de progreso ───────────────────────
                             SchemaView::make('filament.components.expediente-stepper')
@@ -123,7 +291,13 @@ class ExpedienteResource extends Resource
                                 ->options(TipoTramite::where('activo', true)->orderBy('orden')->pluck('nombre', 'id'))
                                 ->required()
                                 ->live()
-                                ->afterStateUpdated(fn (\Filament\Schemas\Components\Utilities\Set $set) => $set('etapa_tramite_id', null))
+                                ->afterStateUpdated(function (\Filament\Schemas\Components\Utilities\Set $set, $state) {
+                                    // Auto-seleccionar la primera etapa al cambiar el tipo de trámite
+                                    $primera = $state
+                                        ? \App\Models\EtapaTramite::where('tipo_tramite_id', $state)->orderBy('orden')->first()
+                                        : null;
+                                    $set('etapa_tramite_id', $primera?->id);
+                                })
                                 ->validationMessages([
                                     'required' => 'Debes seleccionar el tipo de trámite.',
                                 ]),
@@ -195,6 +369,7 @@ class ExpedienteResource extends Resource
                                 ->options(User::where('activo', true)->pluck('name', 'id'))
                                 ->searchable()
                                 ->required()
+                                ->live(onBlur: true)
                                 ->hint('Asesor responsable del seguimiento')
                                 ->validationMessages([
                                     'required' => 'Debes asignar un asesor al expediente.',
@@ -204,6 +379,7 @@ class ExpedienteResource extends Resource
                                 ->options(Contacto::pluck('nombre', 'id'))
                                 ->searchable()
                                 ->nullable()
+                                ->live()
                                 ->hint('Opcional — vincula con el prospecto del sitio web'),
                             Forms\Components\Select::make('uso_credito')
                                 ->label('Uso del crédito')
@@ -246,6 +422,95 @@ class ExpedienteResource extends Resource
                                 ->placeholder('Ej: Cliente confirmó que entregará el acta la próxima semana...')
                                 ->rows(3)
                                 ->columnSpanFull(),
+
+                            // ── Sección inline: CUV (visible desde etapa 4 en adelante) ──
+                            \Filament\Schemas\Components\Section::make('CUV — Clave Única de Vivienda')
+                                ->description('Generada por SOFOM una vez enviada la documentación completa (Pasos 14-15)')
+                                ->columnSpanFull()
+                                ->columns(3)
+                                ->collapsible()
+                                ->collapsed(fn ($record) => ! $record?->cuv && ! $record?->cuv_activa)
+                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 4)
+                                ->schema([
+                                    Forms\Components\TextInput::make('cuv')
+                                        ->label('CUV')
+                                        ->placeholder('Clave Única de Vivienda asignada por RUV')
+                                        ->columnSpan(2),
+                                    Forms\Components\DatePicker::make('cuv_fecha_pago')
+                                        ->label('Fecha de pago CUV')
+                                        ->columnSpan(1),
+                                    Forms\Components\Toggle::make('cuv_activa')
+                                        ->label('CUV activa (confirmada por SOFOM)')
+                                        ->columnSpanFull(),
+                                ]),
+
+                            // ── Sección inline: Instrucción notarial (visible desde etapa 4) ──
+                            \Filament\Schemas\Components\Section::make('Instrucción notarial — SOFOM (Paso 18)')
+                                ->description('Instrucción con condiciones crediticias y datos de pago al vendedor')
+                                ->columnSpanFull()
+                                ->columns(2)
+                                ->collapsible()
+                                ->collapsed(fn ($record) => ! $record?->instruccion_notarial_recibida)
+                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 4)
+                                ->schema([
+                                    Forms\Components\Toggle::make('instruccion_notarial_recibida')
+                                        ->label('Instrucción notarial recibida de SOFOM')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('instruccion_notarial_fecha')
+                                        ->label('Fecha de recepción')
+                                        ->columnSpan(1),
+                                ]),
+
+                            // ── Sección inline: CLG y firma (visible desde etapa 5) ──
+                            \Filament\Schemas\Components\Section::make('Notaría — CLG y firma (Paso 19)')
+                                ->description('Certificado de Libertad de Gravamen — 30 días hábiles para firma')
+                                ->columnSpanFull()
+                                ->columns(2)
+                                ->collapsible()
+                                ->collapsed(fn ($record) => ! $record?->clg_solicitado)
+                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 5)
+                                ->schema([
+                                    Forms\Components\Toggle::make('clg_solicitado')
+                                        ->label('CLG solicitado a notaría')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('clg_fecha_solicitud')
+                                        ->label('Fecha solicitud CLG')
+                                        ->columnSpan(1),
+                                    Forms\Components\Toggle::make('clg_recibido')
+                                        ->label('CLG recibido')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('fecha_limite_firma')
+                                        ->label('Fecha límite para firma')
+                                        ->helperText('30 días hábiles desde solicitud del CLG')
+                                        ->columnSpan(1),
+                                    Forms\Components\DatePicker::make('fecha_firma')
+                                        ->label('Fecha real de firma')
+                                        ->columnSpan(1),
+                                ]),
+
+                            // ── Sección inline: Guarda Valores y pago (visible desde etapa 6) ──
+                            \Filament\Schemas\Components\Section::make('Guarda Valores y pago (Paso 20)')
+                                ->description('Envío a FOVISSSTE — el pago llega en 20 días hábiles')
+                                ->columnSpanFull()
+                                ->columns(2)
+                                ->collapsible()
+                                ->collapsed(fn ($record) => ! $record?->fecha_envio_guarda_valores && ! $record?->pago_recibido)
+                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 6)
+                                ->schema([
+                                    Forms\Components\DatePicker::make('fecha_envio_guarda_valores')
+                                        ->label('Envío a Guarda Valores FOVISSSTE')
+                                        ->columnSpan(1),
+                                    Forms\Components\DatePicker::make('fecha_esperada_pago')
+                                        ->label('Fecha esperada de pago')
+                                        ->helperText('20 días hábiles desde envío a Guarda Valores')
+                                        ->columnSpan(1),
+                                    Forms\Components\Toggle::make('pago_recibido')
+                                        ->label('Pago recibido')
+                                        ->columnSpanFull(),
+                                    Forms\Components\DatePicker::make('fecha_pago_recibido')
+                                        ->label('Fecha real del pago')
+                                        ->columnSpan(1),
+                                ]),
 
                             // ── Montos del crédito ────────────────────────────
                             \Filament\Schemas\Components\Section::make('Montos del crédito')
@@ -342,12 +607,84 @@ class ExpedienteResource extends Resource
                         ])->columns(2),
 
                     // ── TAB 2: ACREDITADO ─────────────────────────────────
-                    Tabs\Tab::make('Acreditado')
-                        ->icon('heroicon-o-user')
-                        ->schema([
-                            Forms\Components\TextInput::make('acreditado_nombre')
+                     Tabs\Tab::make('Acreditado')
+                         ->icon('heroicon-o-user')
+                         ->badge(fn ($livewire) => collect($livewire->getErrorBag()->keys())
+                             ->filter(fn ($k) => in_array($k, ['acreditado_nombre', 'acreditado_estado_civil']))
+                             ->count() ?: null)
+                         ->badgeColor('danger')
+                         ->schema([
+                            // ── Datos del prospecto (readonly) ────────────────
+                            \Filament\Schemas\Components\Section::make('Datos del prospecto')
+                                ->description('Información registrada durante la etapa de prospección. Solo lectura.')
+                                ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => (bool) $get('contacto_id'))
+                                ->columnSpanFull()
+                                ->collapsible()
+                                ->schema([
+                                    Forms\Components\Placeholder::make('_prospecto_info')
+                                        ->label('')
+                                        ->columnSpanFull()
+                                        ->content(function ($record): \Illuminate\Support\HtmlString {
+                                            $c = $record?->contacto;
+                                            if (! $c) return new \Illuminate\Support\HtmlString('');
+
+                                            $fotoHtml = $c->foto_url
+                                                ? "<img src='{$c->foto_url}' style='width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;' />"
+                                                : "<div style='width:72px;height:72px;border-radius:50%;background:#1c1917;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#d97706;'>" . strtoupper(substr($c->nombre ?? '?', 0, 1)) . "</div>";
+
+                                            $servicio = strtoupper($c->servicio ?? '');
+                                            $row = fn(string $lbl, ?string $val) => $val
+                                                ? "<tr><td style='padding:4px 12px 4px 0;font-size:13px;color:#6b7280;white-space:nowrap;font-weight:600;'>{$lbl}</td><td style='padding:4px 0;font-size:13px;color:#111827;'>" . e($val) . "</td></tr>"
+                                                : '';
+
+                                            $tabla  = '<table style="border-collapse:collapse;width:100%;">';
+                                            $tabla .= $row('Teléfono', $c->telefono);
+                                            $tabla .= $row('Correo',   $c->email);
+                                            $tabla .= $row('CURP',     $c->curp);
+                                            $tabla .= $row('NSS',      $c->nss);
+                                            $tabla .= $row('Servicio', $servicio ?: null);
+
+                                            if ($servicio === 'FOVISSSTE') {
+                                                $tabla .= $row('Estado (crédito)',    $c->estado_uso_credito);
+                                                $tabla .= $row('Municipio (crédito)', $c->municipio_uso_credito);
+                                                $tabla .= $row('Estado (residencia)', $c->estado_residencia);
+                                                if ($c->regimen_pensionario) {
+                                                    $label = $c->regimen_pensionario === 'decimo_transitorio' ? 'Décimo Transitorio' : 'Cuenta Individual';
+                                                    $tabla .= $row('Régimen', $label);
+                                                }
+                                                $tabla .= $row('Discapacidad', $c->tiene_discapacidad ? 'Sí' : 'No');
+                                            }
+
+                                            if ($servicio === 'INFONAVIT') {
+                                                $tabla .= $row('Estado (crédito)',    $c->estado_uso_credito);
+                                                $tabla .= $row('Municipio (crédito)', $c->municipio_uso_credito);
+                                            }
+
+                                            $tabla .= '</table>';
+
+                                            $screenshotHtml = '';
+                                            if ($c->simulador_screenshot_url) {
+                                                $lbl = $servicio === 'INFONAVIT' ? 'Mi Cuenta INFONAVIT' : 'Simulador FOVISSSTE';
+                                                $screenshotHtml = "<div style='margin-top:16px;'>"
+                                                    . "<p style='font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;'>Captura {$lbl}</p>"
+                                                    . "<a href='{$c->simulador_screenshot_url}' target='_blank' rel='noopener'>"
+                                                    . "<img src='{$c->simulador_screenshot_url}' style='max-width:100%;max-height:300px;border-radius:8px;border:1px solid #e5e7eb;object-fit:contain;' /></a>"
+                                                    . "</div>";
+                                            }
+
+                                            return new \Illuminate\Support\HtmlString(
+                                                "<div style='display:flex;gap:20px;align-items:flex-start;'>"
+                                                . "<div style='flex-shrink:0;'>{$fotoHtml}</div>"
+                                                . "<div style='flex:1;'>{$tabla}{$screenshotHtml}</div>"
+                                                . "</div>"
+                                            );
+                                        }),
+                                ]),
+
+                             Forms\Components\TextInput::make('acreditado_nombre')
                                 ->label('Nombre completo')
                                 ->required()
+                                ->live(onBlur: true)
                                 ->maxLength(255)
                                 ->hint('Nombre como aparece en identificación oficial')
                                 ->validationMessages([
@@ -389,6 +726,7 @@ class ExpedienteResource extends Resource
                             Forms\Components\Select::make('acreditado_estado_civil')
                                 ->label('Estado civil')
                                 ->required()
+                                ->live(onBlur: true)
                                 ->options([
                                     'soltero'     => 'Soltero(a)',
                                     'casado'      => 'Casado(a)',
@@ -437,7 +775,7 @@ class ExpedienteResource extends Resource
                                 ->maxLength(5)
                                 ->validationMessages(['regex' => 'El código postal debe tener exactamente 5 dígitos.'])
                                 ->hint('5 dígitos numéricos'),
-                            Forms\Components\Placeholder::make('acceso_simulador_exp')
+                             Forms\Components\Placeholder::make('acceso_simulador_exp')
                                 ->label('Consultar crédito disponible')
                                 ->columnSpanFull()
                                 ->content(function (\Filament\Schemas\Components\Utilities\Get $get): \Illuminate\Support\HtmlString {
@@ -463,7 +801,9 @@ class ExpedienteResource extends Resource
                                         . '</div>'
                                     );
                                 }),
+
                         ])->columns(2),
+
 
                     // ── TAB 3: VENDEDOR ───────────────────────────────────
                     Tabs\Tab::make('Vendedor')
@@ -523,6 +863,24 @@ class ExpedienteResource extends Resource
                                 ->label('Requiere acta de matrimonio')
                                 ->hint('Activar si el vendedor está casado bajo sociedad conyugal')
                                 ->columnSpanFull(),
+
+                            // ── Situación fiscal del vendedor (Paso 16) ───────
+                            \Filament\Schemas\Components\Section::make('Situación fiscal del vendedor')
+                                ->description('Exención de ISR en la venta de vivienda')
+                                ->columnSpanFull()
+                                ->collapsible()
+                                ->schema([
+                                    Forms\Components\Toggle::make('vendedor_exencion_isr')
+                                        ->label('¿Aplica exención de ISR?')
+                                        ->helperText('El vendedor NO ha vendido otra propiedad en los últimos 3 años')
+                                        ->reactive()
+                                        ->columnSpanFull(),
+                                    Forms\Components\Toggle::make('vendedor_requiere_avaluo_referido')
+                                        ->label('¿Requiere avalúo referido?')
+                                        ->helperText('Si el vendedor sí vendió antes de 3 años, requiere avalúo referido (tiene costo adicional)')
+                                        ->visible(fn ($get) => !$get('vendedor_exencion_isr'))
+                                        ->columnSpanFull(),
+                                ]),
                         ])->columns(2),
 
                     // ── TAB 4: VIVIENDA ───────────────────────────────────
@@ -539,8 +897,20 @@ class ExpedienteResource extends Resource
                             Forms\Components\TextInput::make('vivienda_superficie')
                                 ->label('Superficie (m²)')
                                 ->numeric()
+                                ->suffix('m²')
                                 ->minValue(0)
-                                ->validationMessages(['min' => 'La superficie no puede ser negativa.']),
+                                ->validationMessages(['min' => 'La superficie no puede ser negativa.'])
+                                ->columnSpan(1),
+                            Forms\Components\TextInput::make('superficie_total_predio')
+                                ->label('Superficie total del predio (m²)')
+                                ->numeric()
+                                ->suffix('m²')
+                                ->helperText('Solo si se vende una fracción del predio')
+                                ->columnSpan(1),
+                            Forms\Components\Toggle::make('requiere_subdivision')
+                                ->label('¿Requiere subdivisión/apeo y deslinde?')
+                                ->helperText('Cuando la superficie del predio supera la regla 3:1 de FOVISSSTE')
+                                ->columnSpanFull(),
                             Forms\Components\TextInput::make('vivienda_calle')
                                 ->label('Calle')
                                 ->maxLength(255),
@@ -646,6 +1016,7 @@ class ExpedienteResource extends Resource
                                 ->hint('Concepto 001 del talón (pensión base, sin bonos). Mín. $32,200.60 para crédito máximo.'),
                         ])->columns(2),
 
+                    // ── TAB 7: SEGUIMIENTO DEL PROCESO ────────────────────
                 ])->columnSpanFull()->persistTabInQueryString(),
         ]);
     }
@@ -659,15 +1030,27 @@ public static function canDelete(Model $record): bool
     {
         $user = Auth::user();
         if (! $user) return false;
+        if (! $user->can('Update:Expediente')) return false;
         if ($user->hasRole('super_admin')) return true;
-        // Asesor solo puede editar sus propios expedientes
-        return $user->hasRole('asesor') && $record->asesor_id === $user->id;
+        // El asesor solo puede editar expedientes asignados a él
+        if ($user->hasRole('asesor')) return $record->asesor_id === $user->id;
+        // Cualquier otro rol con permiso (capturista, etc.) puede editar todos
+        return true;
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
+                Tables\Columns\IconColumn::make('ocr_procesando')
+                    ->label('')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-sparkles')
+                    ->falseIcon('')
+                    ->trueColor('warning')
+                    ->tooltip(fn ($record) => $record->ocr_procesando ? '🔍 Analizando documentos con IA...' : null)
+                    ->alignCenter()
+                    ->width('40px'),
                 Tables\Columns\TextColumn::make('folio')
                     ->label('Folio')
                     ->searchable()
@@ -781,6 +1164,129 @@ public static function canDelete(Model $record): bool
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->actions([
+                // ── Subir documentos directo desde la lista ───────────────
+                \Filament\Actions\Action::make('subir_docs')
+                    ->label('Subir docs')
+                    ->icon('heroicon-o-folder-arrow-down')
+                    ->color('primary')
+                    ->modalHeading(fn ($record) => 'Subir documentos — ' . ($record->acreditado_nombre ?: $record->folio))
+                    ->modalWidth('2xl')
+                    ->modalSubmitActionLabel('Subir y procesar')
+                    ->visible(fn () => auth()->user()?->can('Create:DocumentoRequerido') || auth()->user()?->hasRole('super_admin'))
+                    ->form([
+                        Forms\Components\Placeholder::make('_info')
+                            ->label('')
+                            ->columnSpanFull()
+                            ->content(new \Illuminate\Support\HtmlString(
+                                '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;font-size:13px;color:#1e40af;">'
+                                . '<strong>Instrucciones</strong><br>'
+                                . '1. Selecciona todos los archivos de la carpeta del acreditado.<br>'
+                                . '2. En el campo de rutas, escribe la carpeta de cada archivo (una por línea):<br>'
+                                . '<code style="background:#dbeafe;padding:2px 6px;border-radius:4px;">ACREDITADA/CURP.pdf</code><br>'
+                                . '<code style="background:#dbeafe;padding:2px 6px;border-radius:4px;">VENDEDOR/INE.pdf</code><br>'
+                                . '<code style="background:#dbeafe;padding:2px 6px;border-radius:4px;">VIVIENDA/ESCRITURA.pdf</code><br><br>'
+                                . 'Carpetas válidas: <strong>ACREDITADA, VENDEDOR, VIVIENDA, SOFOM, NOTARIA, AVALUO, CATASTRO</strong><br>'
+                                . '<em>PDFs con texto: el sistema extrae datos automáticamente (CURP, SAT, Avalúo).</em>'
+                                . '</div>'
+                            )),
+
+                        Forms\Components\FileUpload::make('archivos')
+                            ->label('Archivos')
+                            ->multiple()
+                            ->disk('local')
+                            ->directory('tmp/carga_masiva')
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+                            ->maxSize(20480)
+                            ->maxFiles(200)
+                            ->columnSpanFull()
+                            ->required(),
+
+                        Forms\Components\Textarea::make('rutas_relativas')
+                            ->label('Rutas relativas (una por línea, mismo orden que los archivos)')
+                            ->columnSpanFull()
+                            ->rows(6)
+                            ->placeholder("ACREDITADA/CURP.pdf\nACREDITADA/INE.pdf\nACREDITADA/SAT 2026.pdf\nVENDEDOR/CURP.pdf\nVIVIENDA/ESCRITURA.pdf")
+                            ->required(),
+                    ])
+                    ->action(function (array $data, $record) {
+                        $expediente      = $record;
+                        $archivosSubidos = $data['archivos'] ?? [];
+                        $rutas           = array_values(array_filter(
+                            array_map('trim', explode("\n", $data['rutas_relativas'] ?? ''))
+                        ));
+
+                        if (empty($archivosSubidos)) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('No se seleccionaron archivos')->warning()->send();
+                            return;
+                        }
+
+                        $items = [];
+                        foreach ($archivosSubidos as $idx => $rutaTmp) {
+                            $rutaAbsoluta = Storage::disk('local')->path($rutaTmp);
+                            if (! file_exists($rutaAbsoluta)) continue;
+
+                            $items[] = [
+                                'file' => new \Illuminate\Http\UploadedFile(
+                                    $rutaAbsoluta, basename($rutaTmp), null, null, true
+                                ),
+                                'ruta_relativa' => $rutas[$idx] ?? basename($rutaTmp),
+                            ];
+                        }
+
+                        /** @var CargaMasivaService $servicio */
+                        $servicio  = app(CargaMasivaService::class);
+                        $resultado = $servicio->procesar($expediente, $items);
+
+                        // Pre-rellenar campos vacíos del expediente
+                        $extraidos = $resultado['datos_extraidos'];
+                        unset($extraidos['_fuentes']);
+
+                        $mapa = [
+                            'acreditado_nombre'           => $extraidos['acreditado_nombre'] ?? $extraidos['nombre'] ?? null,
+                            'acreditado_curp'             => $extraidos['curp'] ?? null,
+                            'acreditado_rfc'              => $extraidos['rfc'] ?? null,
+                            'acreditado_fecha_nacimiento' => $extraidos['fecha_nacimiento'] ?? null,
+                            'vivienda_calle'              => $extraidos['vivienda_calle'] ?? null,
+                            'vivienda_numero'             => $extraidos['vivienda_numero'] ?? null,
+                            'vivienda_colonia'            => $extraidos['vivienda_colonia'] ?? null,
+                            'vivienda_cp'                 => $extraidos['vivienda_cp'] ?? null,
+                            'vivienda_municipio'          => $extraidos['vivienda_municipio'] ?? null,
+                            'vivienda_estado'             => $extraidos['vivienda_estado'] ?? null,
+                            'vendedor_nombre'             => $extraidos['vendedor_nombre'] ?? null,
+                            'cuv'                         => $extraidos['cuv'] ?? null,
+                        ];
+
+                        $actualizacion = [];
+                        foreach (array_filter($mapa) as $campo => $valor) {
+                            if (empty($expediente->$campo)) {
+                                $actualizacion[$campo] = $valor;
+                            }
+                        }
+                        if (! empty($actualizacion)) {
+                            $expediente->update($actualizacion);
+                        }
+
+                        // Limpiar temporales
+                        foreach ($archivosSubidos as $rutaTmp) {
+                            Storage::disk('local')->delete($rutaTmp);
+                        }
+
+                        $camposRellenos = count($actualizacion);
+                        $msg = "{$resultado['documentos_creados']} documentos subidos";
+                        if ($resultado['documentos_actualizados'] > 0) {
+                            $msg .= ", {$resultado['documentos_actualizados']} actualizados";
+                        }
+                        if ($camposRellenos > 0) {
+                            $msg .= ". {$camposRellenos} campos del expediente pre-rellenados automáticamente.";
+                        }
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Documentos cargados')
+                            ->body($msg)
+                            ->success()->send();
+                    }),
+
                 \Filament\Actions\EditAction::make()
                     ->hidden(fn ($record) => Auth::user()?->hasRole('asesor')
                         && $record->etapa && $record->etapa->orden >= 5),
@@ -809,9 +1315,10 @@ public static function canDelete(Model $record): bool
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListExpedientes::route('/'),
-            'create' => Pages\CreateExpediente::route('/create'),
-            'edit'   => Pages\EditExpediente::route('/{record}/edit'),
+            'index'               => Pages\ListExpedientes::route('/'),
+            'create'              => Pages\CreateExpediente::route('/create'),
+            'crear-desde-carpeta' => Pages\CrearDesdeCarptea::route('/crear-desde-carpeta'),
+            'edit'                => Pages\EditExpediente::route('/{record}/edit'),
         ];
     }
 }

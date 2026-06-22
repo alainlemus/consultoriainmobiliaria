@@ -3,6 +3,7 @@
 .env
 .env.backup
 .env.production
+/storage/app/google-vision-credentials.json
 .phpactor.json
 .phpunit.result.cache
 /.fleet

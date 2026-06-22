@@ -19,6 +19,22 @@ class EditExpediente extends EditRecord
 {
     protected static string $resource = ExpedienteResource::class;
 
+    // Polling cada 8 segundos cuando el OCR está procesando para refrescar el banner
+    protected function getHeaderWidgets(): array { return []; }
+
+    public function getListeners(): array
+    {
+        return array_merge(parent::getListeners(), [
+            'refreshOcrStatus' => '$refresh',
+        ]);
+    }
+
+    protected function getPollingInterval(): ?string
+    {
+        // Solo hacer polling si el expediente tiene OCR activo
+        return $this->record?->ocr_procesando ? '8s' : null;
+    }
+
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $pct   = floatval($data['honorarios_porcentaje'] ?? 0);
@@ -74,7 +90,14 @@ class EditExpediente extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            // ── Avanzar etapa (solo super_admin, oculto en última etapa) ─────
+            // ── Descargar carpeta completa como ZIP ───────────────────────
+            Action::make('descargar_zip')
+                ->label('Descargar carpeta')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->url(fn () => route('expediente.descargar.zip', $this->record))
+                ->openUrlInNewTab()
+                ->visible(fn () => $this->record->documentos()->whereNotNull('ruta_archivo')->exists()),
             Action::make('avanzar_etapa')
                 ->label(function () {
                     $siguiente = $this->siguienteEtapa();
@@ -183,11 +206,11 @@ class EditExpediente extends EditRecord
                 ->color('gray')
                 ->visible(fn () => auth()->user()?->hasRole('super_admin'))
                 ->modalHeading('Vista previa — Contrato de Servicios')
-                ->modalWidth('5xl')
+                ->modalWidth('7xl')
                 ->modalSubmitActionLabel('Descargar PDF')
                 ->modalContent(fn () => new HtmlString(
                     '<iframe src="' . route('contratos.prestacion_servicios', $this->record->id) . '?preview=1"
-                        style="width:100%;height:75vh;border:none;border-radius:4px;"
+                        style="width:100%;height:88vh;border:none;border-radius:4px;"
                         title="Contrato de Servicios">
                     </iframe>'
                 ))
@@ -201,11 +224,11 @@ class EditExpediente extends EditRecord
                 ->color('warning')
                 ->visible(fn () => auth()->user()?->hasRole('super_admin'))
                 ->modalHeading('Vista previa — Convenio de Honorarios')
-                ->modalWidth('5xl')
+                ->modalWidth('7xl')
                 ->modalSubmitActionLabel('Descargar PDF')
                 ->modalContent(fn () => new HtmlString(
                     '<iframe src="' . route('contratos.convenio_honorarios', $this->record->id) . '?preview=1"
-                        style="width:100%;height:75vh;border:none;border-radius:4px;"
+                        style="width:100%;height:88vh;border:none;border-radius:4px;"
                         title="Convenio de Honorarios">
                     </iframe>'
                 ))
@@ -218,11 +241,11 @@ class EditExpediente extends EditRecord
                 ->icon('heroicon-o-identification')
                 ->color('info')
                 ->modalHeading('Vista previa — Carta Mandato')
-                ->modalWidth('5xl')
+                ->modalWidth('7xl')
                 ->modalSubmitActionLabel('Descargar PDF')
                 ->modalContent(fn () => new HtmlString(
                     '<iframe src="' . route('contratos.carta_mandato', $this->record->id) . '?preview=1"
-                        style="width:100%;height:75vh;border:none;border-radius:4px;"
+                        style="width:100%;height:88vh;border:none;border-radius:4px;"
                         title="Carta Mandato">
                     </iframe>'
                 ))

@@ -140,4 +140,52 @@ class AuthController extends Controller
         // No revelar si el correo existe o no (seguridad)
         return response()->json(['message' => 'Si ese correo está registrado, recibirás un enlace en breve.']);
     }
+
+    /**
+     * POST /api/v1/auth/solicitar-cancelacion
+     *
+     * Apple App Store requiere que toda app con cuentas permita eliminarla.
+     * En lugar de borrar datos (que afectaría expedientes activos), desactivamos
+     * la cuenta y notificamos al super_admin para que la gestione.
+     *
+     * Lo que hace:
+     * - Marca al usuario como activo = false
+     * - Revoca todos sus tokens de Sanctum (cierra sesión en todos los dispositivos)
+     * - Notifica a los super_admin
+     *
+     * El super_admin puede reactivar la cuenta desde el CRM si fue un error.
+     */
+    public function solicitarCancelacion(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Desactivar cuenta
+        $user->update(['activo' => false]);
+
+        // Revocar todos los tokens — cierra sesión en todos los dispositivos
+        $user->tokens()->delete();
+
+        // Notificar a super_admins
+        User::role('super_admin')->get()->each(function ($admin) use ($user) {
+            $admin->notify(new \App\Notifications\CuentaCancelada($user));
+        });
+
+        return response()->json([
+            'message' => 'Tu cuenta ha sido desactivada. Todos tus datos se conservan y un administrador procesará tu solicitud en los próximos días hábiles.',
+        ]);
+    }
+    public function asesores(Request $request): JsonResponse
+    {
+        if (! $request->user()?->hasRole('super_admin')) {
+            return response()->json(['data' => []]);
+        }
+
+        $asesores = User::role('asesor')
+            ->where('activo', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email'])
+            ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email]);
+
+        return response()->json(['data' => $asesores]);
+    }
 }

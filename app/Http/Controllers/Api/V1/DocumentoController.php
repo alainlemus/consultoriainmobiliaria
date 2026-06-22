@@ -67,33 +67,66 @@ class DocumentoController extends Controller
 
         $request->validate([
             'archivo'        => ['required', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,heic,webp'],
-            'tipo_documento' => ['required', 'string', 'max:100'],
+            'tipo_documento' => ['required', 'string', 'max:150'],
+            'seccion'        => ['nullable', 'string', 'in:acreditado,vendedor,vivienda,otros'],
             'notas'          => ['nullable', 'string'],
         ]);
 
         $archivo = $request->file('archivo');
-        $ext     = $archivo->getClientOriginalExtension();
-        $nombre  = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
-        $ruta    = "expedientes/{$expedienteId}/docs/{$nombre}";
 
-        // Si ya existe un doc de este tipo, borrar el archivo anterior
+        // Detectar si el archivo es HEIC aunque venga con extensión .jpeg (iPhone)
+        $mimeReal = mime_content_type($archivo->getRealPath()) ?: '';
+        $heicMimes = ['image/heic', 'image/heif', 'image/x-heic', 'image/x-heif'];
+        $esHeic    = in_array(strtolower($mimeReal), $heicMimes);
+
+        if ($esHeic && class_exists(\Imagick::class)) {
+            // Convertir HEIC → JPEG con Imagick
+            try {
+                $im = new \Imagick($archivo->getRealPath());
+                $im->setImageFormat('jpeg');
+                $im->setImageCompressionQuality(90);
+                $jpegContent = $im->getImageBlob();
+                $im->clear();
+
+                $ext    = 'jpg';
+                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
+                $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
+
+                Storage::disk(self::DISK)->put($ruta, $jpegContent);
+            } catch (\Throwable) {
+                // Si falla la conversión, guardar el original
+                $ext    = $archivo->getClientOriginalExtension() ?: 'heic';
+                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
+                $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
+                Storage::disk(self::DISK)->putFileAs("expedientes/{$expedienteId}/docs", $archivo, $nombre);
+            }
+        } else {
+            $ext    = $archivo->getClientOriginalExtension();
+            $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
+            $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
+            Storage::disk(self::DISK)->putFileAs("expedientes/{$expedienteId}/docs", $archivo, $nombre);
+        }
+
+        $seccion = $request->input('seccion');
+
+        // Si ya existe un doc de este tipo+sección, borrar el archivo anterior
         $existente = DocumentoExpediente::where('expediente_id', $expedienteId)
             ->where('tipo', $request->tipo_documento)
+            ->where('seccion', $seccion)
             ->first();
         if ($existente?->ruta_archivo) {
             Storage::disk(self::DISK)->delete($existente->ruta_archivo);
         }
 
-        Storage::disk(self::DISK)->putFileAs(
-            "expedientes/{$expedienteId}/docs",
-            $archivo,
-            $nombre
-        );
-
         $doc = DocumentoExpediente::updateOrCreate(
-            ['expediente_id' => $expedienteId, 'tipo' => $request->tipo_documento],
             [
-                'nombre'       => $archivo->getClientOriginalName(),
+                'expediente_id' => $expedienteId,
+                'tipo'          => $request->tipo_documento,
+                'seccion'       => $seccion,
+            ],
+            [
+                // Usamos el nombre descriptivo del documento, no el nombre técnico del archivo
+                'nombre'       => $request->tipo_documento,
                 'estado'       => 'pendiente',
                 'notas'        => $request->input('notas'),
                 'ruta_archivo' => $ruta,
@@ -162,14 +195,42 @@ class DocumentoController extends Controller
             abort(404, 'Archivo no encontrado.');
         }
 
-        $path     = Storage::disk(self::DISK)->path($doc->ruta_archivo);
-        $mimeType = mime_content_type($path) ?: 'application/octet-stream';
-        $nombre   = $doc->nombre ?? basename($doc->ruta_archivo);
+        $path   = Storage::disk(self::DISK)->path($doc->ruta_archivo);
+
+        // Nombre de descarga: derivado del archivo real
+        $nombreDescarga = basename($doc->ruta_archivo);
+
+        // Detectar MIME real del contenido (no solo por extensión)
+        // Los iPhones suben archivos HEIC con extensión .jpeg — hay que detectar el real
+        $ext     = strtolower(pathinfo($doc->ruta_archivo, PATHINFO_EXTENSION));
+        $mimeMap = [
+            'pdf'  => 'application/pdf',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'webp' => 'image/webp',
+            'heic' => 'image/heic',
+            'heif' => 'image/heif',
+        ];
+
+        // Usar mime_content_type() para detectar el tipo real del archivo
+        $mimeReal = mime_content_type($path) ?: null;
+
+        // Si el archivo es HEIC/HEIF con extensión .jpeg, corregir el MIME y el nombre
+        $heicMimes = ['image/heic', 'image/heif', 'image/x-heic', 'image/x-heif'];
+        if ($mimeReal && in_array(strtolower($mimeReal), $heicMimes)) {
+            $mimeType = 'image/heic';
+            // Corregir el nombre para que el navegador lo descargue con extensión correcta
+            $nombreDescarga = pathinfo($nombreDescarga, PATHINFO_FILENAME) . '.heic';
+        } else {
+            $mimeType = $mimeMap[$ext] ?? ($mimeReal ?: 'application/octet-stream');
+        }
 
         return response()->file($path, [
-            'Content-Type'        => $mimeType,
-            'Content-Disposition' => 'inline; filename="' . $nombre . '"',
-            'Cache-Control'       => 'private, max-age=300',
+            'Content-Type'           => $mimeType,
+            'Content-Disposition'    => 'inline; filename="' . $nombreDescarga . '"',
+            'Cache-Control'          => 'private, max-age=300',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 
@@ -230,7 +291,7 @@ class DocumentoController extends Controller
         );
 
         $doc->update([
-            'nombre'       => $archivo->getClientOriginalName(),
+            // No se sobreescribe 'nombre': conserva el nombre descriptivo asignado al subir
             'ruta_archivo' => $ruta,
             'estado'       => 'pendiente',
         ]);

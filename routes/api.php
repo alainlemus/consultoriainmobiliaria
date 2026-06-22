@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\ContactoController;
 use App\Http\Controllers\Api\V1\ExpedienteController;
 use App\Http\Controllers\Api\V1\DocumentoController;
 use App\Http\Controllers\Api\V1\UbicacionController;
+use App\Http\Controllers\Api\V1\AnuncioController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\ComisionController;
@@ -37,7 +38,11 @@ Route::get(
     [UbicacionController::class, 'verFoto']
 )->middleware('signed')->name('api.ubicacion.foto');
 
-// ── Foto de perfil de usuario con URL firmada (1 hora) ─────────────────────
+// ── Foto de anuncio con URL firmada (1 hora) ───────────────────────────────
+Route::get(
+    '/anuncios/fotos/{fotoId}',
+    [AnuncioController::class, 'verFoto']
+)->middleware('signed')->name('api.anuncio.foto');
 Route::get(
     '/users/{user}/foto-perfil',
     [AuthController::class, 'verFotoPerfil']
@@ -53,16 +58,20 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
 
         // Auth
-        Route::post('/auth/logout',           [AuthController::class, 'logout']);
-        Route::get('/auth/me',                [AuthController::class, 'me']);
-        Route::put('/auth/perfil',            [AuthController::class, 'updatePerfil']);
-        Route::post('/auth/perfil/foto',      [AuthController::class, 'subirFotoPerfil']);
+        Route::post('/auth/logout',                [AuthController::class, 'logout']);
+        Route::get('/auth/me',                     [AuthController::class, 'me']);
+        Route::put('/auth/perfil',                 [AuthController::class, 'updatePerfil']);
+        Route::post('/auth/perfil/foto',           [AuthController::class, 'subirFotoPerfil']);
+        Route::get('/auth/asesores',               [AuthController::class, 'asesores']);
+        Route::post('/auth/solicitar-cancelacion', [AuthController::class, 'solicitarCancelacion']);
 
         // Prospectos / Contactos
-        Route::get('/contactos',          [ContactoController::class, 'index']);
-        Route::post('/contactos',         [ContactoController::class, 'store']);
-        Route::get('/contactos/{id}',     [ContactoController::class, 'show']);
-        Route::put('/contactos/{id}',     [ContactoController::class, 'update']);
+        Route::get('/contactos',                              [ContactoController::class, 'index']);
+        Route::post('/contactos',                             [ContactoController::class, 'store']);
+        Route::get('/contactos/{id}',                        [ContactoController::class, 'show']);
+        Route::put('/contactos/{id}',                        [ContactoController::class, 'update']);
+        Route::post('/contactos/{id}/foto',                  [ContactoController::class, 'uploadFoto']);
+        Route::post('/contactos/{id}/simulador-screenshot',  [ContactoController::class, 'uploadSimuladorScreenshot']);
 
         // Expedientes
         Route::get('/expedientes',        [ExpedienteController::class, 'index']);
@@ -78,9 +87,19 @@ Route::prefix('v1')->group(function () {
         Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/reemplazar',         [DocumentoController::class, 'reemplazar']);
 
         // Ubicaciones GPS
-        Route::post('/ubicaciones',              [UbicacionController::class, 'store']);
-        Route::get('/ubicaciones/mapa',          [UbicacionController::class, 'mapa']);
-        Route::post('/ubicaciones/{id}/fotos',   [UbicacionController::class, 'subirFotos']);
+        Route::post('/ubicaciones',                    [UbicacionController::class, 'store']);
+        Route::get('/ubicaciones/mapa',                [UbicacionController::class, 'mapa']);
+        Route::post('/ubicaciones/{id}/fotos',         [UbicacionController::class, 'subirFotos']);
+        Route::patch('/ubicaciones/{id}/semaforo',     [UbicacionController::class, 'actualizarSemaforo']);
+
+        // Escuelas — buscador para vincular prospectos
+        Route::get('/escuelas',                        [UbicacionController::class, 'escuelas']);
+
+        // Anuncios publicitarios
+        Route::get('/anuncios/mapa',               [AnuncioController::class, 'mapa']);
+        Route::post('/anuncios',                   [AnuncioController::class, 'store']);
+        Route::patch('/anuncios/{id}/estado',      [AnuncioController::class, 'actualizarEstado']);
+        Route::post('/anuncios/{id}/fotos',        [AnuncioController::class, 'subirFotos']);
 
         // Sync offline batch
         Route::post('/sync',              [SyncController::class, 'batch']);

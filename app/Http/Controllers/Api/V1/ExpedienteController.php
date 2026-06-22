@@ -15,17 +15,26 @@ class ExpedienteController extends Controller
     {
         $user  = $request->user();
         $query = Expediente::with([
-            'contacto:id,nombre,email,telefono,estado_prospecto',
+            'contacto:id,nombre,foto',
             'tipoTramite:id,nombre',
             'etapa:id,nombre',
         ]);
 
         if (! $user->hasRole('super_admin')) {
+            // Asesor: siempre ve solo los suyos
             $query->where('asesor_id', $user->id);
+        } elseif ($asesorId = $request->input('asesor_id')) {
+            // Super admin con filtro explícito
+            $query->where('asesor_id', (int) $asesorId);
         }
+        // Super admin sin filtro → ve todos
 
         if ($estado = $request->input('estado')) {
             $query->where('estado', $estado);
+        }
+
+        if ($etapa = $request->input('etapa')) {
+            $query->whereHas('etapa', fn ($q) => $q->where('nombre', $etapa));
         }
 
         $perPage = min((int) $request->input('per_page', 20), 100);
@@ -47,19 +56,20 @@ class ExpedienteController extends Controller
         $exp = $this->findForUser($request, $id);
 
         $exp->load([
-            'contacto:id,nombre,email,telefono,estado_prospecto',
+            'contacto',   // modelo completo — incluye accessors foto_url y simulador_screenshot_url
             'tipoTramite:id,nombre',
             'etapa:id,nombre',
             'documentos',
         ]);
 
         // Documentos ya subidos al expediente
+        // Clave compuesta seccion|tipo para evitar colisiones entre secciones
         $docSubidos = $exp->documentos->map(fn ($d) => [
             ...$d->toArray(),
             'tipo_documento' => $d->tipo,
             'url'            => null,
             'tiene_archivo'  => (bool) $d->ruta_archivo,
-        ])->keyBy('tipo_documento');
+        ])->keyBy(fn ($d) => ($d['seccion'] ?? '') . '|' . $d['tipo_documento']);
 
         // Checklist completo del tipo de trámite (documentos requeridos)
         $requeridos = DocumentoRequerido::where('tipo_tramite_id', $exp->tipo_tramite_id)
@@ -69,7 +79,9 @@ class ExpedienteController extends Controller
 
         // Mezclar: para cada requerido, si ya existe un doc subido se usa ese, si no se crea entrada vacía
         $checklist = $requeridos->map(function ($req) use ($docSubidos) {
-            $subido = $docSubidos->get($req->nombre);
+            // Buscar por clave exacta seccion|tipo, con fallback a solo tipo (uploads legacy sin seccion)
+            $subido = $docSubidos->get($req->seccion . '|' . $req->nombre)
+                   ?? $docSubidos->get('|' . $req->nombre);
             if ($subido) {
                 return array_merge($subido, ['seccion' => $req->seccion, 'orden' => $req->orden, 'obligatorio' => $req->obligatorio]);
             }
@@ -88,10 +100,10 @@ class ExpedienteController extends Controller
             ];
         });
 
-        // Documentos subidos que no están en el checklist (tipos personalizados)
-        $tiposRequeridos = $requeridos->pluck('nombre')->toArray();
+        // Documentos subidos que no están en el checklist (tipos personalizados / legacy sin sección)
+        $tiposRequeridos = $requeridos->map(fn ($r) => $r->seccion . '|' . $r->nombre)->toArray();
         $extrasSubidos   = $exp->documentos
-            ->filter(fn ($d) => ! in_array($d->tipo, $tiposRequeridos))
+            ->filter(fn ($d) => ! in_array(($d->seccion ?? '') . '|' . $d->tipo, $tiposRequeridos))
             ->map(fn ($d) => [
                 ...$d->toArray(),
                 'tipo_documento' => $d->tipo,
@@ -111,13 +123,20 @@ class ExpedienteController extends Controller
         return response()->json(['data' => $data]);
     }
 
+    /** Valores válidos del enum estado — sincronizados con la BD */
+    private const ESTADOS_VALIDOS = [
+        'en_proceso', 'documentacion', 'en_catastro', 'pre_avaluo',
+        'cuv_generada', 'avaluo_cerrado', 'en_notaria',
+        'firmado', 'cerrado', 'pausado', 'cancelado',
+    ];
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
             'contacto_id'      => ['required', 'exists:contactos,id'],
             'tipo_tramite_id'  => ['required', 'exists:tipo_tramites,id'],
             'etapa_tramite_id' => ['nullable', 'exists:etapa_tramites,id'],
-            'estado'           => ['nullable', 'in:en_proceso,documentacion,autorizado,escrituracion,cerrado,cancelado'],
+            'estado'           => ['nullable', 'in:' . implode(',', self::ESTADOS_VALIDOS)],
             'monto_credito'    => ['nullable', 'numeric', 'min:0'],
             'honorarios_monto' => ['nullable', 'numeric', 'min:0'],
             'notas_internas'   => ['nullable', 'string'],
@@ -142,7 +161,7 @@ class ExpedienteController extends Controller
         $exp = $this->findForUser($request, $id);
 
         $data = $request->validate([
-            'estado'           => ['nullable', 'in:en_proceso,documentacion,autorizado,escrituracion,cerrado,cancelado'],
+            'estado'           => ['nullable', 'in:' . implode(',', self::ESTADOS_VALIDOS)],
             'etapa_tramite_id' => ['nullable', 'exists:etapa_tramites,id'],
             'monto_credito'    => ['nullable', 'numeric', 'min:0'],
             'honorarios_monto' => ['nullable', 'numeric', 'min:0'],

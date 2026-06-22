@@ -12,12 +12,14 @@ class RedirectAsesorToExpedientes
     {
         $user = auth()->user();
 
-        if ($user && $user->hasRole('asesor')) {
-            $path = rtrim($request->path(), '/');
-
-            // Cualquier intento de acceder al panel raíz → redirigir a su dashboard
-            if ($path === 'admin') {
+        if ($user && rtrim($request->path(), '/') === 'admin') {
+            if ($user->hasRole('asesor')) {
                 return redirect('/admin/dashboard-asesor');
+            }
+
+            // Cualquier rol que no sea super_admin ni admin va a expedientes
+            if (! $user->hasRole('super_admin') && ! $user->hasRole('admin')) {
+                return redirect('/admin/expedientes');
             }
         }
 
