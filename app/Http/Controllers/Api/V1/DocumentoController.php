@@ -73,9 +73,40 @@ class DocumentoController extends Controller
         ]);
 
         $archivo = $request->file('archivo');
-        $ext     = $archivo->getClientOriginalExtension();
-        $nombre  = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
-        $ruta    = "expedientes/{$expedienteId}/docs/{$nombre}";
+
+        // Detectar si el archivo es HEIC aunque venga con extensión .jpeg (iPhone)
+        $mimeReal = mime_content_type($archivo->getRealPath()) ?: '';
+        $heicMimes = ['image/heic', 'image/heif', 'image/x-heic', 'image/x-heif'];
+        $esHeic    = in_array(strtolower($mimeReal), $heicMimes);
+
+        if ($esHeic && class_exists(\Imagick::class)) {
+            // Convertir HEIC → JPEG con Imagick
+            try {
+                $im = new \Imagick($archivo->getRealPath());
+                $im->setImageFormat('jpeg');
+                $im->setImageCompressionQuality(90);
+                $jpegContent = $im->getImageBlob();
+                $im->clear();
+
+                $ext    = 'jpg';
+                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
+                $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
+
+                Storage::disk(self::DISK)->put($ruta, $jpegContent);
+            } catch (\Throwable) {
+                // Si falla la conversión, guardar el original
+                $ext    = $archivo->getClientOriginalExtension() ?: 'heic';
+                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
+                $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
+                Storage::disk(self::DISK)->putFileAs("expedientes/{$expedienteId}/docs", $archivo, $nombre);
+            }
+        } else {
+            $ext    = $archivo->getClientOriginalExtension();
+            $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
+            $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
+            Storage::disk(self::DISK)->putFileAs("expedientes/{$expedienteId}/docs", $archivo, $nombre);
+        }
+
         $seccion = $request->input('seccion');
 
         // Si ya existe un doc de este tipo+sección, borrar el archivo anterior
@@ -172,20 +203,34 @@ class DocumentoController extends Controller
 
         $path   = Storage::disk(self::DISK)->path($doc->ruta_archivo);
 
-        // Nombre de descarga: derivado del archivo real (tiene extensión correcta)
+        // Nombre de descarga: derivado del archivo real
         $nombreDescarga = basename($doc->ruta_archivo);
 
-        // Detección de MIME por extensión (más fiable que mime_content_type())
-        $ext      = strtolower(pathinfo($doc->ruta_archivo, PATHINFO_EXTENSION));
-        $mimeMap  = [
+        // Detectar MIME real del contenido (no solo por extensión)
+        // Los iPhones suben archivos HEIC con extensión .jpeg — hay que detectar el real
+        $ext     = strtolower(pathinfo($doc->ruta_archivo, PATHINFO_EXTENSION));
+        $mimeMap = [
             'pdf'  => 'application/pdf',
             'jpg'  => 'image/jpeg',
             'jpeg' => 'image/jpeg',
             'png'  => 'image/png',
             'webp' => 'image/webp',
             'heic' => 'image/heic',
+            'heif' => 'image/heif',
         ];
-        $mimeType = $mimeMap[$ext] ?? (mime_content_type($path) ?: 'application/octet-stream');
+
+        // Usar mime_content_type() para detectar el tipo real del archivo
+        $mimeReal = mime_content_type($path) ?: null;
+
+        // Si el archivo es HEIC/HEIF con extensión .jpeg, corregir el MIME y el nombre
+        $heicMimes = ['image/heic', 'image/heif', 'image/x-heic', 'image/x-heif'];
+        if ($mimeReal && in_array(strtolower($mimeReal), $heicMimes)) {
+            $mimeType = 'image/heic';
+            // Corregir el nombre para que el navegador lo descargue con extensión correcta
+            $nombreDescarga = pathinfo($nombreDescarga, PATHINFO_FILENAME) . '.heic';
+        } else {
+            $mimeType = $mimeMap[$ext] ?? ($mimeReal ?: 'application/octet-stream');
+        }
 
         return response()->file($path, [
             'Content-Type'           => $mimeType,
