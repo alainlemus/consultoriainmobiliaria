@@ -13,6 +13,7 @@ use App\Models\UbicacionFoto;
 use Illuminate\Support\Facades\Storage;
 
 use App\Http\Controllers\CargaMasivaController;
+use App\Http\Controllers\ExpedienteZipController;
 
 // Alias para que el middleware 'auth' de Laravel redirija al login de Filament
 Route::redirect('/login', '/admin/login', 302)->name('login');
@@ -87,3 +88,8 @@ Route::middleware(['web', 'auth'])
 Route::middleware(['web', 'auth'])
     ->post('/admin/expedientes/upload-archivo', [CargaMasivaController::class, 'uploadArchivo'])
     ->name('filament.admin.resources.expedientes.crear-desde-carpeta.upload-archivo');
+
+// Descargar carpeta completa del expediente como ZIP
+Route::middleware(['web', 'auth'])
+    ->get('/admin/expedientes/{expediente}/descargar-zip', [ExpedienteZipController::class, 'descargar'])
+    ->name('expediente.descargar.zip');

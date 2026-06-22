@@ -90,7 +90,14 @@ class EditExpediente extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            // ── Avanzar etapa (solo super_admin, oculto en última etapa) ─────
+            // ── Descargar carpeta completa como ZIP ───────────────────────
+            Action::make('descargar_zip')
+                ->label('Descargar carpeta')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->url(fn () => route('expediente.descargar.zip', $this->record))
+                ->openUrlInNewTab()
+                ->visible(fn () => $this->record->documentos()->whereNotNull('ruta_archivo')->exists()),
             Action::make('avanzar_etapa')
                 ->label(function () {
                     $siguiente = $this->siguienteEtapa();
