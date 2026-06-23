@@ -43,8 +43,6 @@ class MiPerfil extends Page implements HasForms
             'name'     => $user->name,
             'email'    => $user->email,
             'telefono' => $user->telefono,
-            'banco'    => $user->banco,
-            'clabe'    => $user->clabe,
         ]);
     }
 
@@ -83,32 +81,6 @@ class MiPerfil extends Page implements HasForms
                             ]),
                     ]),
 
-                \Filament\Schemas\Components\Section::make('Datos bancarios')
-                    ->description('Estos datos se usan para el pago de tus comisiones.')
-                    ->icon('heroicon-o-banknotes')
-                    ->columns(2)
-                    ->schema([
-                        Forms\Components\TextInput::make('banco')
-                            ->label('Banco')
-                            ->maxLength(100)
-                            ->placeholder('Ej: BBVA, Banorte, HSBC…')
-                            ->validationMessages([
-                                'max' => 'El nombre del banco no puede superar los 100 caracteres.',
-                            ]),
-
-                        Forms\Components\TextInput::make('clabe')
-                            ->label('CLABE interbancaria')
-                            ->maxLength(18)
-                            ->minLength(18)
-                            ->placeholder('18 dígitos')
-                            ->hint('Exactamente 18 dígitos')
-                            ->extraInputAttributes(['style' => 'font-family:monospace;letter-spacing:2px;'])
-                            ->validationMessages([
-                                'min' => 'La CLABE debe tener exactamente 18 dígitos.',
-                                'max' => 'La CLABE debe tener exactamente 18 dígitos.',
-                            ]),
-                    ]),
-
 
             ])
             ->statePath('data');
@@ -121,8 +93,6 @@ class MiPerfil extends Page implements HasForms
         $this->validate([
             'data.name'     => ['required', 'string', 'max:255'],
             'data.telefono' => ['nullable', 'string', 'max:20'],
-            'data.banco'    => ['nullable', 'string', 'max:100'],
-            'data.clabe'    => ['nullable', 'digits:18'],
         ]);
 
         $user = Auth::user();
@@ -130,16 +100,12 @@ class MiPerfil extends Page implements HasForms
         $user->update([
             'name'     => $validated['name'],
             'telefono' => $validated['telefono'] ?? null,
-            'banco'    => $validated['banco'] ?? null,
-            'clabe'    => $validated['clabe'] ?? null,
         ]);
 
         $this->form->fill([
             'name'     => $user->fresh()->name,
             'email'    => $user->fresh()->email,
             'telefono' => $user->fresh()->telefono,
-            'banco'    => $user->fresh()->banco,
-            'clabe'    => $user->fresh()->clabe,
         ]);
 
         Notification::make()

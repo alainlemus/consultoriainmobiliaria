@@ -20,8 +20,6 @@ class AuthController extends Controller
             'name'            => $user->name,
             'email'           => $user->email,
             'telefono'        => $user->telefono,
-            'banco'           => $user->banco,
-            'clabe'           => $user->clabe,
             'foto_perfil_url' => $user->foto_perfil_url,
             'roles'           => $user->getRoleNames(),
         ];
@@ -78,8 +76,6 @@ class AuthController extends Controller
         $data = $request->validate([
             'name'     => ['sometimes', 'string', 'max:255'],
             'telefono' => ['sometimes', 'nullable', 'string', 'max:20'],
-            'banco'    => ['sometimes', 'nullable', 'string', 'max:100'],
-            'clabe'    => ['sometimes', 'nullable', 'string', 'max:18'],
         ]);
 
         $user->update($data);

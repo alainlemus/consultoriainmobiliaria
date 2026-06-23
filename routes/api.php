@@ -11,6 +11,10 @@ use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\ComisionController;
 use App\Http\Controllers\Api\WhatsAppWebhookController;
+use App\Http\Controllers\Api\V1\Acreditado\AuthController as AcreditadoAuthController;
+use App\Http\Controllers\Api\V1\Acreditado\ExpedienteController as AcreditadoExpedienteController;
+use App\Http\Controllers\Api\V1\Acreditado\DocumentoController as AcreditadoDocumentoController;
+use App\Http\Controllers\Api\V1\Acreditado\SolicitudController as AcreditadoSolicitudController;
 
 /*
 |--------------------------------------------------------------------------
@@ -110,5 +114,50 @@ Route::prefix('v1')->group(function () {
         // Comisiones del asesor
         Route::get('/comisiones',         [ComisionController::class, 'index']);
         Route::get('/comisiones/resumen', [ComisionController::class, 'resumen']);
+    });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// API ACREDITADO — /api/v1/acreditado/
+// Rutas para la app del acreditado (guard separado)
+// ══════════════════════════════════════════════════════════════════════════════
+Route::prefix('v1/acreditado')->group(function () {
+
+    // ── Foto de perfil pública (URL firmada) ──────────────────────────────
+    Route::get('/foto-perfil/{acreditado}', [AcreditadoAuthController::class, 'verFotoPerfil'])
+        ->middleware('signed')
+        ->name('api.acreditado.foto-perfil');
+
+    // ── Auth pública (sin token) ──────────────────────────────────────────
+    Route::post('/auth/registro',        [AcreditadoAuthController::class, 'registro']);
+    Route::post('/auth/login',           [AcreditadoAuthController::class, 'login']);
+    Route::post('/auth/forgot-password', [AcreditadoAuthController::class, 'forgotPassword']);
+
+    // ── Servicios disponibles (público, para mostrar en onboarding) ───────
+    Route::get('/servicios', [AcreditadoSolicitudController::class, 'servicios']);
+
+    // ── Rutas protegidas con Sanctum (token del acreditado) ───────────────
+    Route::middleware('auth:sanctum')->group(function () {
+
+        // Auth
+        Route::post('/auth/logout',             [AcreditadoAuthController::class, 'logout']);
+        Route::get('/auth/me',                  [AcreditadoAuthController::class, 'me']);
+        Route::put('/auth/perfil',              [AcreditadoAuthController::class, 'updatePerfil']);
+        Route::post('/auth/perfil/foto',        [AcreditadoAuthController::class, 'subirFoto']);
+        Route::put('/auth/password',            [AcreditadoAuthController::class, 'cambiarPassword']);
+        Route::post('/auth/solicitar-cancelacion', [AcreditadoAuthController::class, 'solicitarCancelacion']);
+
+        // Solicitudes de asesoría
+        Route::post('/solicitudes', [AcreditadoSolicitudController::class, 'store']);
+
+        // Expediente
+        Route::get('/expediente',                    [AcreditadoExpedienteController::class, 'show']);
+        Route::get('/expediente/seguimiento',        [AcreditadoExpedienteController::class, 'seguimiento']);
+        Route::get('/expediente/documentos-pendientes', [AcreditadoExpedienteController::class, 'documentosPendientes']);
+
+        // Documentos del expediente
+        Route::get('/expediente/documentos',         [AcreditadoDocumentoController::class, 'index']);
+        Route::post('/expediente/documentos',        [AcreditadoDocumentoController::class, 'store']);
+        Route::get('/expediente/documentos/{id}/ver', [AcreditadoDocumentoController::class, 'ver']);
     });
 });

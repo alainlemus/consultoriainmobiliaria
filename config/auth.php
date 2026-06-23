@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Models\Acreditado;
 
 return [
 
@@ -39,8 +40,13 @@ return [
 
     'guards' => [
         'web' => [
-            'driver' => 'session',
+            'driver'   => 'session',
             'provider' => 'users',
+        ],
+        // Guard para acreditados — usa Sanctum via auth:sanctum con provider acreditados
+        'acreditado' => [
+            'driver'   => 'session',
+            'provider' => 'acreditados',
         ],
     ],
 
@@ -64,13 +70,12 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            'model'  => env('AUTH_MODEL', User::class),
         ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'acreditados' => [
+            'driver' => 'eloquent',
+            'model'  => Acreditado::class,
+        ],
     ],
 
     /*
@@ -95,8 +100,14 @@ return [
     'passwords' => [
         'users' => [
             'provider' => 'users',
-            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
-            'expire' => 60,
+            'table'    => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire'   => 60,
+            'throttle' => 60,
+        ],
+        'acreditados' => [
+            'provider' => 'acreditados',
+            'table'    => 'password_reset_tokens',
+            'expire'   => 60,
             'throttle' => 60,
         ],
     ],

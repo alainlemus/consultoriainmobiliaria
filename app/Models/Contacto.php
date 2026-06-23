@@ -20,7 +20,7 @@ class Contacto extends Model
         'regimen_pensionario', 'tiene_discapacidad', 'simulador_screenshot',
         // Estado y fechas
         'estado_prospecto', 'estado_ubicacion',
-        'fecha_primer_contacto', 'modalidad_cierre', 'notas_cierre', 'fecha_envio_dueno',
+        'fecha_nacimiento', 'fecha_primer_contacto', 'modalidad_cierre', 'notas_cierre', 'fecha_envio_dueno',
     ];
 
     protected $appends = ['foto_url', 'simulador_screenshot_url'];
@@ -30,6 +30,7 @@ class Contacto extends Model
     ];
 
     protected $casts = [
+        'fecha_nacimiento'      => 'date',
         'fecha_primer_contacto' => 'date',
         'fecha_envio_dueno'     => 'datetime',
         'tiene_discapacidad'    => 'boolean',

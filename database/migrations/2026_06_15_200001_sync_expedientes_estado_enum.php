@@ -27,6 +27,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // Mapear valores legacy a los nuevos antes de cambiar el enum
         DB::statement("
             UPDATE expedientes SET estado = CASE estado
@@ -59,6 +61,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // Revertir al enum original de la BD
         DB::statement("
             UPDATE expedientes SET estado = CASE estado

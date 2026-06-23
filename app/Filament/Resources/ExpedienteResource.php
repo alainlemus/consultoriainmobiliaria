@@ -690,7 +690,20 @@ class ExpedienteResource extends Resource
                                 ->validationMessages([
                                     'required' => 'El nombre del acreditado es obligatorio.',
                                     'max'      => 'El nombre no puede superar los 255 caracteres.',
-                                ]),
+                                ])
+                                ->suffixAction(
+                                    \Filament\Actions\Action::make('_estado_acreditado_app')
+                                        ->icon(fn ($record) => $record?->acreditado_id
+                                            ? 'heroicon-o-device-phone-mobile'
+                                            : 'heroicon-o-device-phone-mobile'
+                                        )
+                                        ->color(fn ($record) => $record?->acreditado_id ? 'success' : 'gray')
+                                        ->tooltip(fn ($record) => $record?->acreditado_id
+                                            ? '✅ Acreditado registrado en la app'
+                                            : 'Sin cuenta en la app'
+                                        )
+                                        ->action(fn () => null) // solo informativo
+                                ),
                             Forms\Components\TextInput::make('acreditado_curp')
                                 ->label('CURP')
                                 ->maxLength(18)
@@ -1060,6 +1073,15 @@ public static function canDelete(Model $record): bool
                     ->label('Acreditado')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\IconColumn::make('acreditado_id')
+                    ->label('App')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-device-phone-mobile')
+                    ->falseIcon('')
+                    ->trueColor('success')
+                    ->tooltip(fn ($record) => $record->acreditado_id ? 'Acreditado registrado en la app' : null)
+                    ->alignCenter()
+                    ->width('50px'),
                 Tables\Columns\TextColumn::make('tipoTramite.nombre')
                     ->label('Tipo')
                     ->badge()
