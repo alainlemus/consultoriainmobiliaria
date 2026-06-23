@@ -3,9 +3,7 @@
 namespace App\Filament\Resources\Acreditados\Pages;
 
 use App\Filament\Resources\Acreditados\AcreditadoResource;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\ForceDeleteAction;
-use Filament\Actions\RestoreAction;
+use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditAcreditado extends EditRecord
@@ -15,9 +13,15 @@ class EditAcreditado extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
-            ForceDeleteAction::make(),
-            RestoreAction::make(),
+            Actions\DeleteAction::make()
+                ->label('Eliminar cuenta')
+                ->requiresConfirmation()
+                ->modalDescription('Se eliminará permanentemente la cuenta del acreditado. Los expedientes vinculados no se borran.'),
         ];
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
     }
 }

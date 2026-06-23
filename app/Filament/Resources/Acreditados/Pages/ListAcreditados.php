@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Acreditados\Pages;
 
 use App\Filament\Resources\Acreditados\AcreditadoResource;
-use Filament\Actions\CreateAction;
+use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListAcreditados extends ListRecords
@@ -12,8 +12,6 @@ class ListAcreditados extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            CreateAction::make(),
-        ];
+        return [];  // no se crean desde el CRM
     }
 }
