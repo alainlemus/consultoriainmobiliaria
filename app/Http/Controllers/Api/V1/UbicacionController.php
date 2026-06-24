@@ -201,7 +201,7 @@ class UbicacionController extends Controller
     {
         $user  = $request->user();
         $query = Ubicacion::with([
-            'contacto:id,nombre,estado_prospecto',
+            'contacto:id,nombre,estado_prospecto,foto',
             'fotos:id,ubicacion_id',
         ])
         ->withCount('contactosEscuela')
@@ -233,6 +233,7 @@ class UbicacionController extends Controller
                     'visitado_en'    => $u->visitado_en,
                     'contacto_id'    => $u->contacto_id,
                     'contacto'       => $u->contacto?->nombre,
+                    'contacto_foto_url' => $u->contacto?->foto_url,
                     'fotos'          => $u->fotos->map(fn ($f) => [
                         'id'  => $f->id,
                         'url' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addHour()),

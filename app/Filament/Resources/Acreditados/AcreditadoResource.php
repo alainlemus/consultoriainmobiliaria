@@ -212,8 +212,8 @@ class AcreditadoResource extends Resource
                     ),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->label('Ver')->icon('heroicon-o-eye'),
-                Tables\Actions\Action::make('toggle_activo')
+                \Filament\Actions\EditAction::make()->label('Ver')->icon('heroicon-o-eye'),
+                \Filament\Actions\Action::make('toggle_activo')
                     ->label(fn ($record) => $record->activo ? 'Desactivar' : 'Activar')
                     ->icon(fn ($record) => $record->activo ? 'heroicon-o-no-symbol' : 'heroicon-o-check-circle')
                     ->color(fn ($record) => $record->activo ? 'danger' : 'success')
@@ -226,14 +226,14 @@ class AcreditadoResource extends Resource
                     ->action(function ($record) {
                         if ($record->activo) {
                             $record->update(['activo' => false]);
-                            $record->tokens()->delete(); // cerrar sesiones activas
+                            $record->tokens()->delete();
                         } else {
                             $record->update(['activo' => true]);
                         }
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkAction::make('desactivar')
+                \Filament\Actions\BulkAction::make('desactivar')
                     ->label('Desactivar seleccionados')
                     ->icon('heroicon-o-no-symbol')
                     ->color('danger')
