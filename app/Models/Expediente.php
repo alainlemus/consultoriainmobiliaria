@@ -48,6 +48,8 @@ class Expediente extends Model
         'cuv', 'cuv_fecha_pago', 'cuv_activa',
         // OCR / IA
         'ocr_procesando',
+        // Acreditado registrado en app
+        'acreditado_id',
         // Cónyuge (crédito conyugal / mancomunado)
         'conyuge_nombre', 'conyuge_curp', 'conyuge_rfc', 'conyuge_telefono',
         'conyuge_institucion', 'conyuge_numero_credito',
@@ -157,6 +159,11 @@ class Expediente extends Model
     public function contacto(): BelongsTo
     {
         return $this->belongsTo(Contacto::class);
+    }
+
+    public function acreditadoRegistrado(): BelongsTo
+    {
+        return $this->belongsTo(Acreditado::class, 'acreditado_id');
     }
 
     public function documentos(): HasMany

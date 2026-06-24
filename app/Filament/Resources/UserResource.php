@@ -135,8 +135,7 @@ class UserResource extends Resource
                     ]),
             ])->columns(2),
 
-            \Filament\Schemas\Components\Section::make('Datos bancarios para comisiones')
-                ->description('CLABE y banco al que se transferirán las comisiones del asesor. Solo visible para el administrador.')
+            \Filament\Schemas\Components\Section::make('Datos de contacto')
                 ->schema([
                     Forms\Components\TextInput::make('telefono')
                         ->label('Teléfono')
@@ -147,27 +146,6 @@ class UserResource extends Resource
                         ->validationMessages([
                             'max' => 'El teléfono no puede superar los 20 caracteres.',
                         ]),
-
-                    Forms\Components\TextInput::make('banco')
-                        ->label('Banco')
-                        ->maxLength(100)
-                        ->placeholder('Ej: BBVA, Banamex, Banorte…')
-                        ->validationMessages([
-                            'max' => 'El nombre del banco no puede superar los 100 caracteres.',
-                        ]),
-
-                    Forms\Components\TextInput::make('clabe')
-                        ->label('CLABE interbancaria')
-                        ->maxLength(18)
-                        ->minLength(18)
-                        ->regex('/^\d{18}$/')
-                        ->validationMessages([
-                            'regex' => 'La CLABE debe tener exactamente 18 dígitos numéricos.',
-                            'min'   => 'La CLABE debe tener exactamente 18 dígitos.',
-                            'max'   => 'La CLABE debe tener exactamente 18 dígitos.',
-                        ])
-                        ->placeholder('18 dígitos')
-                        ->hint('18 dígitos — requerida para transferencia'),
                 ])->columns(2),
 
             \Filament\Schemas\Components\Section::make('Rol en el sistema')
@@ -226,18 +204,6 @@ class UserResource extends Resource
                     ->color('primary')
                     ->separator(', ')
                     ->tooltip('Rol que determina los permisos del usuario en el sistema'),
-
-                Tables\Columns\TextColumn::make('banco')
-                    ->label('Banco')
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                Tables\Columns\TextColumn::make('clabe')
-                    ->label('CLABE')
-                    ->placeholder('—')
-                    ->copyable()
-                    ->copyMessage('CLABE copiada')
-                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\IconColumn::make('activo')
                     ->label('Activo')
