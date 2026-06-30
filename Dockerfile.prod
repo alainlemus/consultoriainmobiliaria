@@ -20,6 +20,8 @@ RUN apk add --no-cache \
     icu-dev \
     imagemagick-dev \
     imagemagick \
+    libjpeg-turbo-dev \
+    libwebp-dev \
     autoconf \
     build-base \
     unzip \
