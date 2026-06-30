@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Anuncio;
 use App\Models\AnuncioFoto;
 use App\Models\User;
+use App\Services\ImagenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -137,12 +138,18 @@ class AnuncioController extends Controller
         ]);
 
         $guardadas = [];
+        $servicio  = new ImagenService();
+
         foreach ($request->file('fotos') as $archivo) {
-            $ruta = $archivo->store("anuncios/{$id}/fotos", self::DISK);
+            $ruta = $servicio->comprimirYGuardar(
+                $archivo,
+                "anuncios/{$id}/fotos",
+                self::DISK
+            );
             $foto = AnuncioFoto::create([
                 'anuncio_id' => $id,
                 'ruta'       => $ruta,
-                'mime'       => $archivo->getMimeType(),
+                'mime'       => 'image/jpeg',
             ]);
             $guardadas[] = [
                 'id'  => $foto->id,

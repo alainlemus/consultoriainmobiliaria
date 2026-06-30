@@ -58,6 +58,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Expediente::class, 'asesor_id');
     }
 
+    public function routePoints(): HasMany
+    {
+        return $this->hasMany(RoutePoint::class);
+    }
+
     public function getFotoPerfilUrlAttribute(): ?string
     {
         if (! $this->foto_perfil) {

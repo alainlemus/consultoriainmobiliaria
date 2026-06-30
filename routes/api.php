@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\ExpedienteController;
 use App\Http\Controllers\Api\V1\DocumentoController;
 use App\Http\Controllers\Api\V1\UbicacionController;
 use App\Http\Controllers\Api\V1\AnuncioController;
+use App\Http\Controllers\Api\V1\RouteController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\ComisionController;
@@ -105,6 +106,12 @@ Route::prefix('v1')->group(function () {
         Route::patch('/anuncios/{id}/estado',      [AnuncioController::class, 'actualizarEstado']);
         Route::post('/anuncios/{id}/fotos',        [AnuncioController::class, 'subirFotos']);
 
+        // Rutas de asesores (GPS tracking)
+        Route::post('/routes/points',      [RouteController::class, 'storePoints']);
+        Route::get('/routes/asesores',    [RouteController::class, 'listAsesores']);
+        Route::get('/routes/points',       [RouteController::class, 'getPoints']);
+        Route::get('/routes/dias',        [RouteController::class, 'getDias']);
+
         // Sync offline batch
         Route::post('/sync',              [SyncController::class, 'batch']);
 
@@ -114,6 +121,13 @@ Route::prefix('v1')->group(function () {
         // Comisiones del asesor
         Route::get('/comisiones',         [ComisionController::class, 'index']);
         Route::get('/comisiones/resumen', [ComisionController::class, 'resumen']);
+    });
+
+    // ── Rutas para CRM (autenticación por sesión web, no token) ──────────────
+    Route::middleware('auth:web')->group(function () {
+        Route::get('/crm/routes/asesores', [RouteController::class, 'listAsesores']);
+        Route::get('/crm/routes/points',   [RouteController::class, 'getPoints']);
+        Route::get('/crm/routes/dias',     [RouteController::class, 'getDias']);
     });
 });
 

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\VisitaRegistrada;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Services\ImagenService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
@@ -155,14 +156,19 @@ class UbicacionController extends Controller
         ]);
 
         $guardadas = [];
+        $servicio  = new ImagenService();
 
         foreach ($request->file('fotos') as $archivo) {
-            $ruta = $archivo->store("ubicaciones/{$id}/fotos", self::DISK);
+            $ruta = $servicio->comprimirYGuardar(
+                $archivo,
+                "ubicaciones/{$id}/fotos",
+                self::DISK
+            );
 
             $foto = UbicacionFoto::create([
                 'ubicacion_id' => $id,
                 'ruta'         => $ruta,
-                'mime'         => $archivo->getMimeType(),
+                'mime'         => 'image/jpeg',
             ]);
 
             $guardadas[] = [

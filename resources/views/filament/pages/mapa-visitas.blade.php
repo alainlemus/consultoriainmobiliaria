@@ -81,28 +81,28 @@
             {{-- Tipo visitas --}}
             <div class="flex gap-2 flex-wrap">
                 <button @click="setFiltroTipo('todos')"
-                    :class="filtroTipo === 'todos' ? 'bg-gray-800 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
-                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
+                    :class="filtroTipo === 'todos' ? 'bg-gray-800 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'">
                     Todos
                 </button>
                 <button @click="setFiltroTipo('visita_cliente')"
-                    :class="filtroTipo === 'visita_cliente' ? 'bg-amber-500 text-white' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'"
-                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
+                    :class="filtroTipo === 'visita_cliente' ? 'bg-amber-500 text-white' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'">
                     🏠 Clientes
                 </button>
                 <button @click="setFiltroTipo('propiedad')"
-                    :class="filtroTipo === 'propiedad' ? 'bg-purple-600 text-white' : 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'"
-                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
+                    :class="filtroTipo === 'propiedad' ? 'bg-purple-600 text-white' : 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'">
                     🏢 Propiedades
                 </button>
                 <button @click="setFiltroTipo('escuela')"
-                    :class="filtroTipo === 'escuela' ? 'bg-blue-600 text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'"
-                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
+                    :class="filtroTipo === 'escuela' ? 'bg-blue-600 text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'">
                     🏫 Escuelas
                 </button>
                 <button @click="toggleAnuncios()"
-                    :class="mostrarAnuncios ? 'bg-orange-500 text-white' : 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'"
-                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
+                    :class="mostrarAnuncios ? 'bg-orange-500 text-white' : 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'">
                     📢 Anuncios
                 </button>
             </div>
@@ -125,7 +125,7 @@
         </div>
 
         {{-- Mapa --}}
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden" style="height: 560px;">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden" style="height: 700px;">
             <div id="mapa-visitas" style="height: 100%; width: 100%; z-index: 0;"></div>
         </div>
 
@@ -320,7 +320,7 @@
 
             aplicarFiltros() {
                 this.marcadoresFiltrados = this.todos.filter(u => {
-                    const pasaTipo   = this.filtroTipo   === 'todos' || u.tipo      === this.filtroTipo;
+                    const pasaTipo   = this.filtroTipo === 'todos' || u.tipo === this.filtroTipo;
                     const pasaAsesor = this.filtroAsesor === ''      || String(u.asesor_id) === String(this.filtroAsesor);
                     return pasaTipo && pasaAsesor;
                 });
