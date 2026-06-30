@@ -283,6 +283,55 @@ class EditExpediente extends EditRecord
                         ->send();
                     $this->redirect(ExpedienteResource::getUrl('index'));
                 }),
+
+            // ── Revertir a prospecto ─────────────────────────────────────────
+            Action::make('revertir_a_prospecto')
+                ->label('Revertir a prospecto')
+                ->icon('heroicon-o-arrow-uturn-left')
+                ->color('danger')
+                ->visible(fn () => auth()->user()?->hasRole('super_admin'))
+                ->requiresConfirmation()
+                ->modalHeading('Revertir cliente a prospecto')
+                ->modalDescription(fn () => new HtmlString(
+                    '<div style="font-size:14px;line-height:1.6;">'
+                    . '<p>Esta acción realizará lo siguiente:</p>'
+                    . '<ul style="margin:8px 0 0 16px;list-style:disc;">'
+                    . '<li>El expediente <strong>' . e($this->record->folio) . '</strong> será <strong>eliminado</strong>.</li>'
+                    . ($this->record->contacto
+                        ? '<li>El prospecto <strong>' . e($this->record->contacto->nombre) . '</strong> regresará al estado <strong>Nuevo</strong>.</li>'
+                        : '<li style="color:#6b7280;">No hay prospecto vinculado al expediente.</li>')
+                    . '</ul>'
+                    . '<p style="margin-top:10px;color:#dc2626;font-weight:600;">Esta acción no se puede deshacer.</p>'
+                    . '</div>'
+                ))
+                ->modalSubmitActionLabel('Sí, revertir a prospecto')
+                ->modalSubmitAction(fn ($action) => $action->color('danger'))
+                ->action(function () {
+                    $expediente = $this->record;
+                    $contacto   = $expediente->contacto;
+
+                    // Regresar el contacto a estado prospecto si existe
+                    if ($contacto) {
+                        $contacto->update([
+                            'estado_prospecto' => 'nuevo',
+                        ]);
+                    }
+
+                    // Eliminar el expediente (soft delete)
+                    $expediente->delete();
+
+                    Notification::make()
+                        ->title('Revertido a prospecto')
+                        ->body(
+                            $contacto
+                                ? $contacto->nombre . ' volvió a la lista de prospectos.'
+                                : 'Expediente eliminado. Sin prospecto vinculado.'
+                        )
+                        ->success()
+                        ->send();
+
+                    $this->redirect(ExpedienteResource::getUrl('index'));
+                }),
         ];
     }
 
