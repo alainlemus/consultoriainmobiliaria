@@ -3,10 +3,15 @@
 namespace App\Http\Controllers\Api\V1\Acreditado;
 
 use App\Http\Controllers\Controller;
+use App\Mail\ConfirmacionContacto;
+use App\Mail\NuevoContactoAdmin;
+use App\Models\AcreditadoSolicitud;
 use App\Models\Contacto;
 use App\Models\TipoTramite;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class SolicitudController extends Controller
 {
@@ -29,7 +34,8 @@ class SolicitudController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────────
     // POST /v1/acreditado/solicitudes
-    // El acreditado solicita una asesoría — crea un Contacto en el CRM
+    // El acreditado solicita una asesoría — crea un Contacto en el CRM,
+    // registra la solicitud en el historial y envía emails en cola.
     // ─────────────────────────────────────────────────────────────────────────
     public function store(Request $request): JsonResponse
     {
@@ -42,51 +48,71 @@ class SolicitudController extends Controller
             'estado'          => ['nullable', 'string', 'max:100'],
         ]);
 
-        // Verificar si ya tiene un contacto o expediente activo
+        // Verificar si ya tiene un expediente activo
         if ($acreditado->expedientes()->whereNotIn('estado', ['cerrado', 'cancelado'])->exists()) {
             return response()->json([
                 'message' => 'Ya tienes un expediente activo. Contacta a tu asesor para continuar.',
             ], 422);
         }
 
-        // Obtener el nombre del servicio solicitado
-        $servicio = null;
-        if (! empty($data['tipo_tramite_id'])) {
-            $tipo = TipoTramite::find($data['tipo_tramite_id']);
-            $servicio = $tipo?->nombre;
-        }
+        // Resolver nombre del servicio
+        $tipo     = ! empty($data['tipo_tramite_id']) ? TipoTramite::find($data['tipo_tramite_id']) : null;
+        $servicio = $tipo?->nombre;
 
-        // Crear o actualizar el contacto en el CRM
+        // Crear o actualizar el Contacto en el CRM
+        // El ContactoObserver dispara: WhatsApp en cola + NuevoProspectoCreado a admins
         $contacto = Contacto::updateOrCreate(
             ['curp' => $acreditado->curp ?? null, 'email' => $acreditado->email],
             [
-                'nombre'          => $acreditado->name,
-                'telefono'        => $acreditado->telefono ?? '',
-                'email'           => $acreditado->email,
-                'curp'            => $acreditado->curp,
-                'nss'             => $acreditado->nss,
-                'servicio'        => $servicio ?? 'FOVISSSTE',
-                'mensaje'         => $data['mensaje'] ?? 'Solicitud desde la app del acreditado.',
-                'origen'          => 'app_acreditado',
-                'estado_prospecto'=> 'nuevo',
-                'estado_uso_credito'  => $data['estado'] ?? null,
+                'nombre'                => $acreditado->name,
+                'telefono'              => $acreditado->telefono ?? '',
+                'email'                 => $acreditado->email,
+                'curp'                  => $acreditado->curp,
+                'nss'                   => $acreditado->nss,
+                'servicio'              => $servicio ?? 'FOVISSSTE',
+                'mensaje'               => $data['mensaje'] ?? 'Solicitud desde la app del acreditado.',
+                'origen'                => 'app_acreditado',
+                'estado_prospecto'      => 'nuevo',
+                'estado_uso_credito'    => $data['estado'] ?? null,
                 'municipio_uso_credito' => $data['municipio'] ?? null,
             ]
         );
 
-        // Vincular el contacto al acreditado
+        // Vincular el Contacto al Acreditado (una sola vez)
         if (! $acreditado->contacto_id) {
             $acreditado->update(['contacto_id' => $contacto->id]);
         }
 
-        // Notificar a todos los super_admin de la nueva solicitud
-        \App\Models\User::role('super_admin')->get()->each(
-            fn ($admin) => $admin->notify(new \App\Notifications\NuevoMensajeContacto($contacto))
-        );
+        // Registrar la solicitud en el historial
+        AcreditadoSolicitud::create([
+            'acreditado_id'   => $acreditado->id,
+            'contacto_id'     => $contacto->id,
+            'tipo_tramite_id' => $data['tipo_tramite_id'] ?? null,
+            'servicio'        => $servicio,
+            'mensaje'         => $data['mensaje'] ?? null,
+            'municipio'       => $data['municipio'] ?? null,
+            'estado'          => $data['estado'] ?? null,
+            'estado_solicitud' => 'pendiente',
+        ]);
+
+        // ── Emails en cola ────────────────────────────────────────────────────
+        // 1. Confirmación al acreditado
+        if ($acreditado->email) {
+            Mail::to($acreditado->email)
+                ->queue(new ConfirmacionContacto($contacto));
+        }
+
+        // 2. Notificación a cada super_admin con email configurado
+        User::role('super_admin')
+            ->whereNotNull('email')
+            ->get()
+            ->each(fn (User $admin) => Mail::to($admin->email)
+                ->queue(new NuevoContactoAdmin($contacto))
+            );
 
         return response()->json([
-            'message'  => 'Tu solicitud fue recibida. Un asesor te contactará pronto.',
-            'contacto_id' => $contacto->id,
+            'message'      => 'Tu solicitud fue recibida. Un asesor te contactará pronto.',
+            'contacto_id'  => $contacto->id,
         ], 201);
     }
 }
