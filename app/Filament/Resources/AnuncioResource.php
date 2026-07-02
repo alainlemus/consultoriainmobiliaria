@@ -160,6 +160,22 @@ class AnuncioResource extends Resource
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->actions([
+                \Filament\Actions\Action::make('ver_fotos')
+                    ->label('Ver fotos')
+                    ->icon('heroicon-o-photo')
+                    ->color('info')
+                    ->visible(fn (Anuncio $record) => $record->fotos->isNotEmpty())
+                    ->modalHeading(fn (Anuncio $record) => 'Fotos del anuncio — ' . ($record->municipio ?? $record->tipo))
+                    ->modalContent(fn (Anuncio $record) => view('filament.modals.anuncio-fotos-carousel', [
+                        'fotos' => $record->fotos->map(fn ($f) => \URL::signedRoute(
+                            'api.anuncio.foto',
+                            ['fotoId' => $f->id],
+                            now()->addMinutes(30)
+                        ))->values(),
+                    ]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Cerrar'),
+
                 \Filament\Actions\Action::make('retirar')
                     ->label('Marcar retirado')
                     ->icon('heroicon-o-x-circle')
