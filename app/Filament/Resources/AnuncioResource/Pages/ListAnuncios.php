@@ -4,7 +4,6 @@ namespace App\Filament\Resources\AnuncioResource\Pages;
 
 use App\Filament\Resources\AnuncioResource;
 use Filament\Resources\Pages\ListRecords;
-use Filament\Actions;
 
 class ListAnuncios extends ListRecords
 {

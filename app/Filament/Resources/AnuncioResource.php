@@ -138,11 +138,9 @@ class AnuncioResource extends Resource
                     ->date('d/m/Y')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('fotos_count')
+                Tables\Columns\ViewColumn::make('fotos')
                     ->label('Fotos')
-                    ->counts('fotos')
-                    ->badge()
-                    ->color('info'),
+                    ->view('filament.tables.columns.anuncio-fotos'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('tipo')
