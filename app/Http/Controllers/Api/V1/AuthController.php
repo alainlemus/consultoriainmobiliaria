@@ -21,7 +21,9 @@ class AuthController extends Controller
             'email'           => $user->email,
             'telefono'        => $user->telefono,
             'foto_perfil_url' => $user->foto_perfil_url,
-            'roles'           => $user->getRoleNames(),
+            // getRoleNames() devuelve una Collection — castear a array plano
+            // para que JSON lo serialice como [] y no como {} con keys numéricas.
+            'roles'           => $user->getRoleNames()->values()->toArray(),
         ];
     }
 

@@ -52,7 +52,8 @@ class RouteController extends Controller
 
     /**
      * GET /api/v1/routes/asesores
-     * Lista de asesores con rutas (solo super_admin).
+     * Lista todos los asesores activos (solo super_admin).
+     * Incluye cuántos puntos registraron hoy para mostrar estado en la app.
      */
     public function listAsesores(Request $request): JsonResponse
     {
@@ -62,9 +63,13 @@ class RouteController extends Controller
             abort(403, 'Solo el administrador puede ver las rutas de otros asesores.');
         }
 
+        // Devolver TODOS los asesores activos, no solo los que registraron ruta hoy.
+        // El filtro anterior impedía ver rutas de días anteriores porque
+        // si el asesor no tenía ruta hoy nunca aparecía en la lista.
         $asesores = \App\Models\User::role('asesor')
-            ->whereHas('routePoints', fn ($q) => $q->whereDate('timestamp', now()->toDateString()))
+            ->where('activo', true)
             ->withCount(['routePoints as puntos_hoy' => fn ($q) => $q->whereDate('timestamp', now()->toDateString())])
+            ->withCount(['routePoints as total_puntos'])
             ->orderBy('name')
             ->get(['id', 'name']);
 
