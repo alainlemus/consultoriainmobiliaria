@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Jobs\EnviarWhatsAppBienvenidaProspecto;
 use App\Models\Contacto;
 use App\Models\User;
 use App\Notifications\NuevoProspectoCreado;
@@ -25,8 +26,8 @@ class ContactoObserver
      */
     public function created(Contacto $contacto): void
     {
-        // 1. WhatsApp de bienvenida al prospecto
-        $this->notificarBienvenidaProspecto($contacto);
+        // 1. WhatsApp de bienvenida al prospecto — en cola (no bloquea el request)
+        EnviarWhatsAppBienvenidaProspecto::dispatch($contacto);
 
         // 2. Notificar al asesor asignado (si hay)
         if ($contacto->asesor_id) {
@@ -63,32 +64,14 @@ class ContactoObserver
                 'descartado'        => 'atendido',
             ];
             $nuevoEstado = $map[$contacto->estado_prospecto] ?? 'en_proceso';
-            // Actualizar sin disparar eventos para evitar loop
             Contacto::withoutEvents(fn () => $contacto->updateQuietly(['estado' => $nuevoEstado]));
         }
 
         // Notificar al asesor si cambia la asignación
         if ($contacto->wasChanged('asesor_id') && $contacto->asesor_id !== null) {
             $contacto->asesor?->notify(new ProspectoAsignado($contacto));
-
-            // WhatsApp al nuevo asesor asignado
             $this->notificarAsesorNuevoProspecto($contacto);
         }
-    }
-
-    private function notificarBienvenidaProspecto(Contacto $contacto): void
-    {
-        $telefono = $contacto->celular ?? $contacto->telefono ?? null;
-        if (! $telefono) return;
-
-        $nombre = trim("{$contacto->nombre} {$contacto->apellidos}");
-
-        WhatsAppService::sendText(
-            $telefono,
-            "¡Hola *{$nombre}*! 👋\n\n" .
-            "Gracias por contactarnos. Hemos recibido tu información y un asesor se pondrá en contacto contigo a la brevedad.\n\n" .
-            "Si tienes alguna duda, no dudes en escribirnos. 🏠"
-        );
     }
 
     private function notificarAdminsNuevoProspectoWeb(Contacto $contacto): void

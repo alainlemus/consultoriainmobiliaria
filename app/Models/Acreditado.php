@@ -58,6 +58,12 @@ class Acreditado extends Authenticatable
         return $this->hasMany(Expediente::class, 'acreditado_id');
     }
 
+    /** Historial de solicitudes de asesoría enviadas desde la app */
+    public function solicitudes(): HasMany
+    {
+        return $this->hasMany(AcreditadoSolicitud::class);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /** Foto de perfil con URL firmada de 1 hora */

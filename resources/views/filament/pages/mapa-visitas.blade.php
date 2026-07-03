@@ -81,28 +81,28 @@
             {{-- Tipo visitas --}}
             <div class="flex gap-2 flex-wrap">
                 <button @click="setFiltroTipo('todos')"
-                    :class="filtroTipo === 'todos' ? 'bg-gray-800 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
-                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
+                    :class="filtroTipo === 'todos' ? 'bg-gray-800 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'">
                     Todos
                 </button>
                 <button @click="setFiltroTipo('visita_cliente')"
-                    :class="filtroTipo === 'visita_cliente' ? 'bg-amber-500 text-white' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'"
-                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
+                    :class="filtroTipo === 'visita_cliente' ? 'bg-amber-500 text-white' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'">
                     🏠 Clientes
                 </button>
                 <button @click="setFiltroTipo('propiedad')"
-                    :class="filtroTipo === 'propiedad' ? 'bg-purple-600 text-white' : 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'"
-                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
+                    :class="filtroTipo === 'propiedad' ? 'bg-purple-600 text-white' : 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'">
                     🏢 Propiedades
                 </button>
                 <button @click="setFiltroTipo('escuela')"
-                    :class="filtroTipo === 'escuela' ? 'bg-blue-600 text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'"
-                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
+                    :class="filtroTipo === 'escuela' ? 'bg-blue-600 text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'">
                     🏫 Escuelas
                 </button>
                 <button @click="toggleAnuncios()"
-                    :class="mostrarAnuncios ? 'bg-orange-500 text-white' : 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'"
-                    class="text-xs font-medium px-3 py-1.5 rounded-full transition">
+                    class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
+                    :class="mostrarAnuncios ? 'bg-orange-500 text-white' : 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'">
                     📢 Anuncios
                 </button>
             </div>
@@ -125,7 +125,7 @@
         </div>
 
         {{-- Mapa --}}
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden" style="height: 560px;">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden" style="height: 700px;">
             <div id="mapa-visitas" style="height: 100%; width: 100%; z-index: 0;"></div>
         </div>
 
@@ -157,6 +157,132 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
+    // ── Modal carousel de fotos (JS puro, montado en body) ──
+    (function () {
+        let urls   = [];
+        let idx    = 0;
+
+        // Overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'foto-modal-overlay';
+        overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:16px;cursor:zoom-out;';
+
+        // Contenedor central
+        const inner = document.createElement('div');
+        inner.style.cssText = 'position:relative;max-width:900px;width:100%;cursor:default;display:flex;flex-direction:column;align-items:center;gap:12px;';
+        inner.addEventListener('click', e => e.stopPropagation());
+
+        // Barra superior: contador + cerrar
+        const topBar = document.createElement('div');
+        topBar.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:space-between;';
+
+        const contador = document.createElement('span');
+        contador.style.cssText = 'color:rgba(255,255,255,0.7);font-size:13px;font-family:sans-serif;';
+
+        const btnCerrar = document.createElement('button');
+        btnCerrar.type = 'button';
+        btnCerrar.style.cssText = 'color:rgba(255,255,255,0.85);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:13px;font-family:sans-serif;padding:0;';
+        btnCerrar.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg> Cerrar';
+
+        topBar.appendChild(contador);
+        topBar.appendChild(btnCerrar);
+
+        // Zona imagen + flechas
+        const fotoWrap = document.createElement('div');
+        fotoWrap.style.cssText = 'position:relative;width:100%;display:flex;align-items:center;justify-content:center;';
+
+        const foto = document.createElement('img');
+        foto.alt = 'Foto ampliada';
+        foto.style.cssText = 'max-width:100%;max-height:80vh;object-fit:contain;border-radius:12px;box-shadow:0 25px 60px rgba(0,0,0,0.5);display:block;';
+
+        const btnPrev = document.createElement('button');
+        btnPrev.type = 'button';
+        btnPrev.style.cssText = 'position:absolute;left:-48px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.12);border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:white;transition:background 0.15s;';
+        btnPrev.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>';
+        btnPrev.addEventListener('mouseenter', () => btnPrev.style.background = 'rgba(255,255,255,0.25)');
+        btnPrev.addEventListener('mouseleave', () => btnPrev.style.background = 'rgba(255,255,255,0.12)');
+
+        const btnNext = document.createElement('button');
+        btnNext.type = 'button';
+        btnNext.style.cssText = 'position:absolute;right:-48px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.12);border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:white;transition:background 0.15s;';
+        btnNext.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>';
+        btnNext.addEventListener('mouseenter', () => btnNext.style.background = 'rgba(255,255,255,0.25)');
+        btnNext.addEventListener('mouseleave', () => btnNext.style.background = 'rgba(255,255,255,0.12)');
+
+        fotoWrap.appendChild(btnPrev);
+        fotoWrap.appendChild(foto);
+        fotoWrap.appendChild(btnNext);
+
+        // Miniaturas
+        const thumbsRow = document.createElement('div');
+        thumbsRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:100%;';
+
+        inner.appendChild(topBar);
+        inner.appendChild(fotoWrap);
+        inner.appendChild(thumbsRow);
+        overlay.appendChild(inner);
+        document.body.appendChild(overlay);
+
+        function render() {
+            foto.src = urls[idx];
+            contador.textContent = urls.length > 1 ? `${idx + 1} / ${urls.length}` : '';
+            btnPrev.style.display = urls.length > 1 ? 'flex' : 'none';
+            btnNext.style.display = urls.length > 1 ? 'flex' : 'none';
+            thumbsRow.style.display = urls.length > 1 ? 'flex' : 'none';
+            // Actualizar estado activo de miniaturas
+            thumbsRow.querySelectorAll('img').forEach((t, i) => {
+                t.style.outline = i === idx ? '3px solid white' : '3px solid transparent';
+                t.style.opacity = i === idx ? '1' : '0.55';
+            });
+        }
+
+        function irA(i) {
+            idx = (i + urls.length) % urls.length;
+            render();
+        }
+
+        function abrirModal(lista, inicio) {
+            urls = lista;
+            idx  = inicio ?? 0;
+
+            // Construir miniaturas
+            thumbsRow.innerHTML = '';
+            if (lista.length > 1) {
+                lista.forEach((u, i) => {
+                    const t = document.createElement('img');
+                    t.src = u;
+                    t.style.cssText = 'width:52px;height:52px;object-fit:cover;border-radius:6px;cursor:pointer;transition:opacity 0.15s,outline 0.15s;';
+                    t.addEventListener('click', () => irA(i));
+                    thumbsRow.appendChild(t);
+                });
+            }
+
+            render();
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function cerrarModal() {
+            overlay.style.display = 'none';
+            foto.src = '';
+            urls = [];
+            document.body.style.overflow = '';
+        }
+
+        btnPrev.addEventListener('click', () => irA(idx - 1));
+        btnNext.addEventListener('click', () => irA(idx + 1));
+        overlay.addEventListener('click', cerrarModal);
+        btnCerrar.addEventListener('click', cerrarModal);
+        document.addEventListener('keydown', e => {
+            if (overlay.style.display === 'none') return;
+            if (e.key === 'Escape')      cerrarModal();
+            if (e.key === 'ArrowLeft')   irA(idx - 1);
+            if (e.key === 'ArrowRight')  irA(idx + 1);
+        });
+
+        window.abrirFotoModal = abrirModal;
+    })();
+
     function mapaVisitas() {
         const datos    = JSON.parse(document.getElementById('ubicaciones-data').textContent);
         const anuncios = JSON.parse(document.getElementById('anuncios-data').textContent);
@@ -290,11 +416,12 @@
                     if (u.fotos && u.fotos.length > 0) {
                         const grid = document.createElement('div');
                         grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:8px';
-                        u.fotos.forEach(f => {
+                        const listaUrls = u.fotos.map(f => f.url);
+                        u.fotos.forEach((f, i) => {
                             const img = document.createElement('img');
                             img.src = f.url;
                             img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:pointer;';
-                            img.addEventListener('click', () => window.open(f.url, '_blank'));
+                            img.addEventListener('click', () => window.abrirFotoModal(listaUrls, i));
                             grid.appendChild(img);
                         });
                         popupEl.appendChild(grid);
@@ -320,7 +447,7 @@
 
             aplicarFiltros() {
                 this.marcadoresFiltrados = this.todos.filter(u => {
-                    const pasaTipo   = this.filtroTipo   === 'todos' || u.tipo      === this.filtroTipo;
+                    const pasaTipo   = this.filtroTipo === 'todos' || u.tipo === this.filtroTipo;
                     const pasaAsesor = this.filtroAsesor === ''      || String(u.asesor_id) === String(this.filtroAsesor);
                     return pasaTipo && pasaAsesor;
                 });
@@ -408,11 +535,12 @@
                     if (a.fotos && a.fotos.length > 0) {
                         const grid = document.createElement('div');
                         grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:8px';
-                        a.fotos.forEach(f => {
+                        const listaUrls = a.fotos.map(f => f.url);
+                        a.fotos.forEach((f, i) => {
                             const img = document.createElement('img');
                             img.src = f.url;
                             img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:pointer;';
-                            img.addEventListener('click', () => window.open(f.url, '_blank'));
+                            img.addEventListener('click', () => window.abrirFotoModal(listaUrls, i));
                             grid.appendChild(img);
                         });
                         popupEl.appendChild(grid);

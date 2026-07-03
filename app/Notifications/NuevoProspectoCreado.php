@@ -28,7 +28,12 @@ class NuevoProspectoCreado extends Notification
         $nombre   = $this->contacto->nombre;
         $servicio = $this->contacto->servicio ?? 'No especificado';
         $asesor   = $this->contacto->asesor?->name ?? 'Sin asesor';
-        $origen   = $this->contacto->origen === 'app_movil' ? '📱 App móvil' : '💻 Panel admin';
+        $origen   = match ($this->contacto->origen) {
+            'app_movil'      => '📱 App móvil',
+            'app_acreditado' => '👤 App acreditado',
+            'sitio_web'      => '🌐 Sitio web',
+            default          => '💻 Panel admin',
+        };
 
         return FilamentNotification::make()
             ->title('👤 Nuevo prospecto registrado')

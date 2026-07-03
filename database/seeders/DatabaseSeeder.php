@@ -37,5 +37,8 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Limpiando caché de permisos...');
         Artisan::call('permission:cache-reset');
         $this->command->info('Permisos listos.');
+
+        $this->command->info('Creando rutas de prueba...');
+        $this->call(RutaAsesorSeeder::class);
     }
 }

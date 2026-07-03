@@ -18,10 +18,19 @@ RUN apk add --no-cache \
     libxml2-dev \
     libzip-dev \
     icu-dev \
+    imagemagick-dev \
+    imagemagick \
+    libjpeg-turbo-dev \
+    libwebp-dev \
+    autoconf \
+    build-base \
     unzip \
     git
 
-RUN docker-php-ext-install pdo_mysql bcmath gd zip intl
+RUN docker-php-ext-install pdo_mysql bcmath gd zip intl \
+    && pecl install imagick \
+    && docker-php-ext-enable imagick \
+    && apk del autoconf build-base
 
 RUN { \
     echo 'upload_max_filesize=100M'; \

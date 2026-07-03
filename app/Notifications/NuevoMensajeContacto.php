@@ -21,15 +21,22 @@ class NuevoMensajeContacto extends Notification
 
     public function toDatabase(object $notifiable): array
     {
+        $origen = match ($this->contacto->origen) {
+            'app_movil'      => '📱 App móvil',
+            'app_acreditado' => '👤 App acreditado',
+            'sitio_web'      => '🌐 Sitio web',
+            default          => '💻 Panel admin',
+        };
+
         return FilamentNotification::make()
-            ->title('Nuevo prospecto del sitio web')
-            ->body("{$this->contacto->nombre} · {$this->contacto->telefono}")
+            ->title("Nueva solicitud de asesoría — {$origen}")
+            ->body("{$this->contacto->nombre} · {$this->contacto->telefono} · {$this->contacto->servicio}")
             ->icon('heroicon-o-envelope')
             ->iconColor('warning')
             ->actions([
                 Action::make('ver')
                     ->label('Ver prospecto')
-                    ->url(url('/admin/contactos'))
+                    ->url(url("/admin/contactos/{$this->contacto->id}/edit"))
                     ->markAsRead(),
             ])
             ->getDatabaseMessage();
