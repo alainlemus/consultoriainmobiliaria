@@ -9,7 +9,7 @@ class UbicacionFoto extends Model
 {
     protected $table = 'ubicacion_fotos';
 
-    protected $fillable = ['ubicacion_id', 'ruta', 'mime'];
+    protected $fillable = ['ubicacion_id', 'ruta', 'ruta_thumb', 'mime'];
 
     public function ubicacion(): BelongsTo
     {

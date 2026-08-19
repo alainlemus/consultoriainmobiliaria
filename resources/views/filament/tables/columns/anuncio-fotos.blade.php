@@ -6,7 +6,10 @@
     <span class="text-gray-400 text-xs italic">Sin fotos</span>
 @else
     @php
-        $urls = $fotos->map(fn ($f) => \URL::signedRoute('api.anuncio.foto', ['fotoId' => $f->id], now()->addMinutes(30)))->values();
+        // Expiración redondeada a la hora: misma URL firmada en renders repetidos
+        // dentro de la misma hora, así el navegador puede reutilizar la imagen cacheada.
+        $expira = now()->addHour()->startOfHour();
+        $urls = $fotos->map(fn ($f) => \URL::signedRoute('api.anuncio.foto', ['fotoId' => $f->id, 'thumb' => 1], $expira))->values();
     @endphp
 
     <div class="flex flex-wrap gap-1 items-center">

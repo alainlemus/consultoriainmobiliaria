@@ -6,12 +6,18 @@
     <span class="text-gray-400 text-xs">Sin fotos</span>
 @else
     <div class="flex flex-wrap gap-1">
+        @php
+            // Expiración redondeada a la hora: misma URL firmada en renders repetidos
+            // dentro de la misma hora, así el navegador puede reutilizar la imagen cacheada.
+            $expira = now()->addHour()->startOfHour();
+        @endphp
         @foreach($fotos->take(3) as $foto)
             @php
-                $url = \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $foto->id], now()->addMinutes(30));
+                $urlCompleta = \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $foto->id], $expira);
+                $urlThumb    = \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $foto->id, 'thumb' => 1], $expira);
             @endphp
-            <a href="{{ $url }}" target="_blank">
-                <img src="{{ $url }}"
+            <a href="{{ $urlCompleta }}" target="_blank">
+                <img src="{{ $urlThumb }}"
                      class="w-10 h-10 object-cover rounded"
                      loading="lazy" />
             </a>

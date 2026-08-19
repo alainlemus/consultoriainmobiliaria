@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\SimuladorPrecalificacion;
 use App\Models\User;
+use App\Services\UmaService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -82,7 +83,7 @@ class SimuladorPrecalificacionTest extends TestCase
             50000,  // subcuenta
             5,      // antigüedad
             35,     // edad
-            SimuladorPrecalificacion::VSM_MENSUAL
+            UmaService::getUmaMensual()
         );
 
         $this->assertSame('Crédito Tradicional FOVISSSTE', $resultado['tipo']);
@@ -114,7 +115,7 @@ class SimuladorPrecalificacionTest extends TestCase
         $metodo    = new \ReflectionMethod($simulador, 'calcularTradicional');
         $metodo->setAccessible(true);
 
-        $resultado = $metodo->invoke($simulador, 20000, 0, 5, 71, SimuladorPrecalificacion::VSM_MENSUAL);
+        $resultado = $metodo->invoke($simulador, 20000, 0, 5, 71, UmaService::getUmaMensual());
 
         $this->assertFalse($resultado['elegible']);
         $this->assertNotEmpty($resultado['errores']);
@@ -127,11 +128,11 @@ class SimuladorPrecalificacionTest extends TestCase
         $metodo->setAccessible(true);
 
         // Edad 50 → plazo = min(30, 70-50) = 20 años
-        $r50 = $metodo->invoke($simulador, 20000, 0, 5, 50, SimuladorPrecalificacion::VSM_MENSUAL);
+        $r50 = $metodo->invoke($simulador, 20000, 0, 5, 50, UmaService::getUmaMensual());
         $this->assertSame(20, $r50['plazo_años']);
 
         // Edad 35 → plazo = min(30, 70-35) = 30 años
-        $r35 = $metodo->invoke($simulador, 20000, 0, 5, 35, SimuladorPrecalificacion::VSM_MENSUAL);
+        $r35 = $metodo->invoke($simulador, 20000, 0, 5, 35, UmaService::getUmaMensual());
         $this->assertSame(30, $r35['plazo_años']);
     }
 
@@ -143,7 +144,7 @@ class SimuladorPrecalificacionTest extends TestCase
         $metodo    = new \ReflectionMethod($simulador, 'calcularPensionados');
         $metodo->setAccessible(true);
 
-        $resultado = $metodo->invoke($simulador, 35000, 0, 55, SimuladorPrecalificacion::VSM_MENSUAL);
+        $resultado = $metodo->invoke($simulador, 35000, 0, 55, UmaService::getUmaMensual());
 
         $this->assertSame('Crédito Pensionados FOVISSSTE', $resultado['tipo']);
         $this->assertTrue($resultado['elegible']);
@@ -159,7 +160,7 @@ class SimuladorPrecalificacionTest extends TestCase
         $metodo    = new \ReflectionMethod($simulador, 'calcularPensionados');
         $metodo->setAccessible(true);
 
-        $resultado = $metodo->invoke($simulador, 35000, 0, 40, SimuladorPrecalificacion::VSM_MENSUAL);
+        $resultado = $metodo->invoke($simulador, 35000, 0, 40, UmaService::getUmaMensual());
         $this->assertFalse($resultado['elegible']);
     }
 
@@ -169,7 +170,7 @@ class SimuladorPrecalificacionTest extends TestCase
         $metodo    = new \ReflectionMethod($simulador, 'calcularPensionados');
         $metodo->setAccessible(true);
 
-        $resultado = $metodo->invoke($simulador, 35000, 0, 75, SimuladorPrecalificacion::VSM_MENSUAL);
+        $resultado = $metodo->invoke($simulador, 35000, 0, 75, UmaService::getUmaMensual());
         $this->assertFalse($resultado['elegible']);
     }
 
@@ -183,7 +184,7 @@ class SimuladorPrecalificacionTest extends TestCase
         $metodoConyugal->setAccessible(true);
         $metodoTradicional->setAccessible(true);
 
-        $vsm = SimuladorPrecalificacion::VSM_MENSUAL;
+        $vsm = UmaService::getUmaMensual();
 
         $conyugal    = $metodoConyugal->invoke($simulador, 15000, 12000, 0, 5, 35, $vsm);
         $tradicional = $metodoTradicional->invoke($simulador, 27000, 0, 5, 35, $vsm);
@@ -235,7 +236,7 @@ class SimuladorPrecalificacionTest extends TestCase
             50000,  // subcuenta INFONAVIT
             5,      // antigüedad
             35,     // edad
-            SimuladorPrecalificacion::VSM_MENSUAL
+            UmaService::getUmaMensual()
         );
 
         $this->assertSame('FOVISSSTE-INFONAVIT Individual (Crédito Unidos)', $resultado['tipo']);
@@ -250,10 +251,11 @@ class SimuladorPrecalificacionTest extends TestCase
         $metodo->setAccessible(true);
 
         // Sueldo muy alto — crédito FOVISSSTE no debe superar tope
-        $resultado = $metodo->invoke($simulador, 500000, 0, 0, 5, 35, SimuladorPrecalificacion::VSM_MENSUAL);
+        $resultado = $metodo->invoke($simulador, 500000, 0, 0, 5, 35, UmaService::getUmaMensual());
 
+        $topeInfonavit = SimuladorPrecalificacion::TOPE_UMA_INFONAVIT * UmaService::getUmaAnual();
         $this->assertLessThanOrEqual(
-            SimuladorPrecalificacion::TOPE_INFONAVIT,
+            $topeInfonavit,
             $resultado['monto_credito']
         );
     }
@@ -264,7 +266,7 @@ class SimuladorPrecalificacionTest extends TestCase
         $metodo    = new \ReflectionMethod($simulador, 'calcularInfonavitFovissste');
         $metodo->setAccessible(true);
 
-        $resultado = $metodo->invoke($simulador, 20000, 10000, 80000, 5, 35, SimuladorPrecalificacion::VSM_MENSUAL);
+        $resultado = $metodo->invoke($simulador, 20000, 10000, 80000, 5, 35, UmaService::getUmaMensual());
 
         // valor_inmueble = crédito FOVISSSTE + subcuenta INFONAVIT
         $this->assertEqualsWithDelta(
@@ -280,7 +282,7 @@ class SimuladorPrecalificacionTest extends TestCase
         $metodo    = new \ReflectionMethod($simulador, 'calcularInfonavitFovissste');
         $metodo->setAccessible(true);
 
-        $resultado = $metodo->invoke($simulador, 20000, 0, 0, 1, 35, SimuladorPrecalificacion::VSM_MENSUAL);
+        $resultado = $metodo->invoke($simulador, 20000, 0, 0, 1, 35, UmaService::getUmaMensual());
 
         $this->assertFalse($resultado['elegible']);
         $this->assertNotEmpty($resultado['errores']);
@@ -292,7 +294,7 @@ class SimuladorPrecalificacionTest extends TestCase
         $metodo    = new \ReflectionMethod($simulador, 'calcularInfonavitFovissste');
         $metodo->setAccessible(true);
 
-        $resultado = $metodo->invoke($simulador, 20000, 0, 0, 5, 71, SimuladorPrecalificacion::VSM_MENSUAL);
+        $resultado = $metodo->invoke($simulador, 20000, 0, 0, 5, 71, UmaService::getUmaMensual());
 
         $this->assertFalse($resultado['elegible']);
     }
@@ -308,15 +310,16 @@ class SimuladorPrecalificacionTest extends TestCase
 
     // ─── Constantes de negocio ─────────────────────────────────────────────
 
-    public function test_constantes_tienen_valores_correctos_2024(): void
+    public function test_constantes_tienen_valores_correctos(): void
     {
-        $this->assertSame(3300.54, SimuladorPrecalificacion::VSM_MENSUAL);
+        // El valor VSM/UMA ya no es una constante fija — se calcula dinámicamente
+        // vía UmaService (BD con fallback), actualizable cada año sin tocar código.
+        $this->assertSame(UmaService::FALLBACK_MENSUAL, UmaService::getUmaMensual());
         $this->assertSame(954,     SimuladorPrecalificacion::TOPE_VSM);
         $this->assertSame(0.30,    SimuladorPrecalificacion::PORCENTAJE_PAGO);
         $this->assertSame(30,      SimuladorPrecalificacion::PLAZO_TRADICIONAL);
         $this->assertSame(20,      SimuladorPrecalificacion::PLAZO_PENSIONADOS);
         $this->assertSame(0.08,    SimuladorPrecalificacion::HONORARIOS_DEFAULT);
         $this->assertSame(430,     SimuladorPrecalificacion::TOPE_UMA_INFONAVIT);
-        $this->assertEqualsWithDelta(1533474.60, SimuladorPrecalificacion::TOPE_INFONAVIT, 0.01);
     }
 }

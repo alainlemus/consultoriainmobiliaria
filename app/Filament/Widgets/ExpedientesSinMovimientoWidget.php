@@ -24,14 +24,9 @@ class ExpedientesSinMovimientoWidget extends BaseWidget
         return $table
             ->query(
                 Expediente::query()
+                    ->with(['tipoTramite:id,nombre', 'etapa:id,nombre', 'asesor:id,name'])
                     ->whereIn('estado', ['en_proceso', 'aprobado', 'firmado'])
-                    ->where(function ($q) {
-                        // Sin seguimientos en los últimos 7 días
-                        $q->whereDoesntHave('seguimientos')
-                          ->orWhereHas('seguimientos', function ($sq) {
-                              $sq->where('created_at', '<', now()->subDays(7));
-                          }, '=', $q->getModel()->seguimientos()->getRelated()::query()->count());
-                    })
+                    // Sin seguimientos en los últimos 7 días (incluye los que nunca tuvieron ninguno)
                     ->whereDoesntHave('seguimientos', fn ($sq) =>
                         $sq->where('created_at', '>=', now()->subDays(7))
                     )

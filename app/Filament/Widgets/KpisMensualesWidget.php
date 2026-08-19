@@ -9,6 +9,7 @@ use App\Models\GastoFinanciado;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class KpisMensualesWidget extends BaseWidget
 {
@@ -64,76 +65,89 @@ class KpisMensualesWidget extends BaseWidget
             ? Carbon::create($anio, $mes, 1)->translatedFormat('F Y')
             : 'Año ' . $anio;
 
-        // ── Builders reutilizables ────────────────────────────────────────────
+        $cacheKey = "dashboard:kpis_mensuales:{$anio}:" . ($mes ?? 'todo');
 
-        $expQ = fn () => Expediente::query()
-            ->when($mes, fn ($q) => $q->whereMonth('fecha_apertura', $mes))
-            ->whereYear('fecha_apertura', $anio);
+        $d = Cache::remember($cacheKey, 90, function () use ($mes, $anio) {
+            // ── Builders reutilizables ────────────────────────────────────────
 
-        $cerQ = fn () => Expediente::where('estado', 'cerrado')
-            ->when($mes, fn ($q) => $q->whereMonth('fecha_cierre', $mes))
-            ->whereYear('fecha_cierre', $anio);
+            $expQ = fn () => Expediente::query()
+                ->when($mes, fn ($q) => $q->whereMonth('fecha_apertura', $mes))
+                ->whereYear('fecha_apertura', $anio);
 
-        $comQ = fn () => Comision::query()
-            ->when($mes, fn ($q) => $q->whereMonth('fecha_generacion', $mes))
-            ->whereYear('fecha_generacion', $anio);
+            $cerQ = fn () => Expediente::where('estado', 'cerrado')
+                ->when($mes, fn ($q) => $q->whereMonth('fecha_cierre', $mes))
+                ->whereYear('fecha_cierre', $anio);
 
-        $gastoQ = fn () => GastoFinanciado::query()
-            ->when($mes, fn ($q) => $q->whereMonth('fecha_pago', $mes))
-            ->whereYear('fecha_pago', $anio);
+            $comQ = fn () => Comision::query()
+                ->when($mes, fn ($q) => $q->whereMonth('fecha_generacion', $mes))
+                ->whereYear('fecha_generacion', $anio);
 
-        // ── Expedientes ───────────────────────────────────────────────────────
+            $gastoQ = fn () => GastoFinanciado::query()
+                ->when($mes, fn ($q) => $q->whereMonth('fecha_pago', $mes))
+                ->whereYear('fecha_pago', $anio);
 
-        $totalAbiertos   = $expQ()->count();
-        $totalCerrados   = $cerQ()->count();
-        $totalCancelados = Expediente::where('estado', 'cancelado')
-            ->when($mes, fn ($q) => $q->whereMonth('updated_at', $mes))
-            ->whereYear('updated_at', $anio)->count();
-        $activos = Expediente::whereIn('estado', ['en_proceso', 'aprobado', 'firmado'])->count();
+            // ── Expedientes ───────────────────────────────────────────────────
 
-        $tasaCierre = $totalAbiertos > 0
-            ? round(($totalCerrados / $totalAbiertos) * 100, 1) : 0;
+            $totalAbiertos   = $expQ()->count();
+            $totalCerrados   = $cerQ()->count();
+            $totalCancelados = Expediente::where('estado', 'cancelado')
+                ->when($mes, fn ($q) => $q->whereMonth('updated_at', $mes))
+                ->whereYear('updated_at', $anio)->count();
+            $activos = Expediente::whereIn('estado', ['en_proceso', 'aprobado', 'firmado'])->count();
 
-        // ── 💰 FLUJO DE DINERO ────────────────────────────────────────────────
+            $tasaCierre = $totalAbiertos > 0
+                ? round(($totalCerrados / $totalAbiertos) * 100, 1) : 0;
 
-        // INGRESOS: honorarios efectivamente cobrados (pagados = true)
-        $ingresosCobrados = $cerQ()->where('honorarios_pagados', true)->sum('honorarios_monto');
+            // ── 💰 FLUJO DE DINERO ──────────────────────────────────────────────
 
-        // INGRESOS PENDIENTES: honorarios de cerrados aún no cobrados
-        $ingresosPendientes = $cerQ()->where('honorarios_pagados', false)->sum('honorarios_monto');
+            // INGRESOS: honorarios efectivamente cobrados (pagados = true)
+            $ingresosCobrados = $cerQ()->where('honorarios_pagados', true)->sum('honorarios_monto');
 
-        // INGRESOS ESPERADOS: todos los expedientes activos (pipeline)
-        $ingresosEsperados = Expediente::whereIn('estado', ['en_proceso', 'aprobado', 'firmado'])
-            ->sum('honorarios_monto');
+            // INGRESOS PENDIENTES: honorarios de cerrados aún no cobrados
+            $ingresosPendientes = $cerQ()->where('honorarios_pagados', false)->sum('honorarios_monto');
 
-        // EGRESOS: comisiones pagadas a asesores
-        $egresoComisionesPagadas  = $comQ()->where('estado', 'pagada')->sum('monto_comision');
-        $egresoComisionesPendientes = $comQ()->whereIn('estado', ['pendiente', 'aprobada'])->sum('monto_comision');
+            // INGRESOS ESPERADOS: todos los expedientes activos (pipeline)
+            $ingresosEsperados = Expediente::whereIn('estado', ['en_proceso', 'aprobado', 'firmado'])
+                ->sum('honorarios_monto');
 
-        // EGRESOS: gastos financiados pagados por la consultora
-        $egresoGastosPagados = $gastoQ()->sum('monto');
+            // EGRESOS: comisiones pagadas a asesores
+            $egresoComisionesPagadas  = $comQ()->where('estado', 'pagada')->sum('monto_comision');
+            $egresoComisionesPendientes = $comQ()->whereIn('estado', ['pendiente', 'aprobada'])->sum('monto_comision');
 
-        // TOTAL EGRESOS REALES
-        $egresoTotal = $egresoComisionesPagadas + $egresoGastosPagados;
+            // EGRESOS: gastos financiados pagados por la consultora
+            $egresoGastosPagados = $gastoQ()->sum('monto');
 
-        // FLUJO NETO: lo que realmente entró menos lo que salió
-        $flujoNeto = $ingresosCobrados - $egresoTotal;
+            // TOTAL EGRESOS REALES
+            $egresoTotal = $egresoComisionesPagadas + $egresoGastosPagados;
 
-        // MARGEN: % de lo cobrado que quedó en la empresa
-        $margen = $ingresosCobrados > 0
-            ? round((($ingresosCobrados - $egresoTotal) / $ingresosCobrados) * 100, 1)
-            : 0;
+            // FLUJO NETO: lo que realmente entró menos lo que salió
+            $flujoNeto = $ingresosCobrados - $egresoTotal;
 
-        // ── Honorarios detalle ────────────────────────────────────────────────
+            // MARGEN: % de lo cobrado que quedó en la empresa
+            $margen = $ingresosCobrados > 0
+                ? round((($ingresosCobrados - $egresoTotal) / $ingresosCobrados) * 100, 1)
+                : 0;
 
-        $honTotal     = $cerQ()->sum('honorarios_monto');
-        $ticketProm   = $totalCerrados > 0 ? round($honTotal / $totalCerrados, 2) : 0;
+            // ── Honorarios detalle ──────────────────────────────────────────────
 
-        // ── Prospectos ────────────────────────────────────────────────────────
+            $honTotal     = $cerQ()->sum('honorarios_monto');
+            $ticketProm   = $totalCerrados > 0 ? round($honTotal / $totalCerrados, 2) : 0;
 
-        $prospectos      = Contacto::when($mes, fn ($q) => $q->whereMonth('created_at', $mes))
-            ->whereYear('created_at', $anio)->count();
-        $prospNuevos     = Contacto::where('estado_prospecto', 'nuevo')->count();
+            // ── Prospectos ────────────────────────────────────────────────────
+
+            $prospectos      = Contacto::when($mes, fn ($q) => $q->whereMonth('created_at', $mes))
+                ->whereYear('created_at', $anio)->count();
+            $prospNuevos     = Contacto::where('estado_prospecto', 'nuevo')->count();
+
+            return compact(
+                'totalAbiertos', 'totalCerrados', 'totalCancelados', 'activos', 'tasaCierre',
+                'ingresosCobrados', 'ingresosPendientes', 'ingresosEsperados',
+                'egresoComisionesPagadas', 'egresoComisionesPendientes', 'egresoGastosPagados',
+                'flujoNeto', 'margen', 'ticketProm', 'prospectos', 'prospNuevos'
+            );
+        });
+
+        extract($d);
 
         // ── Stats ─────────────────────────────────────────────────────────────
 

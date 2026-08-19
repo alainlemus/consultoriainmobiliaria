@@ -9,7 +9,7 @@ class AnuncioFoto extends Model
 {
     protected $table = 'anuncio_fotos';
 
-    protected $fillable = ['anuncio_id', 'ruta', 'mime'];
+    protected $fillable = ['anuncio_id', 'ruta', 'ruta_thumb', 'mime'];
 
     public function anuncio(): BelongsTo
     {

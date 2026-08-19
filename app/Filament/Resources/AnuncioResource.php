@@ -170,7 +170,7 @@ class AnuncioResource extends Resource
                         'fotos' => $record->fotos->map(fn ($f) => \URL::signedRoute(
                             'api.anuncio.foto',
                             ['fotoId' => $f->id],
-                            now()->addMinutes(30)
+                            now()->addHour()->startOfHour()
                         ))->values(),
                     ]))
                     ->modalSubmitAction(false)

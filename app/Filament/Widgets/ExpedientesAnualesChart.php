@@ -6,6 +6,7 @@ use App\Models\Comision;
 use App\Models\Expediente;
 use App\Models\GastoFinanciado;
 use Filament\Widgets\Widget;
+use Illuminate\Support\Facades\Cache;
 
 class ExpedientesAnualesChart extends Widget
 {
@@ -24,6 +25,11 @@ class ExpedientesAnualesChart extends Widget
     {
         $year = now()->year;
 
+        return Cache::remember("dashboard:expedientes_anuales:{$year}", 300, fn () => $this->buildViewData($year));
+    }
+
+    private function buildViewData(int $year): array
+    {
         $meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
         $expedientesPorMes = array_fill(0, 12, 0);

@@ -29,6 +29,7 @@ class ProspectosPendientesCierreWidget extends BaseWidget
         return $table
             ->query(
                 Contacto::query()
+                    ->with('asesor:id,name')
                     ->where('estado_prospecto', 'pendiente_cierre')
                     ->orderBy('fecha_envio_dueno', 'asc')
             )

@@ -56,7 +56,9 @@ class AnuncioController extends Controller
                 'es_mio'      => $a->user_id === $user->id,
                 'fotos'       => $a->fotos->map(fn ($f) => [
                     'id'  => $f->id,
-                    'url' => \URL::signedRoute('api.anuncio.foto', ['fotoId' => $f->id], now()->addHour()),
+                    // Expiración redondeada a la hora: mismas URLs en requests repetidos
+                    // dentro de la misma hora, para que la app pueda cachear las imágenes.
+                    'url' => \URL::signedRoute('api.anuncio.foto', ['fotoId' => $f->id], now()->addHour()->startOfHour()),
                 ]),
             ]);
 
@@ -146,9 +148,12 @@ class AnuncioController extends Controller
                 "anuncios/{$id}/fotos",
                 self::DISK
             );
+            $rutaThumb = $servicio->generarThumbnail($ruta, self::DISK);
+
             $foto = AnuncioFoto::create([
                 'anuncio_id' => $id,
                 'ruta'       => $ruta,
+                'ruta_thumb' => $rutaThumb,
                 'mime'       => 'image/jpeg',
             ]);
             $guardadas[] = [
@@ -168,13 +173,22 @@ class AnuncioController extends Controller
     {
         $foto = AnuncioFoto::findOrFail($fotoId);
 
-        if (! Storage::disk(self::DISK)->exists($foto->ruta)) {
+        $ruta = ($request->boolean('thumb') && $foto->ruta_thumb)
+            ? $foto->ruta_thumb
+            : $foto->ruta;
+
+        if (! Storage::disk(self::DISK)->exists($ruta)) {
             abort(404, 'Foto no encontrada.');
         }
 
         return response()->file(
-            Storage::disk(self::DISK)->path($foto->ruta),
-            ['Content-Type' => $foto->mime ?? 'image/jpeg']
+            Storage::disk(self::DISK)->path($ruta),
+            [
+                'Content-Type'  => $foto->mime ?? 'image/jpeg',
+                // La URL firmada es estable dentro de la misma hora (ver generadores),
+                // así que el navegador puede reutilizar la copia cacheada.
+                'Cache-Control' => 'public, max-age=3600',
+            ]
         );
     }
 
