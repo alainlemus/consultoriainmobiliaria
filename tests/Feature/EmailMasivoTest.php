@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -27,11 +28,20 @@ class EmailMasivoTest extends TestCase
         Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'asesor',      'guard_name' => 'web']);
 
+        // ContactoResource::canViewAny() exige el permiso 'ViewAny:Contacto' —
+        // sin él, mountar ListContactos devuelve 403 y rompe el snapshot de Livewire.
+        $permisos = ['ViewAny:Contacto', 'View:Contacto'];
+        foreach ($permisos as $p) {
+            Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
+        }
+
         $this->admin = User::factory()->create(['activo' => true]);
         $this->admin->assignRole('super_admin');
+        $this->admin->syncPermissions($permisos);
 
         $this->asesor = User::factory()->create(['activo' => true]);
         $this->asesor->assignRole('asesor');
+        $this->asesor->syncPermissions($permisos);
     }
 
     private function crearContactos(int $n = 3, bool $conEmail = true): \Illuminate\Support\Collection

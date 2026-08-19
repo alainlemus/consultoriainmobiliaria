@@ -1,7 +1,7 @@
 <x-filament-panels::page>
 
-    {{-- Leaflet CSS --}}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    {{-- Leaflet CSS (auto-hospedado, ver public/vendor/leaflet) --}}
+    <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}" />
 
     @php
         $stats        = $this->getStats();
@@ -153,8 +153,8 @@
 
     </div>
 
-    {{-- Leaflet JS --}}
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    {{-- Leaflet JS (auto-hospedado, ver public/vendor/leaflet) --}}
+    <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 
     <script>
     // ── Modal carousel de fotos (JS puro, montado en body) ──

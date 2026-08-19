@@ -6,7 +6,7 @@
     </x-filament::section>
 
     @once
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+        <script src="{{ asset('vendor/chartjs/chart.umd.min.js') }}"></script>
     @endonce
 
     <script>

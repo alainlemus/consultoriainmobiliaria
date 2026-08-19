@@ -1,6 +1,6 @@
 <x-filament-panels::page>
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}" />
 
     @php
         $asesores = $this->getAsesores();
@@ -136,7 +136,7 @@
 
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 
     <script>
     function rutasAsesores() {

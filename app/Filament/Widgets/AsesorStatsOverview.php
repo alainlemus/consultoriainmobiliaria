@@ -8,6 +8,7 @@ use App\Models\Expediente;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class AsesorStatsOverview extends BaseWidget
 {
@@ -22,61 +23,59 @@ class AsesorStatsOverview extends BaseWidget
     {
         $id = Auth::id();
 
-        $prospectos = Contacto::where('asesor_id', $id)
-            ->whereNotIn('estado_prospecto', ['descartado', 'convertido'])
-            ->count();
-
-        $pendientesCierre = Contacto::where('asesor_id', $id)
-            ->where('estado_prospecto', 'pendiente_cierre')
-            ->count();
-
-        $expedientesActivos = Expediente::where('asesor_id', $id)
-            ->whereIn('estado', ['en_proceso', 'aprobado', 'firmado'])
-            ->count();
-
-        $expedientesCerrados = Expediente::where('asesor_id', $id)
-            ->where('estado', 'cerrado')
-            ->count();
-
-        $comisionesPendientes = Comision::where('asesor_id', $id)
-            ->where('estado', 'pendiente')
-            ->sum('monto_comision');
-
-        $comisionesAprobadas = Comision::where('asesor_id', $id)
-            ->where('estado', 'aprobada')
-            ->sum('monto_comision');
-
-        $comisionesTotal = Comision::where('asesor_id', $id)
-            ->where('estado', 'pagada')
-            ->sum('monto_comision');
+        $data = Cache::remember("dashboard:asesor_stats:{$id}", 90, function () use ($id) {
+            return [
+                'prospectos' => Contacto::where('asesor_id', $id)
+                    ->whereNotIn('estado_prospecto', ['descartado', 'convertido'])
+                    ->count(),
+                'pendientesCierre' => Contacto::where('asesor_id', $id)
+                    ->where('estado_prospecto', 'pendiente_cierre')
+                    ->count(),
+                'expedientesActivos' => Expediente::where('asesor_id', $id)
+                    ->whereIn('estado', ['en_proceso', 'aprobado', 'firmado'])
+                    ->count(),
+                'expedientesCerrados' => Expediente::where('asesor_id', $id)
+                    ->where('estado', 'cerrado')
+                    ->count(),
+                'comisionesPendientes' => Comision::where('asesor_id', $id)
+                    ->where('estado', 'pendiente')
+                    ->sum('monto_comision'),
+                'comisionesAprobadas' => Comision::where('asesor_id', $id)
+                    ->where('estado', 'aprobada')
+                    ->sum('monto_comision'),
+                'comisionesTotal' => Comision::where('asesor_id', $id)
+                    ->where('estado', 'pagada')
+                    ->sum('monto_comision'),
+            ];
+        });
 
         return [
-            Stat::make('Prospectos activos', $prospectos)
+            Stat::make('Prospectos activos', $data['prospectos'])
                 ->description('Sin contar descartados ni convertidos')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('primary'),
 
-            Stat::make('Pendientes de cierre', $pendientesCierre)
+            Stat::make('Pendientes de cierre', $data['pendientesCierre'])
                 ->description('Listos para iniciar expediente')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('warning'),
 
-            Stat::make('Expedientes en proceso', $expedientesActivos)
+            Stat::make('Expedientes en proceso', $data['expedientesActivos'])
                 ->description('Activos, aprobados o firmados')
                 ->descriptionIcon('heroicon-m-folder-open')
                 ->color('info'),
 
-            Stat::make('Expedientes cerrados', $expedientesCerrados)
+            Stat::make('Expedientes cerrados', $data['expedientesCerrados'])
                 ->description('Trámites concluidos')
                 ->descriptionIcon('heroicon-m-check-badge')
                 ->color('success'),
 
-            Stat::make('Comisiones por cobrar', '$' . number_format($comisionesPendientes + $comisionesAprobadas, 0, '.', ','))
+            Stat::make('Comisiones por cobrar', '$' . number_format($data['comisionesPendientes'] + $data['comisionesAprobadas'], 0, '.', ','))
                 ->description('Pendientes + aprobadas')
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('warning'),
 
-            Stat::make('Comisiones cobradas', '$' . number_format($comisionesTotal, 0, '.', ','))
+            Stat::make('Comisiones cobradas', '$' . number_format($data['comisionesTotal'], 0, '.', ','))
                 ->description('Historial total pagado')
                 ->descriptionIcon('heroicon-m-currency-dollar')
                 ->color('success'),

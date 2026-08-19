@@ -62,7 +62,7 @@ class EditExpediente extends EditRecord
         $cfg    = static::$estadoConfig[$estado] ?? ['label' => ucfirst($estado), 'bg' => '#6b7280', 'text' => '#ffffff'];
 
         $badgeEstado = sprintf(
-            '<span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;background:%s;color:%s;vertical-align:middle;margin-left:10px;">%s</span>',
+            '<span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;background:%s;color:%s;white-space:nowrap;">%s</span>',
             $cfg['bg'],
             $cfg['text'],
             e($cfg['label'])
@@ -71,7 +71,7 @@ class EditExpediente extends EditRecord
         $tipoTramite = $this->record->tipoTramite?->nombre;
         $badgeTipo = $tipoTramite
             ? sprintf(
-                '<span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;background:#0e7490;color:#ecfeff;vertical-align:middle;margin-left:6px;">%s</span>',
+                '<span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;background:#0e7490;color:#ecfeff;white-space:nowrap;">%s</span>',
                 e($tipoTramite)
             )
             : '';
@@ -79,12 +79,21 @@ class EditExpediente extends EditRecord
         $nombre = $this->record->acreditado_nombre;
         $nombreHtml = $nombre
             ? sprintf(
-                '<div style="font-size:1.35rem;font-weight:600;color:#ffffff;margin-top:2px;line-height:1.3;">%s</div>',
+                '<div style="font-size:1.35rem;font-weight:600;color:#ffffff;margin-top:4px;line-height:1.3;">%s</div>',
                 e($nombre)
             )
             : '';
 
-        return new HtmlString('<div>' . $folio . $badgeEstado . $badgeTipo . $nombreHtml . '</div>');
+        $folioHtml = sprintf('<span style="white-space:nowrap;">%s</span>', e($folio));
+
+        return new HtmlString(
+            '<div style="max-width:100%;">'
+                . '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">'
+                    . $folioHtml . $badgeEstado . $badgeTipo
+                . '</div>'
+                . $nombreHtml
+            . '</div>'
+        );
     }
 
     protected function getHeaderActions(): array

@@ -164,10 +164,12 @@ class UbicacionController extends Controller
                 "ubicaciones/{$id}/fotos",
                 self::DISK
             );
+            $rutaThumb = $servicio->generarThumbnail($ruta, self::DISK);
 
             $foto = UbicacionFoto::create([
                 'ubicacion_id' => $id,
                 'ruta'         => $ruta,
+                'ruta_thumb'   => $rutaThumb,
                 'mime'         => 'image/jpeg',
             ]);
 
@@ -188,13 +190,22 @@ class UbicacionController extends Controller
     {
         $foto = UbicacionFoto::findOrFail($fotoId);
 
-        if (! Storage::disk(self::DISK)->exists($foto->ruta)) {
+        $ruta = ($request->boolean('thumb') && $foto->ruta_thumb)
+            ? $foto->ruta_thumb
+            : $foto->ruta;
+
+        if (! Storage::disk(self::DISK)->exists($ruta)) {
             abort(404, 'Foto no encontrada.');
         }
 
         return response()->file(
-            Storage::disk(self::DISK)->path($foto->ruta),
-            ['Content-Type' => $foto->mime ?? 'image/jpeg']
+            Storage::disk(self::DISK)->path($ruta),
+            [
+                'Content-Type'  => $foto->mime ?? 'image/jpeg',
+                // La URL firmada es estable dentro de la misma hora (ver generadores),
+                // así que el navegador puede reutilizar la copia cacheada.
+                'Cache-Control' => 'public, max-age=3600',
+            ]
         );
     }
 
@@ -242,7 +253,9 @@ class UbicacionController extends Controller
                     'contacto_foto_url' => $u->contacto?->foto_url,
                     'fotos'          => $u->fotos->map(fn ($f) => [
                         'id'  => $f->id,
-                        'url' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addHour()),
+                        // Expiración redondeada a la hora: mismas URLs en requests repetidos
+                        // dentro de la misma hora, para que la app pueda cachear las imágenes.
+                        'url' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addHour()->startOfHour()),
                     ]),
                 ];
             });

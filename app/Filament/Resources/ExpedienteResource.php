@@ -67,6 +67,11 @@ class ExpedienteResource extends Resource
         return static::getUrl('edit', ['record' => $record]);
     }
 
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['tipoTramite:id,nombre', 'asesor:id,name']);
+    }
+
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
@@ -1091,8 +1096,14 @@ public static function canDelete(Model $record): bool
                     ->getStateUsing(function ($record) {
                         if (! $record->etapa || ! $record->tipo_tramite_id) return '—';
 
-                        $etapas = \App\Models\EtapaTramite::where('tipo_tramite_id', $record->tipo_tramite_id)
-                            ->orderBy('orden')->get();
+                        // Todas las etapas de todos los trámites se cargan una sola vez
+                        // por render de tabla (en vez de una query por fila visible).
+                        static $etapasPorTramite = null;
+                        $etapasPorTramite ??= \App\Models\EtapaTramite::orderBy('orden')
+                            ->get()
+                            ->groupBy('tipo_tramite_id');
+
+                        $etapas  = $etapasPorTramite->get($record->tipo_tramite_id) ?? collect();
                         $total   = $etapas->count();
                         $current = $record->etapa->orden;
 

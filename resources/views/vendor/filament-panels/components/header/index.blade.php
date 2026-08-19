@@ -10,11 +10,12 @@
     {{
         $attributes->class([
             'fi-header',
+            'flex-wrap',
             'fi-header-has-breadcrumbs' => $breadcrumbs,
         ])
     }}
 >
-    <div>
+    <div class="min-w-0">
         @if ($breadcrumbs)
             <x-filament::breadcrumbs :breadcrumbs="$breadcrumbs" />
         @endif
