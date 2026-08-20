@@ -159,9 +159,12 @@
                 <div class="flex justify-center gap-2 mt-6" x-show="total > visibles">
                     <template x-for="i in (maxIndex() + 1)" :key="i">
                         <button
+                            type="button"
                             @click="goTo(i - 1)"
                             :class="current === i - 1 ? 'bg-gold-400 w-6' : 'bg-dark-600 hover:bg-gold-500/50 w-2'"
                             class="h-2 rounded-full transition-all duration-300"
+                            :aria-label="'Ir al testimonio ' + i + ' de ' + (maxIndex() + 1)"
+                            :aria-current="current === i - 1 ? 'true' : 'false'"
                         ></button>
                     </template>
                 </div>
