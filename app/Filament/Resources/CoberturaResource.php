@@ -49,12 +49,10 @@ class CoberturaResource extends Resource
 
                 Forms\Components\TextInput::make('detalle')
                     ->label('Detalle (dirección o nota de contacto)')
-                    ->required()
                     ->maxLength(255)
                     ->columnSpanFull()
                     ->validationMessages([
-                        'required' => 'El detalle de contacto es obligatorio.',
-                        'max'      => 'El detalle no puede superar los 255 caracteres.',
+                        'max' => 'El detalle no puede superar los 255 caracteres.',
                     ]),
             ])->columns(2),
 

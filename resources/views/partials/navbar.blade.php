@@ -87,7 +87,14 @@
                 <a href="{{ route('home') }}#contacto" class="btn-gold text-xs">Contáctanos</a>
             </div>
 
-            <button @click="open = !open" class="lg:hidden text-gold-400 p-2">
+            <button
+                type="button"
+                @click="open = !open"
+                class="lg:hidden text-gold-400 p-2"
+                :aria-label="open ? 'Cerrar menú' : 'Abrir menú'"
+                aria-controls="menu-movil"
+                :aria-expanded="open"
+            >
                 <svg x-show="!open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 <svg x-show="open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
@@ -99,7 +106,7 @@
          class="lg:hidden fixed inset-0 top-20 bg-dark-900/80"></div>
 
     {{-- Mobile --}}
-    <div x-show="open" x-transition class="lg:hidden bg-dark-900 border-t border-gold-500/20">
+    <div id="menu-movil" x-show="open" x-transition class="lg:hidden bg-dark-900 border-t border-gold-500/20">
         <div class="px-6 py-4 space-y-1">
             <a href="{{ route('home') }}"
                class="block py-2 text-sm uppercase tracking-wider border-b border-dark-600 {{ $isHome ? 'text-gold-400' : 'text-cream-200 hover:text-gold-400' }}">Inicio</a>
