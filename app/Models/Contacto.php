@@ -69,4 +69,33 @@ class Contacto extends Model
     {
         return $this->hasMany(Expediente::class);
     }
+
+    /**
+     * Busca un prospecto existente por teléfono o CURP (los dos campos que
+     * identifican a la misma persona a través de los distintos canales de
+     * captura: sitio web, app móvil, panel admin, solicitud de acreditado).
+     *
+     * @param  int|null  $ignorarId  Excluir este id (para no chocar consigo mismo al editar).
+     */
+    public static function buscarDuplicado(?string $telefono, ?string $curp, ?int $ignorarId = null): ?self
+    {
+        $telefono = $telefono ? trim($telefono) : null;
+        $curp     = $curp ? strtoupper(trim($curp)) : null;
+
+        if (! $telefono && ! $curp) {
+            return null;
+        }
+
+        return static::query()
+            ->when($ignorarId, fn ($q) => $q->where('id', '!=', $ignorarId))
+            ->where(function ($q) use ($telefono, $curp) {
+                if ($telefono) {
+                    $q->orWhere('telefono', $telefono);
+                }
+                if ($curp) {
+                    $q->orWhere('curp', $curp);
+                }
+            })
+            ->first();
+    }
 }

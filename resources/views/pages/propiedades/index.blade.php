@@ -101,13 +101,13 @@
             </div>
 
             <div style="margin-top:24px; padding-top:20px; border-top: 1px solid rgba(255,255,255,0.08);" class="flex items-center justify-between gap-4">
-                <p class="text-cream-300/50 text-xs">
+                <p class="text-cream-300 text-xs">
                     {{ $propiedades->total() }} propiedad(es) encontrada(s)
                 </p>
                 <div class="flex gap-3">
                     @if(request()->anyFilled(['q','tipo','estado','municipio','precio_min','precio_max','infonavit','fovissste']))
                         <a href="{{ route('propiedades.index') }}"
-                           class="text-cream-300/60 hover:text-cream-300 text-xs underline transition-colors">
+                           class="text-cream-300/70 hover:text-cream-300 text-xs underline transition-colors">
                             Limpiar filtros
                         </a>
                     @endif
@@ -122,7 +122,7 @@
         @if($propiedades->count())
             {{-- Barra superior: total + per_page --}}
             <div class="flex items-center justify-between mb-5">
-                <p class="text-cream-300/50 text-xs">
+                <p class="text-cream-300 text-xs">
                     Mostrando {{ $propiedades->firstItem() }}–{{ $propiedades->lastItem() }} de {{ $propiedades->total() }} propiedades
                 </p>
                 <form method="GET" action="{{ route('propiedades.index') }}" class="flex items-center gap-2">
@@ -130,14 +130,14 @@
                     @foreach(request()->except('per_page') as $key => $val)
                         <input type="hidden" name="{{ $key }}" value="{{ $val }}">
                     @endforeach
-                    <label class="text-cream-300/50 text-xs">Mostrar</label>
+                    <label class="text-cream-300 text-xs">Mostrar</label>
                     <select name="per_page" onchange="this.form.submit()"
                             class="bg-dark-800 border border-dark-700 text-cream-300 text-xs rounded-sm px-2 py-1.5 cursor-pointer">
                         @foreach([10, 20, 50] as $n)
                             <option value="{{ $n }}" {{ request('per_page', 12) == $n ? 'selected' : '' }}>{{ $n }}</option>
                         @endforeach
                     </select>
-                    <label class="text-cream-300/50 text-xs">por página</label>
+                    <label class="text-cream-300 text-xs">por página</label>
                 </form>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -177,7 +177,7 @@
                         <h2 class="text-white text-sm font-semibold leading-snug mb-2 group-hover:text-gold-400 transition-colors line-clamp-2">
                             {{ $propiedad->titulo }}
                         </h2>
-                        <p class="text-cream-300/60 text-xs mb-3 flex items-center gap-1">
+                        <p class="text-cream-300/70 text-xs mb-3 flex items-center gap-1">
                             <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -185,7 +185,7 @@
                             {{ $propiedad->municipio }}, {{ $propiedad->estado }}
                         </p>
                         @if($propiedad->recamaras || $propiedad->banos || $propiedad->metros_construccion)
-                        <div class="flex items-center gap-3 text-xs text-cream-300/50 mb-3">
+                        <div class="flex items-center gap-3 text-xs text-cream-300 mb-3">
                             @if($propiedad->recamaras)
                             <span class="flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12V7a1 1 0 011-1h16a1 1 0 011 1v5M3 12h18M3 12v5m18-5v5M3 17h18M7 12V9h4v3M13 12V9h4v3"/></svg>
@@ -223,7 +223,7 @@
                 <svg class="w-16 h-16 mx-auto mb-4 text-dark-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/>
                 </svg>
-                <p class="text-cream-300/50 text-sm">No encontramos propiedades con esos filtros.</p>
+                <p class="text-cream-300 text-sm">No encontramos propiedades con esos filtros.</p>
                 <a href="{{ route('propiedades.index') }}" class="text-gold-400 hover:text-gold-300 text-sm mt-2 inline-block transition-colors">
                     Ver todas las propiedades
                 </a>

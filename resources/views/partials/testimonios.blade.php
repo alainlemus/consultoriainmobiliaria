@@ -19,7 +19,7 @@
                     <div class="w-10 h-10 bg-gold-500/20 border border-gold-500/40 rounded-full flex items-center justify-center text-gold-400 font-serif font-bold text-sm">{{ strtoupper(substr($t->nombre,0,1)) }}</div>
                     <div>
                         <div class="text-white font-semibold text-sm">{{ $t->nombre }}</div>
-                        <div class="text-gold-500/70 text-xs">{{ $t->ciudad }}</div>
+                        <div class="text-gold-300 text-xs">{{ $t->ciudad }}</div>
                     </div>
                 </div>
             </div>
@@ -37,7 +37,7 @@
                     <div class="w-10 h-10 bg-gold-500/20 border border-gold-500/40 rounded-full flex items-center justify-center text-gold-400 font-serif font-bold text-sm">{{ strtoupper(substr($t['nombre'],0,1)) }}</div>
                     <div>
                         <div class="text-white font-semibold text-sm">{{ $t['nombre'] }}</div>
-                        <div class="text-gold-500/70 text-xs">{{ $t['ubicacion'] }}</div>
+                        <div class="text-gold-300 text-xs">{{ $t['ubicacion'] }}</div>
                     </div>
                 </div>
             </div>
