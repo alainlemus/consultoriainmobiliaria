@@ -55,7 +55,7 @@
                 </div>
                 <div class="py-5 text-center">
                     <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl">100%</div>
-                    <div class="mt-1 text-xs tracking-wider uppercase text-cream-300">Trámite financiado</div>
+                    <div class="mt-1 text-xs tracking-wider uppercase text-cream-300">Paga al terminar el trámite</div>
                 </div>
             </div>
         </div>

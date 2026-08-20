@@ -55,7 +55,8 @@
         <div
             class="p-8 text-center border rounded-sm bg-gradient-to-r from-gold-500/10 via-gold-500/20 to-gold-500/10 border-gold-500/30">
             <p class="mb-2 text-2xl font-script text-gold-400 sm:text-3xl">"Tu futuro, nuestra prioridad."</p>
-            <p class="text-sm text-cream-300">Trámite 100% financiado &bull; Sin desembolsos iniciales &bull; Cobertura
+            <p class="text-sm text-cream-300">Paga al terminar el trámite &bull; Sin desembolsos iniciales &bull;
+                Cobertura
                 en 4 estados</p>
         </div>
     </div>
