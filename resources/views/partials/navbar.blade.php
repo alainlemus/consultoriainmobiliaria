@@ -94,8 +94,12 @@
         </div>
     </div>
 
+    {{-- Backdrop del menú móvil: oscurece el resto de la página mientras está abierto --}}
+    <div x-show="open" x-transition.opacity @click="open = false"
+         class="lg:hidden fixed inset-0 top-20 bg-dark-900/80"></div>
+
     {{-- Mobile --}}
-    <div x-show="open" x-transition class="lg:hidden bg-dark-900/98 border-t border-gold-500/20">
+    <div x-show="open" x-transition class="lg:hidden bg-dark-900 border-t border-gold-500/20">
         <div class="px-6 py-4 space-y-1">
             <a href="{{ route('home') }}"
                class="block py-2 text-sm uppercase tracking-wider border-b border-dark-600 {{ $isHome ? 'text-gold-400' : 'text-cream-200 hover:text-gold-400' }}">Inicio</a>

@@ -26,8 +26,8 @@ class ContactoObserver
      */
     public function created(Contacto $contacto): void
     {
-        // 1. WhatsApp de bienvenida al prospecto — en cola (no bloquea el request)
-        EnviarWhatsAppBienvenidaProspecto::dispatch($contacto);
+        // 1. WhatsApp de bienvenida al prospecto — deshabilitado a petición del cliente.
+        // EnviarWhatsAppBienvenidaProspecto::dispatch($contacto);
 
         // 2. Notificar al asesor asignado (si hay)
         if ($contacto->asesor_id) {

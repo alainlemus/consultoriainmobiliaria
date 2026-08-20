@@ -84,6 +84,21 @@ class ContactoController extends Controller
             'tiene_discapacidad'      => ['nullable', 'boolean'],
         ]);
 
+        // Evitar duplicar el prospecto si ya existe por teléfono o CURP.
+        // No se reasigna el asesor ni se pisa el avance ya hecho (estado_prospecto):
+        // solo se refrescan los datos de contacto enviados por la app.
+        $duplicado = Contacto::buscarDuplicado($data['telefono'] ?? null, $data['curp'] ?? null);
+
+        if ($duplicado) {
+            $duplicado->update(collect($data)->except(['estado_prospecto', 'origen'])->all());
+
+            return response()->json([
+                'data'      => $duplicado->fresh(),
+                'duplicado' => true,
+                'mensaje'   => 'Ya existía un prospecto con este teléfono o CURP; se actualizó su información.',
+            ]);
+        }
+
         $contacto = Contacto::create([
             ...$data,
             'asesor_id'        => $request->user()->id,
@@ -91,7 +106,7 @@ class ContactoController extends Controller
             'origen'           => 'app_movil',
         ]);
 
-        return response()->json(['data' => $contacto], 201);
+        return response()->json(['data' => $contacto, 'duplicado' => false], 201);
     }
 
     /**

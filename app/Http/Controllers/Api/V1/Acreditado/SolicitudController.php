@@ -59,24 +59,39 @@ class SolicitudController extends Controller
         $tipo     = ! empty($data['tipo_tramite_id']) ? TipoTramite::find($data['tipo_tramite_id']) : null;
         $servicio = $tipo?->nombre;
 
-        // Crear o actualizar el Contacto en el CRM
-        // El ContactoObserver dispara: WhatsApp en cola + NuevoProspectoCreado a admins
-        $contacto = Contacto::updateOrCreate(
-            ['curp' => $acreditado->curp ?? null, 'email' => $acreditado->email],
-            [
-                'nombre'                => $acreditado->name,
-                'telefono'              => $acreditado->telefono ?? '',
-                'email'                 => $acreditado->email,
-                'curp'                  => $acreditado->curp,
-                'nss'                   => $acreditado->nss,
-                'servicio'              => $servicio ?? 'FOVISSSTE',
-                'mensaje'               => $data['mensaje'] ?? 'Solicitud desde la app del acreditado.',
-                'origen'                => 'app_acreditado',
-                'estado_prospecto'      => 'nuevo',
-                'estado_uso_credito'    => $data['estado'] ?? null,
-                'municipio_uso_credito' => $data['municipio'] ?? null,
-            ]
-        );
+        // Crear o actualizar el Contacto en el CRM. Se busca primero por
+        // teléfono/CURP (mismo criterio de dedup que el resto de la app);
+        // si no hay coincidencia, se recurre al email (siempre presente y
+        // único en Acreditado) para no perder la vinculación de versiones
+        // anteriores de este flujo.
+        $duplicado = Contacto::buscarDuplicado($acreditado->telefono ?: null, $acreditado->curp ?: null)
+            ?? ($acreditado->email ? Contacto::where('email', $acreditado->email)->first() : null);
+
+        $datosContacto = [
+            'nombre'                => $acreditado->name,
+            'telefono'              => $acreditado->telefono ?? '',
+            'email'                 => $acreditado->email,
+            'curp'                  => $acreditado->curp,
+            'nss'                   => $acreditado->nss,
+            'servicio'              => $servicio ?? 'FOVISSSTE',
+            'mensaje'               => $data['mensaje'] ?? 'Solicitud desde la app del acreditado.',
+            'estado_uso_credito'    => $data['estado'] ?? null,
+            'municipio_uso_credito' => $data['municipio'] ?? null,
+        ];
+
+        if ($duplicado) {
+            // No se pisa 'origen' ni 'estado_prospecto': preserva el avance
+            // que ya llevaba el prospecto en el pipeline del asesor.
+            $duplicado->update($datosContacto);
+            $contacto = $duplicado;
+        } else {
+            // El ContactoObserver dispara: WhatsApp en cola + NuevoProspectoCreado a admins
+            $contacto = Contacto::create([
+                ...$datosContacto,
+                'origen'           => 'app_acreditado',
+                'estado_prospecto' => 'nuevo',
+            ]);
+        }
 
         // Vincular el Contacto al Acreditado (una sola vez)
         if (! $acreditado->contacto_id) {

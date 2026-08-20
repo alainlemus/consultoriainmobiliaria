@@ -130,7 +130,19 @@ class ContactoResource extends Resource
                         ->nullable()
                         ->maxLength(18)
                         ->placeholder('LOHA850101HDFPLN02')
-                        ->columnSpanFull(),
+                        ->columnSpanFull()
+                        ->rules([
+                            fn (?Contacto $record): \Closure =>
+                                function (string $attribute, $value, \Closure $fail) use ($record) {
+                                    if (blank($value)) {
+                                        return;
+                                    }
+                                    $duplicado = Contacto::buscarDuplicado(null, $value, $record?->id);
+                                    if ($duplicado) {
+                                        $fail("Ya existe un prospecto con esta CURP: \"{$duplicado->nombre}\"" . ($duplicado->asesor?->name ? " (asignado a {$duplicado->asesor->name})" : '') . '.');
+                                    }
+                                },
+                        ]),
                     Forms\Components\FileUpload::make('foto')
                         ->label('Foto del prospecto')
                         ->image()
@@ -142,6 +154,15 @@ class ContactoResource extends Resource
                     Forms\Components\TextInput::make('telefono')
                         ->label('Teléfono')->required()->live(onBlur: true)->tel()
                         ->regex('/^\d{10}$/')->maxLength(10)
+                        ->rules([
+                            fn (?Contacto $record): \Closure =>
+                                function (string $attribute, $value, \Closure $fail) use ($record) {
+                                    $duplicado = Contacto::buscarDuplicado($value, null, $record?->id);
+                                    if ($duplicado) {
+                                        $fail("Ya existe un prospecto con este teléfono: \"{$duplicado->nombre}\"" . ($duplicado->asesor?->name ? " (asignado a {$duplicado->asesor->name})" : '') . '.');
+                                    }
+                                },
+                        ])
                         ->validationMessages([
                             'required' => 'El teléfono es obligatorio.',
                             'regex'    => 'El teléfono debe tener exactamente 10 dígitos.',

@@ -68,11 +68,33 @@ class ContactoController extends Controller
             $validated['curp'] = strtoupper($validated['curp']);
         }
 
-        $contacto = Contacto::create([
-            ...$validated,
-            'origen'               => 'sitio_web',
-            'fecha_primer_contacto' => now()->toDateString(),
-        ]);
+        // Evitar duplicar el prospecto si ya existe por teléfono o CURP —
+        // en vez de crear otro registro, se actualizan sus datos y se deja
+        // constancia del nuevo mensaje en las notas internas.
+        $duplicado = Contacto::buscarDuplicado($validated['telefono'], $validated['curp'] ?? null);
+
+        if ($duplicado) {
+            $notaNueva = 'Volvió a escribir por el sitio web (' . now()->format('d/m/Y H:i') . ')'
+                . (filled($validated['servicio'] ?? null) && strtolower($validated['servicio']) !== strtolower((string) $duplicado->servicio)
+                    ? ", interesado ahora en: {$validated['servicio']}"
+                    : '')
+                . (filled($validated['mensaje'] ?? null) ? ": \"{$validated['mensaje']}\"" : '.');
+
+            $duplicado->update([
+                'nombre' => $validated['nombre'],
+                'email'  => $validated['email'],
+                'curp'   => $validated['curp'] ?? $duplicado->curp,
+                'notas'  => trim(($duplicado->notas ? $duplicado->notas . "\n\n" : '') . $notaNueva),
+            ]);
+
+            $contacto = $duplicado;
+        } else {
+            $contacto = Contacto::create([
+                ...$validated,
+                'origen'               => 'sitio_web',
+                'fecha_primer_contacto' => now()->toDateString(),
+            ]);
+        }
 
         // 1. Correo de confirmación al cliente
         try {
