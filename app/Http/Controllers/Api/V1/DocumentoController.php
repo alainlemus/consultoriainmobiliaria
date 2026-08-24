@@ -298,4 +298,42 @@ class DocumentoController extends Controller
 
         return response()->json(['data' => $this->serialize($doc->fresh())]);
     }
+
+    /**
+     * POST /api/v1/expedientes/{expedienteId}/documentos/{documentoId}/rechazar
+     *
+     * El asesor marca un documento ya subido como no válido (ilegible,
+     * incompleto, etc.) con un motivo. El archivo se conserva (para que el
+     * asesor pueda revisar qué se subió), pero el estado pasa a 'rechazado'
+     * y el acreditado recibe un push explicando qué debe corregir.
+     */
+    public function rechazar(Request $request, int $expedienteId, int $documentoId): JsonResponse
+    {
+        $exp = Expediente::findOrFail($expedienteId);
+        $this->authorizeAccess($request, $exp);
+
+        $doc = DocumentoExpediente::where('expediente_id', $expedienteId)
+            ->findOrFail($documentoId);
+
+        $data = $request->validate([
+            'motivo' => ['required', 'string', 'max:500'],
+        ]);
+
+        if (! $doc->ruta_archivo) {
+            abort(422, 'Este documento no tiene archivo — no hay nada que rechazar.');
+        }
+
+        $doc->update([
+            'estado' => 'rechazado',
+            'notas'  => $data['motivo'],
+        ]);
+
+        if ($exp->acreditadoRegistrado) {
+            $exp->acreditadoRegistrado->notify(
+                new \App\Notifications\DocumentoRechazado($doc, $exp, $data['motivo'])
+            );
+        }
+
+        return response()->json(['data' => $this->serialize($doc->fresh())]);
+    }
 }

@@ -1,14 +1,14 @@
 <section id="cobertura" class="py-24 bg-cream-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
+        <div class="text-center mb-16" x-reveal>
             <p class="section-subtitle mb-3">Dónde operamos</p>
             <h2 class="section-title mb-4">Nuestra <span class="text-crimson-600">Cobertura</span></h2>
             <div class="gold-divider"></div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             @foreach($coberturas as $e)
-            <div class="bg-white rounded-sm p-8 text-center border border-cream-300 hover:border-gold-400 hover:shadow-xl transition-all duration-300 group">
-                <div class="w-20 h-20 mx-auto mb-4 bg-gold-500/10 rounded-full flex items-center justify-center group-hover:bg-gold-500/20 transition-colors">
+            <div class="bg-white rounded-sm p-8 text-center border border-cream-300 hover:-translate-y-1 hover:border-gold-400 hover:shadow-xl hover:shadow-gold-400/20 transition-all duration-300 group" x-reveal.delay.{{ $loop->index * 100 }}>
+                <div class="w-20 h-20 mx-auto mb-4 bg-gold-500/10 rounded-full flex items-center justify-center group-hover:bg-gold-500/20 group-hover:scale-110 transition-all duration-300">
                     <svg class="w-10 h-10 text-gold-500" fill="currentColor" viewBox="0 0 24 24">
                         <path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-2.013 3.5-4.6 3.5-7.827a8 8 0 10-16 0c0 3.227 1.556 5.814 3.5 7.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
                     </svg>

@@ -1,6 +1,6 @@
 <section id="proceso" class="py-24 bg-cream-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
+        <div class="text-center mb-16" x-reveal>
             <p class="section-subtitle mb-3">Cómo funciona</p>
             <h2 class="section-title mb-4">El Proceso <span class="text-crimson-600">Paso a Paso</span></h2>
             <div class="gold-divider"></div>
@@ -8,7 +8,7 @@
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             @foreach($procesos as $paso)
-            <div class="flex flex-col items-center text-center group">
+            <div class="flex flex-col items-center text-center group" x-reveal.delay.{{ $loop->index * 100 }}>
                 <div class="w-16 h-16 bg-white border-2 border-gold-400 rounded-full flex items-center justify-center mb-4 shadow-md group-hover:bg-crimson-600 group-hover:border-crimson-600 transition-all duration-300 z-10">
                     <span class="font-serif font-bold text-gold-500 text-lg group-hover:text-white transition-colors">{{ $paso->numero }}</span>
                 </div>

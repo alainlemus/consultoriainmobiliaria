@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\DeviceToken;
-use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -23,11 +22,14 @@ class PushService
     private const CACHE_KEY   = 'fcm_access_token';
 
     /**
-     * Envía una push notification a todos los dispositivos de un usuario.
+     * Envía una push notification a todos los dispositivos de un usuario o
+     * acreditado. DeviceToken es polimórfico (tokenable_type/tokenable_id) —
+     * ambos modelos usan el mismo registro, ver DeviceTokenController::store.
      */
-    public static function sendToUser(User $user, string $title, string $body, array $data = []): void
+    public static function sendToUser(object $user, string $title, string $body, array $data = []): void
     {
-        $tokens = DeviceToken::where('user_id', $user->id)
+        $tokens = DeviceToken::where('tokenable_type', get_class($user))
+            ->where('tokenable_id', $user->id)
             ->pluck('fcm_token')
             ->toArray();
 

@@ -94,6 +94,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/expedientes/{expedienteId}/documentos/{documentoId}/ver',                 [DocumentoController::class, 'ver']);
         Route::delete('/expedientes/{expedienteId}/documentos/{documentoId}',                  [DocumentoController::class, 'destroy']);
         Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/reemplazar',         [DocumentoController::class, 'reemplazar']);
+        Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/rechazar',           [DocumentoController::class, 'rechazar']);
 
         // Ubicaciones GPS
         Route::post('/ubicaciones',                    [UbicacionController::class, 'store']);
@@ -177,5 +178,9 @@ Route::prefix('v1/acreditado')->group(function () {
         Route::get('/expediente/documentos',         [AcreditadoDocumentoController::class, 'index']);
         Route::post('/expediente/documentos',        [AcreditadoDocumentoController::class, 'store']);
         Route::get('/expediente/documentos/{id}/ver', [AcreditadoDocumentoController::class, 'ver']);
+
+        // Dispositivo (push notifications) — mismo controlador que el asesor,
+        // DeviceToken es polimórfico (ver DeviceTokenController::store)
+        Route::post('/dispositivos', [DeviceTokenController::class, 'store']);
     });
 });

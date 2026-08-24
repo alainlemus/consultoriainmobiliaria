@@ -1,6 +1,6 @@
 <section id="servicios" class="py-24 bg-cream-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
+        <div class="text-center mb-16" x-reveal>
             <p class="section-subtitle mb-3">Lo que ofrecemos</p>
             <h2 class="section-title mb-4">Nuestros <span class="text-crimson-600">Servicios</span></h2>
             <div class="gold-divider"></div>
@@ -8,7 +8,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
             @foreach($servicios as $s)
-            <div class="card-service group flex flex-col">
+            <div class="card-service group flex flex-col" x-reveal.delay.{{ ($loop->index % 3) * 100 }}>
                 <div class="icon-gold group-hover:bg-gold-500 transition-colors">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="{{ $s->icon_path }}"/>
@@ -26,7 +26,7 @@
             </div>
             @endforeach
 
-            <div class="bg-dark-900 rounded-sm p-6 flex flex-col items-center justify-center text-center border border-gold-500/30 relative overflow-hidden">
+            <div class="bg-dark-900 rounded-sm p-6 flex flex-col items-center justify-center text-center border border-gold-500/30 relative overflow-hidden" x-reveal.delay.200>
                 <div class="absolute inset-0 bg-gradient-to-br from-gold-500/10 to-transparent"></div>
                 <div class="relative z-10">
                     <p class="text-gold-400 font-serif text-lg font-semibold mb-2">¿No sabes por dónde empezar?</p>
