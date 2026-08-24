@@ -135,7 +135,10 @@ class DocumentoController extends Controller
             ['expedienteId' => $expediente->id, 'documentoId' => $doc->id]
         );
 
-        return response()->json(['url' => $url, 'expira_en' => 30]);
+        // expira_en en segundos (igual convención que DocumentoController::ver
+        // del asesor, que reporta 300 para addMinutes(5)) — antes decía "30"
+        // sin convertir, subestimando la vigencia real por un factor de 60.
+        return response()->json(['url' => $url, 'expira_en' => 30 * 60]);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
