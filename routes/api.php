@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\RouteController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\ComisionController;
+use App\Http\Controllers\Api\V1\ContratosController;
 use App\Http\Controllers\Api\WhatsAppWebhookController;
 use App\Http\Controllers\Api\V1\Acreditado\AuthController as AcreditadoAuthController;
 use App\Http\Controllers\Api\V1\Acreditado\ExpedienteController as AcreditadoExpedienteController;
@@ -83,6 +84,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/expedientes',       [ExpedienteController::class, 'store']);
         Route::get('/expedientes/{id}',   [ExpedienteController::class, 'show']);
         Route::put('/expedientes/{id}',   [ExpedienteController::class, 'update']);
+
+        // Contratos — texto configurable para generar el PDF en la app (sin conexión)
+        Route::get('/contratos/prestacion-servicios/config', [ContratosController::class, 'prestacionServiciosConfig']);
 
         // Documentos
         Route::get('/expedientes/{expedienteId}/documentos',                                   [DocumentoController::class, 'index']);

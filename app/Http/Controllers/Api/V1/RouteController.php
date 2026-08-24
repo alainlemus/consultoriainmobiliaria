@@ -79,6 +79,10 @@ class RouteController extends Controller
     /**
      * GET /api/v1/routes/points?asesor_id=X&fecha=Y
      * Devuelve los puntos de ruta para mostrar en el mapa del CRM.
+     *
+     * `asesor_id=todos` (solo super_admin) devuelve los puntos de TODOS los
+     * asesores para esa fecha, cada uno etiquetado con su asesor_id/nombre
+     * para poder pintarlos con colores distintos en el mapa.
      */
     public function getPoints(Request $request): JsonResponse
     {
@@ -95,28 +99,36 @@ class RouteController extends Controller
             return response()->json(['data' => []]);
         }
 
-        $query = RoutePoint::where('user_id', $asesorId)
-            ->whereDate('timestamp', $fecha)
-            ->orderBy('timestamp');
+        $todos = $asesorId === 'todos';
+
+        $query = RoutePoint::whereDate('timestamp', $fecha)->orderBy('timestamp');
+
+        if ($todos) {
+            $query->whereHas('user', fn ($q) => $q->role('asesor'))->with('user:id,name');
+        } else {
+            $query->where('user_id', $asesorId);
+        }
 
         $points = $query->get([
-            'id', 'lat', 'lng', 'precision', 'velocidad', 'timestamp',
+            'id', 'user_id', 'lat', 'lng', 'precision', 'velocidad', 'timestamp',
         ]);
 
         $formatted = $points->map(fn (RoutePoint $p) => [
-            'id'        => $p->id,
-            'lat'       => $p->lat,
-            'lng'       => $p->lng,
-            'precision' => $p->precision,
-            'velocidad' => $p->velocidad,
-            'hora'      => $p->timestamp->format('H:i:s'),
-            'timestamp' => $p->timestamp->toIso8601String(),
+            'id'            => $p->id,
+            'lat'           => $p->lat,
+            'lng'           => $p->lng,
+            'precision'     => $p->precision,
+            'velocidad'     => $p->velocidad,
+            'hora'          => $p->timestamp->format('H:i:s'),
+            'timestamp'     => $p->timestamp->toIso8601String(),
+            'asesor_id'     => $p->user_id,
+            'asesor_nombre' => $todos ? $p->user?->name : null,
         ]);
 
         return response()->json([
             'data' => $formatted,
             'meta' => [
-                'asesor_id' => (int) $asesorId,
+                'asesor_id' => $todos ? null : (int) $asesorId,
                 'fecha'     => $fecha,
                 'total'     => $points->count(),
             ],
@@ -126,6 +138,8 @@ class RouteController extends Controller
     /**
      * GET /api/v1/routes/dias?asesor_id=X
      * Devuelve las fechas disponibles para un asesor.
+     * `asesor_id=todos` (solo super_admin) devuelve la unión de fechas de
+     * todos los asesores.
      */
     public function getDias(Request $request): JsonResponse
     {
@@ -141,8 +155,15 @@ class RouteController extends Controller
             return response()->json(['data' => []]);
         }
 
-        $dias = RoutePoint::where('user_id', $asesorId)
-            ->selectRaw('DATE(timestamp) as fecha, COUNT(*) as puntos')
+        $query = RoutePoint::query();
+
+        if ($asesorId === 'todos') {
+            $query->whereHas('user', fn ($q) => $q->role('asesor'));
+        } else {
+            $query->where('user_id', $asesorId);
+        }
+
+        $dias = $query->selectRaw('DATE(timestamp) as fecha, COUNT(*) as puntos')
             ->groupByRaw('DATE(timestamp)')
             ->orderByDesc('fecha')
             ->limit(30)
