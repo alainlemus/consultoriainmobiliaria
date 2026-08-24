@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Channels\PushChannel;
+use App\Models\Acreditado;
 use App\Models\Expediente;
 use App\Notifications\Concerns\SendsPushNotification;
 use Filament\Actions\Action;
@@ -23,7 +24,10 @@ class EtapaExpedienteCambiada extends Notification
 
     public function via(object $notifiable): array
     {
-        return array_filter(['database', $this->viaPush() ? PushChannel::class : null]);
+        // El acreditado no tiene bandeja de notificaciones en la app — solo push.
+        // 'database' es para el admin/asesor, se lee en Filament.
+        $canales = $notifiable instanceof Acreditado ? [] : ['database'];
+        return array_filter([...$canales, $this->viaPush() ? PushChannel::class : null]);
     }
 
     public function toDatabase(object $notifiable): array

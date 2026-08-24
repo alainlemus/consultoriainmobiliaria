@@ -1,11 +1,17 @@
-<section class="relative flex items-center min-h-screen overflow-hidden">
+<section
+    class="relative flex items-center min-h-screen overflow-hidden"
+    x-data="{ y: 0, reduced: window.matchMedia('(prefers-reduced-motion: reduce)').matches }"
+    @scroll.window="if (!reduced) y = Math.min(window.scrollY * 0.15, 60)"
+>
     @php
         $heroImage = setting('hero_image')
             ? asset('storage/' . setting('hero_image'))
             : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1600&q=80';
     @endphp
-    <div class="absolute inset-0 z-0 bg-dark-800"
-        style="background-image:url('{{ $heroImage }}');background-size:cover;background-position:center;"></div>
+    {{-- -inset-y-16 la extiende más allá de la sección para que el parallax no deje huecos.
+         Todo el style va en :style porque Alpine reemplaza (no combina) el atributo style. --}}
+    <div class="absolute -inset-y-16 inset-x-0 z-0 bg-dark-800"
+        :style="`background-image:url('{{ $heroImage }}');background-size:cover;background-position:center;transform:translateY(${y}px)`"></div>
     <div class="absolute inset-0 z-10 bg-gradient-to-r from-dark-900 via-dark-900/85 to-dark-800/50"></div>
 
     <div class="relative z-20 px-4 py-32 mx-auto max-w-7xl sm:px-6 lg:px-8 lg:py-44">
@@ -45,16 +51,16 @@
     <div class="absolute bottom-0 left-0 right-0 z-20 border-t bg-dark-900/90 backdrop-blur-sm border-gold-500/20">
         <div class="px-4 mx-auto max-w-7xl">
             <div class="grid grid-cols-3 divide-x divide-gold-500/20">
-                <div class="py-5 text-center">
-                    <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl">+500</div>
+                <div class="py-5 text-center" x-data="countUp(500, { prefix: '+', duration: 1500 })">
+                    <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl" x-text="display"></div>
                     <div class="mt-1 text-xs tracking-wider uppercase text-cream-300">Familias asesoradas</div>
                 </div>
-                <div class="py-5 text-center">
-                    <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl">4</div>
+                <div class="py-5 text-center" x-data="countUp(4, { duration: 1000 })">
+                    <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl" x-text="display"></div>
                     <div class="mt-1 text-xs tracking-wider uppercase text-cream-300">Estados</div>
                 </div>
-                <div class="py-5 text-center">
-                    <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl">100%</div>
+                <div class="py-5 text-center" x-data="countUp(100, { suffix: '%', duration: 1500 })">
+                    <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl" x-text="display"></div>
                     <div class="mt-1 text-xs tracking-wider uppercase text-cream-300">Paga al terminar el trámite</div>
                 </div>
             </div>

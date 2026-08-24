@@ -65,10 +65,10 @@
         @apply w-16 h-0.5 bg-gold-400 mx-auto my-4;
     }
     .card-service {
-        @apply bg-white border border-cream-300 rounded-sm p-6 hover:shadow-lg hover:border-gold-400 transition-all duration-300 text-center;
+        @apply bg-white border border-cream-300 rounded-sm p-6 hover:-translate-y-1 hover:shadow-xl hover:shadow-gold-400/20 hover:border-gold-400 transition-all duration-300 text-center;
     }
     .icon-gold {
-        @apply w-14 h-14 bg-gold-400 rounded-full flex items-center justify-center mx-auto mb-4 text-dark-900;
+        @apply w-14 h-14 bg-gold-400 rounded-full flex items-center justify-center mx-auto mb-4 text-dark-900 transition-transform duration-300 group-hover:scale-110;
     }
     .whatsapp-float {
         @apply fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300;
@@ -90,6 +90,17 @@
     }
     .input-field {
         @apply w-full bg-dark-700 border border-dark-600 focus:border-gold-400 text-white placeholder-dark-400 rounded-sm px-4 py-3 text-sm outline-none transition-colors;
+    }
+
+    /* Scroll-reveal — usado por la directiva x-reveal (resources/js/app.js) */
+    .reveal-init {
+        opacity: 0;
+        transform: translateY(24px);
+        transition: opacity 600ms ease, transform 600ms ease;
+    }
+    .reveal-visible {
+        opacity: 1;
+        transform: translateY(0);
     }
 
     /* Contenido generado por RichEditor de Filament */
@@ -178,5 +189,11 @@
     ::view-transition-old(*),
     ::view-transition-new(*) {
         animation: none !important;
+    }
+    .reveal-init,
+    .reveal-visible {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
     }
 }

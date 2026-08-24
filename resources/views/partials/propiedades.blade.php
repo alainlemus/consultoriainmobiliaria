@@ -1,9 +1,9 @@
 {{-- Sección Propiedades en venta - últimas 4 destacadas --}}
 @if(isset($propiedades) && $propiedades->count())
 <section id="propiedades" class="py-20 bg-dark-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" x-data="{ filtro: 'todas' }">
 
-        <div class="text-center mb-14">
+        <div class="text-center mb-14" x-reveal>
             <p class="section-subtitle text-gold-400 mb-3">En venta</p>
             <h2 class="section-title text-white mb-4">Propiedades <span class="text-gold-400">Disponibles</span></h2>
             <div class="gold-divider"></div>
@@ -12,9 +12,31 @@
             </p>
         </div>
 
+        {{-- Tabs de filtro (client-side, sobre las propiedades ya cargadas) --}}
+        <div class="flex justify-center gap-2 mb-8">
+            <button type="button" @click="filtro = 'todas'"
+                :class="filtro === 'todas' ? 'bg-gold-400 text-dark-900' : 'bg-dark-800 text-cream-300 hover:text-gold-400'"
+                class="px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors duration-200">
+                Todas
+            </button>
+            <button type="button" @click="filtro = 'infonavit'"
+                :class="filtro === 'infonavit' ? 'bg-gold-400 text-dark-900' : 'bg-dark-800 text-cream-300 hover:text-gold-400'"
+                class="px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors duration-200">
+                INFONAVIT
+            </button>
+            <button type="button" @click="filtro = 'fovissste'"
+                :class="filtro === 'fovissste' ? 'bg-gold-400 text-dark-900' : 'bg-dark-800 text-cream-300 hover:text-gold-400'"
+                class="px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors duration-200">
+                FOVISSSTE
+            </button>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             @foreach($propiedades as $propiedad)
             <a href="{{ route('propiedades.show', $propiedad->slug) }}"
+               x-reveal.delay.{{ ($loop->index % 4) * 100 }}
+               x-show="filtro === 'todas' || (filtro === 'infonavit' && {{ $propiedad->acepta_infonavit ? 'true' : 'false' }}) || (filtro === 'fovissste' && {{ $propiedad->acepta_fovissste ? 'true' : 'false' }})"
+               x-transition
                class="group bg-dark-800 border border-dark-700 hover:border-gold-500/50 rounded-sm overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-gold-500/10 flex flex-col">
 
                 {{-- Imagen --}}

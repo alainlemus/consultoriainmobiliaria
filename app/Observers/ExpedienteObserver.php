@@ -181,11 +181,18 @@ class ExpedienteObserver
     private function notificarCambioEtapa(Expediente $exp): void
     {
         if ($exp->wasChanged('etapa_tramite_id') && $exp->etapa_tramite_id) {
+            $etapaAnterior = \App\Models\EtapaTramite::find($exp->getOriginal('etapa_tramite_id'))?->nombre ?? '—';
+            $etapaNueva    = $exp->etapa?->nombre ?? '—';
+
             $asesor = $exp->asesor;
             if ($asesor) {
-                $etapaAnterior = \App\Models\EtapaTramite::find($exp->getOriginal('etapa_tramite_id'))?->nombre ?? '—';
-                $etapaNueva    = $exp->etapa?->nombre ?? '—';
                 $asesor->notify(new EtapaExpedienteCambiada($exp, $etapaAnterior, $etapaNueva));
+            }
+
+            // El acreditado (si ya vinculó su cuenta de la app) también se
+            // entera del avance — solo push, ver EtapaExpedienteCambiada::via()
+            if ($exp->acreditadoRegistrado) {
+                $exp->acreditadoRegistrado->notify(new EtapaExpedienteCambiada($exp, $etapaAnterior, $etapaNueva));
             }
         }
     }

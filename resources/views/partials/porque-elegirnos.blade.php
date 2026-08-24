@@ -6,7 +6,7 @@
         class="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 border rounded-full w-96 h-96 border-gold-500/10">
     </div>
     <div class="relative z-10 px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <div class="mb-16 text-center">
+        <div class="mb-16 text-center" x-reveal>
             <p class="mb-3 section-subtitle text-gold-400">Nuestra diferencia</p>
             <h2 class="mb-4 font-serif text-3xl font-bold text-white md:text-4xl">¿Por qué <span
                     class="text-gold-400">elegirnos?</span></h2>
@@ -39,7 +39,7 @@
                 ];
             @endphp
             @foreach ($razones as $r)
-                <div class="text-center group">
+                <div class="text-center group" x-reveal.delay.{{ $loop->index * 100 }}>
                     <div
                         class="flex items-center justify-center w-20 h-20 mx-auto mb-5 transition-colors duration-300 border-2 rounded-full border-gold-500 group-hover:bg-gold-500">
                         <svg class="transition-colors w-9 h-9 text-gold-400 group-hover:text-dark-900" fill="none"
@@ -53,6 +53,7 @@
             @endforeach
         </div>
         <div
+            x-reveal
             class="p-8 text-center border rounded-sm bg-gradient-to-r from-gold-500/10 via-gold-500/20 to-gold-500/10 border-gold-500/30">
             <p class="mb-2 text-2xl font-script text-gold-400 sm:text-3xl">"Tu futuro, nuestra prioridad."</p>
             <p class="text-sm text-cream-300">Paga al terminar el trámite &bull; Sin desembolsos iniciales &bull;

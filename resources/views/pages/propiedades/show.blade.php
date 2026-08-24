@@ -89,7 +89,7 @@
 
                 {{-- Galería --}}
                 @if($propiedad->imagenes && count($propiedad->imagenes))
-                <div x-data="{ activa: 0, imagenes: {{ json_encode($propiedad->imagenes) }} }" class="mb-8">
+                <div x-data="{ activa: 0, imagenes: {{ json_encode($propiedad->imagenes) }}, lightboxOpen: false }" class="mb-8">
                     {{-- Imagen principal --}}
                     <div class="relative h-72 sm:h-96 mb-3">
                         <div class="absolute inset-0 bg-dark-800 rounded-sm overflow-hidden">
@@ -125,6 +125,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
                             </svg>
                         </button>
+                        {{-- Ver en pantalla completa --}}
+                        <button @click="lightboxOpen = true"
+                                style="position:absolute; top:12px; right:12px; z-index:10;"
+                                class="w-10 h-10 bg-dark-900/80 hover:bg-gold-500 text-white rounded-full flex items-center justify-center transition-colors"
+                                aria-label="Ver en pantalla completa">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                            </svg>
+                        </button>
                     </div>
                     {{-- Miniaturas --}}
                     <div x-show="imagenes.length > 1" class="flex gap-2 overflow-x-auto pb-1">
@@ -136,6 +145,64 @@
                             </button>
                         </template>
                     </div>
+
+                    {{-- Lightbox de pantalla completa --}}
+                    <template x-teleport="body">
+                        <div x-show="lightboxOpen"
+                             x-transition.opacity
+                             @keydown.escape.window="lightboxOpen = false"
+                             x-effect="document.body.style.overflow = lightboxOpen ? 'hidden' : ''"
+                             @click.self="lightboxOpen = false"
+                             class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
+                             style="display: none;">
+
+                            <button @click="lightboxOpen = false"
+                                    style="position:absolute; top:16px; right:16px; z-index:10;"
+                                    class="w-11 h-11 bg-dark-900/80 hover:bg-gold-500 text-white rounded-full flex items-center justify-center transition-colors"
+                                    aria-label="Cerrar">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+
+                            <div class="relative w-full max-w-5xl h-[80vh]">
+                                <template x-for="(img, i) in imagenes" :key="i">
+                                    <img :src="'/storage/' + img"
+                                         :alt="'Imagen ' + (i+1)"
+                                         x-show="activa === i"
+                                         x-transition:enter="transition-opacity duration-300"
+                                         x-transition:enter-start="opacity-0"
+                                         x-transition:enter-end="opacity-100"
+                                         class="absolute inset-0 w-full h-full object-contain">
+                                </template>
+                            </div>
+
+                            <button @click="activa = (activa - 1 + imagenes.length) % imagenes.length"
+                                    :class="imagenes.length <= 1 ? 'hidden' : ''"
+                                    style="position:absolute; left:16px; top:50%; transform:translateY(-50%); z-index:10;"
+                                    class="w-12 h-12 bg-dark-900/80 hover:bg-gold-500 text-white rounded-full flex items-center justify-center transition-colors"
+                                    aria-label="Anterior">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            <button @click="activa = (activa + 1) % imagenes.length"
+                                    :class="imagenes.length <= 1 ? 'hidden' : ''"
+                                    style="position:absolute; right:16px; top:50%; transform:translateY(-50%); z-index:10;"
+                                    class="w-12 h-12 bg-dark-900/80 hover:bg-gold-500 text-white rounded-full flex items-center justify-center transition-colors"
+                                    aria-label="Siguiente">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+
+                            <span x-show="imagenes.length > 1"
+                                  style="position:absolute; bottom:16px; left:50%; transform:translateX(-50%);"
+                                  class="bg-dark-900/70 text-cream-300 text-xs px-3 py-1 rounded">
+                                <span x-text="activa + 1"></span> / <span x-text="imagenes.length"></span>
+                            </span>
+                        </div>
+                    </template>
                 </div>
                 @else
                 <div class="h-72 sm:h-96 bg-dark-800 rounded-sm flex items-center justify-center mb-8">

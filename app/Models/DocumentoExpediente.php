@@ -148,6 +148,7 @@ class DocumentoExpediente extends Model
     {
         return match($estado) {
             'recibido'  => 'Recibido',
+            'rechazado' => 'Rechazado',
             'no_aplica' => 'No aplica',
             default     => 'Pendiente',
         };

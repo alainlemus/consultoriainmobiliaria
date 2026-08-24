@@ -2,7 +2,7 @@
 <section id="blog" class="py-20 bg-cream-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div class="text-center mb-14">
+        <div class="text-center mb-14" x-reveal>
             <p class="section-subtitle text-gold-400 mb-3">Blog</p>
             <h2 class="section-title mb-4">Consejos y Noticias <span class="text-gold-400">Inmobiliarias</span></h2>
             <div class="gold-divider"></div>
@@ -14,7 +14,7 @@
         @if(isset($posts) && $posts->count())
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @foreach($posts as $post)
-                    <article class="bg-white border border-cream-200 rounded-sm overflow-hidden group hover:shadow-lg hover:border-gold-400 transition-all duration-300">
+                    <article class="bg-white border border-cream-200 rounded-sm overflow-hidden group hover:shadow-lg hover:border-gold-400 transition-all duration-300" x-reveal.delay.{{ ($loop->index % 3) * 100 }}>
                         @if($post->imagen)
                             <div class="overflow-hidden h-48">
                              <img src="{{ Storage::url($post->imagen) }}"
@@ -96,7 +96,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @foreach($ejemplos as $item)
-                    <article class="bg-white border border-cream-200 rounded-sm overflow-hidden group hover:shadow-lg hover:border-gold-400 transition-all duration-300">
+                    <article class="bg-white border border-cream-200 rounded-sm overflow-hidden group hover:shadow-lg hover:border-gold-400 transition-all duration-300" x-reveal.delay.{{ $loop->index * 100 }}>
                         <div class="h-48 bg-gradient-to-br from-gold-100 to-cream-200 flex items-center justify-center">
                             <svg class="w-14 h-14 text-gold-400/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
