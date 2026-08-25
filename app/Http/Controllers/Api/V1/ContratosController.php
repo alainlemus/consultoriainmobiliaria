@@ -25,6 +25,7 @@ class ContratosController extends Controller
                 'site_name'                         => Configuracion::get('site_name') ?? 'Consultoría Inmobiliaria',
                 'firma_prestador'                    => Configuracion::get('firma_prestador', 'C. JOSE ANTONIO SOLIS SANTUARIO'),
                 'firma_juridico'                      => Configuracion::get('firma_juridico', 'LIC. LUZ ANGÉLICA PÉREZ MEJÍA'),
+                'domicilio_juridico'                   => Configuracion::get('domicilio_juridico', ''),
                 'contrato_intro'                      => Configuracion::get('contrato_intro', ''),
                 'contrato_declaraciones_prestador'    => Configuracion::get('contrato_declaraciones_prestador', ''),
                 'contrato_declaraciones_interesado'   => Configuracion::get('contrato_declaraciones_interesado', ''),
@@ -51,6 +52,7 @@ class ContratosController extends Controller
             'site_name'                          => ['required', 'string', 'max:150'],
             'firma_prestador'                     => ['required', 'string', 'max:150'],
             'firma_juridico'                       => ['required', 'string', 'max:150'],
+            'domicilio_juridico'                    => ['nullable', 'string', 'max:255'],
             'domicilio_prestador'                  => ['required', 'string', 'max:255'],
             'contrato_intro'                       => ['nullable', 'string'],
             'contrato_declaraciones_prestador'     => ['nullable', 'string'],
@@ -59,7 +61,7 @@ class ContratosController extends Controller
         ]);
 
         foreach ([
-            'site_name', 'firma_prestador', 'firma_juridico',
+            'site_name', 'firma_prestador', 'firma_juridico', 'domicilio_juridico',
             'contrato_intro', 'contrato_declaraciones_prestador',
             'contrato_declaraciones_interesado', 'contrato_clausulas',
         ] as $clave) {

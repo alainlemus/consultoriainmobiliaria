@@ -28,6 +28,7 @@ class ContratosSettings extends Page
     protected static array $claves = [
         'firma_prestador',
         'firma_juridico',
+        'domicilio_juridico',
         'contrato_intro',
         'contrato_declaraciones_prestador',
         'contrato_declaraciones_interesado',
@@ -49,7 +50,7 @@ class ContratosSettings extends Page
     {
         $hint = fn (string $text) => $text;
 
-        $placeholders = '**Placeholders disponibles:** `{ciudad}` `{fecha}` `{domicilio}` `{acreditado}` `{dom_acreditado}` `{tipo_tramite}` `{curp}` `{rfc}` `{nss}` `{folio}` `{monto_credito}` `{pct_honorarios}` `{monto_honorarios}`';
+        $placeholders = '**Placeholders disponibles:** `{ciudad}` `{fecha}` `{domicilio}` `{domicilio_juridico}` `{firma_prestador}` `{firma_juridico}` `{acreditado}` `{dom_acreditado}` `{tipo_tramite}` `{curp}` `{rfc}` `{nss}` `{clave_elector}` `{folio}` `{monto_credito}` `{pct_honorarios}` `{monto_honorarios}` `{obligado_solidario}`';
 
         return $schema
             ->schema([
@@ -76,6 +77,12 @@ class ContratosSettings extends Page
                                 'required' => 'El nombre del jurídico es obligatorio.',
                                 'max'      => 'El nombre no puede superar los 150 caracteres.',
                             ]),
+
+                        Forms\Components\Textarea::make('domicilio_juridico')
+                            ->label('Domicilio procesal del Jurídico')
+                            ->helperText('Domicilio que se cita en la introducción del contrato para pleitos y cobranzas — distinto del domicilio del Prestador.')
+                            ->rows(2)
+                            ->columnSpanFull(),
                     ]),
 
                 // ── CONTRATO DE PRESTACIÓN DE SERVICIOS ───────────────────────
