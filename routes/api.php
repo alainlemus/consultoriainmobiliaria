@@ -87,6 +87,7 @@ Route::prefix('v1')->group(function () {
 
         // Contratos — texto configurable para generar el PDF en la app (sin conexión)
         Route::get('/contratos/prestacion-servicios/config', [ContratosController::class, 'prestacionServiciosConfig']);
+        Route::put('/contratos/prestacion-servicios/config', [ContratosController::class, 'updatePrestacionServiciosConfig']);
 
         // Documentos
         Route::get('/expedientes/{expedienteId}/documentos',                                   [DocumentoController::class, 'index']);
