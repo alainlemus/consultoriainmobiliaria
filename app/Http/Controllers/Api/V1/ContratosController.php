@@ -26,6 +26,7 @@ class ContratosController extends Controller
                 'firma_prestador'                    => Configuracion::get('firma_prestador', 'JOSE ANTONIO SOLIS SANTUARIO'),
                 'firma_juridico'                      => Configuracion::get('firma_juridico', 'LUZ ANGÉLICA PÉREZ MEJÍA'),
                 'domicilio_juridico'                   => Configuracion::get('domicilio_juridico', ''),
+                'cedula_juridico'                       => Configuracion::get('cedula_juridico', ''),
                 'contrato_intro'                      => Configuracion::get('contrato_intro', ''),
                 'contrato_declaraciones_prestador'    => Configuracion::get('contrato_declaraciones_prestador', ''),
                 'contrato_declaraciones_interesado'   => Configuracion::get('contrato_declaraciones_interesado', ''),
@@ -53,6 +54,7 @@ class ContratosController extends Controller
             'firma_prestador'                     => ['required', 'string', 'max:150'],
             'firma_juridico'                       => ['required', 'string', 'max:150'],
             'domicilio_juridico'                    => ['nullable', 'string', 'max:255'],
+            'cedula_juridico'                        => ['nullable', 'string', 'max:50'],
             'domicilio_prestador'                  => ['required', 'string', 'max:255'],
             'contrato_intro'                       => ['nullable', 'string'],
             'contrato_declaraciones_prestador'     => ['nullable', 'string'],
@@ -61,7 +63,7 @@ class ContratosController extends Controller
         ]);
 
         foreach ([
-            'site_name', 'firma_prestador', 'firma_juridico', 'domicilio_juridico',
+            'site_name', 'firma_prestador', 'firma_juridico', 'domicilio_juridico', 'cedula_juridico',
             'contrato_intro', 'contrato_declaraciones_prestador',
             'contrato_declaraciones_interesado', 'contrato_clausulas',
         ] as $clave) {

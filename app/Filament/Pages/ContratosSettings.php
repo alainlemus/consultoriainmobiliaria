@@ -29,6 +29,7 @@ class ContratosSettings extends Page
         'firma_prestador',
         'firma_juridico',
         'domicilio_juridico',
+        'cedula_juridico',
         'contrato_intro',
         'contrato_declaraciones_prestador',
         'contrato_declaraciones_interesado',
@@ -50,7 +51,7 @@ class ContratosSettings extends Page
     {
         $hint = fn (string $text) => $text;
 
-        $placeholders = '**Placeholders disponibles:** `{ciudad}` `{fecha}` `{domicilio}` `{domicilio_juridico}` `{firma_prestador}` `{firma_juridico}` `{acreditado}` `{dom_acreditado}` `{tipo_tramite}` `{curp}` `{rfc}` `{nss}` `{clave_elector}` `{folio}` `{monto_credito}` `{pct_honorarios}` `{monto_honorarios}` `{obligado_solidario}`';
+        $placeholders = '**Placeholders disponibles:** `{ciudad}` `{fecha}` `{domicilio}` `{domicilio_juridico}` `{firma_prestador}` `{firma_juridico}` `{cedula_juridico}` `{acreditado}` `{dom_acreditado}` `{tipo_tramite}` `{curp}` `{rfc}` `{nss}` `{clave_elector}` `{folio}` `{monto_credito}` `{pct_honorarios}` `{monto_honorarios}` `{obligado_solidario}`';
 
         return $schema
             ->schema([
@@ -85,6 +86,10 @@ class ContratosSettings extends Page
                             ->helperText('Domicilio que se cita en la introducción del contrato para pleitos y cobranzas — distinto del domicilio del Prestador.')
                             ->rows(2)
                             ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('cedula_juridico')
+                            ->label('Cédula profesional del Jurídico')
+                            ->maxLength(50),
                     ]),
 
                 // ── CONTRATO DE PRESTACIÓN DE SERVICIOS ───────────────────────
