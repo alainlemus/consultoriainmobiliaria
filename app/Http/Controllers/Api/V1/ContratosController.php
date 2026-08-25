@@ -23,8 +23,8 @@ class ContratosController extends Controller
         return response()->json([
             'data' => [
                 'site_name'                         => Configuracion::get('site_name') ?? 'Consultoría Inmobiliaria',
-                'firma_prestador'                    => Configuracion::get('firma_prestador', 'C. JOSE ANTONIO SOLIS SANTUARIO'),
-                'firma_juridico'                      => Configuracion::get('firma_juridico', 'LIC. LUZ ANGÉLICA PÉREZ MEJÍA'),
+                'firma_prestador'                    => Configuracion::get('firma_prestador', 'JOSE ANTONIO SOLIS SANTUARIO'),
+                'firma_juridico'                      => Configuracion::get('firma_juridico', 'LUZ ANGÉLICA PÉREZ MEJÍA'),
                 'domicilio_juridico'                   => Configuracion::get('domicilio_juridico', ''),
                 'contrato_intro'                      => Configuracion::get('contrato_intro', ''),
                 'contrato_declaraciones_prestador'    => Configuracion::get('contrato_declaraciones_prestador', ''),

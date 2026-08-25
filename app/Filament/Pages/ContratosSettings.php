@@ -61,7 +61,8 @@ class ContratosSettings extends Page
                     ->columns(2)
                     ->schema([
                         Forms\Components\TextInput::make('firma_prestador')
-                            ->label('Firma de "El Prestador"')
+                            ->label('Nombre de "El Prestador"')
+                            ->helperText('Solo el nombre, sin título — el "C." o "LIC." se agrega automáticamente donde corresponda. Ej: JOSE ANTONIO SOLIS SANTUARIO')
                             ->required()
                             ->maxLength(150)
                             ->validationMessages([
@@ -70,7 +71,8 @@ class ContratosSettings extends Page
                             ]),
 
                         Forms\Components\TextInput::make('firma_juridico')
-                            ->label('Firma por parte del Jurídico')
+                            ->label('Nombre del Jurídico')
+                            ->helperText('Solo el nombre, sin título — el "LIC." se agrega automáticamente. Ej: LUZ ANGÉLICA PÉREZ MEJÍA')
                             ->required()
                             ->maxLength(150)
                             ->validationMessages([

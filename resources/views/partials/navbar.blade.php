@@ -106,7 +106,7 @@
          class="lg:hidden fixed inset-0 top-20 bg-dark-900/80"></div>
 
     {{-- Mobile --}}
-    <div id="menu-movil" x-show="open" x-transition class="lg:hidden bg-dark-900 border-t border-gold-500/20">
+    <div id="menu-movil" x-show="open" x-transition class="lg:hidden relative z-10 bg-dark-900 border-t border-gold-500/20">
         <div class="px-6 py-4 space-y-1">
             <a href="{{ route('home') }}"
                class="block py-2 text-sm uppercase tracking-wider border-b border-dark-600 {{ $isHome ? 'text-gold-400' : 'text-cream-200 hover:text-gold-400' }}">Inicio</a>
