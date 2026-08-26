@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ContratoGenerado extends Model
 {
+    protected $table = 'contratos_generados';
+
     protected $fillable = [
         'asesor_id', 'local_id', 'folio', 'tipo_tramite', 'ciudad',
         'acreditado_nombre', 'acreditado_curp', 'acreditado_rfc', 'acreditado_nss', 'acreditado_clave_elector', 'acreditado_domicilio',
