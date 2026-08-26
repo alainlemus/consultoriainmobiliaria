@@ -39,7 +39,7 @@ class ContratoGeneradoResource extends Resource
             ->modalWidth('4xl')
             ->modalSubmitAction(false)
             ->modalCancelActionLabel('Cerrar')
-            ->modalContent(function (ContratoGenerado $record) use ($campo) {
+            ->modalContent(function (ContratoGenerado $record) use ($campo, $label) {
                 $url = URL::temporarySignedRoute(
                     'api.contratos_generados.descargar',
                     now()->addMinutes(30),
