@@ -47,6 +47,9 @@ Route::view('/aviso-de-privacidad', 'pages.aviso-privacidad')->name('aviso.priva
 // Eliminación de datos (requerido por Google Play)
 Route::view('/eliminacion-de-datos', 'pages.eliminacion-datos')->name('datos.eliminacion');
 
+// Descarga de la app móvil (asesores y clientes)
+Route::view('/descargar-app', 'pages.descargar-app')->name('descargar.app');
+
 // Reportes KPIs (solo super_admin — protegido en el controller)
 Route::middleware(['web', 'auth'])->prefix('admin/reportes/kpis')->name('kpis.reporte.')->group(function () {
     Route::get('/excel', [KpisReporteController::class, 'excel'])->name('excel');

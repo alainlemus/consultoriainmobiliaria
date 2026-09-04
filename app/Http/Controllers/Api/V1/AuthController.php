@@ -64,6 +64,54 @@ class AuthController extends Controller
         return response()->json(['message' => 'Sesión cerrada correctamente.']);
     }
 
+    /**
+     * Token independiente para Face ID / huella, guardado solo en el device.
+     *
+     * Nunca reutilizamos el token de sesión para esto: logout() borra
+     * SOLO currentAccessToken(), así que mientras el token de biometría
+     * tenga un nombre distinto, cerrar sesión no lo toca y Face ID sigue
+     * funcionando después de un logout normal.
+     */
+    public function biometricToken(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->tokens()->where('name', 'app-movil-biometric')->delete();
+        $token = $user->createToken('app-movil-biometric')->plainTextToken;
+
+        return response()->json(['token' => $token]);
+    }
+
+    /** Revoca el token de biometría — usado cuando el usuario borra Face ID desde el perfil. */
+    public function revokeBiometricToken(Request $request): JsonResponse
+    {
+        $request->user()->tokens()->where('name', 'app-movil-biometric')->delete();
+
+        return response()->json(['message' => 'Credencial de biometría eliminada.']);
+    }
+
+    /**
+     * Canjea el token de biometría por un token de sesión normal ('app-movil').
+     *
+     * El login vía Face ID nunca debe usar el token de biometría como token
+     * de sesión: si lo hiciera, un logout posterior lo revocaría (logout()
+     * borra currentAccessToken()) y dejaría a Face ID sin token válido desde
+     * el primer cierre de sesión. Con el canje, logout() solo revoca el
+     * token de sesión fresco; el de biometría permanece intacto.
+     */
+    public function sessionFromBiometric(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $tokenName = $request->input('device_name', 'app-movil');
+        $user->tokens()->where('name', $tokenName)->delete();
+        $token = $user->createToken($tokenName)->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user'  => $this->userPayload($user),
+        ]);
+    }
+
     public function me(Request $request): JsonResponse
     {
         return response()->json([

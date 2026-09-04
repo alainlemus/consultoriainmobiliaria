@@ -77,6 +77,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/perfil/foto',           [AuthController::class, 'subirFotoPerfil']);
         Route::get('/auth/asesores',               [AuthController::class, 'asesores']);
         Route::post('/auth/solicitar-cancelacion', [AuthController::class, 'solicitarCancelacion']);
+        Route::post('/auth/biometric-token',       [AuthController::class, 'biometricToken']);
+        Route::delete('/auth/biometric-token',     [AuthController::class, 'revokeBiometricToken']);
+        Route::post('/auth/session-from-biometric', [AuthController::class, 'sessionFromBiometric']);
 
         // Prospectos / Contactos
         Route::get('/contactos',                              [ContactoController::class, 'index']);
@@ -173,6 +176,9 @@ Route::prefix('v1/acreditado')->group(function () {
         Route::put('/auth/perfil',              [AcreditadoAuthController::class, 'updatePerfil']);
         Route::post('/auth/perfil/foto',        [AcreditadoAuthController::class, 'subirFoto']);
         Route::put('/auth/password',            [AcreditadoAuthController::class, 'cambiarPassword']);
+        Route::post('/auth/biometric-token',    [AcreditadoAuthController::class, 'biometricToken']);
+        Route::delete('/auth/biometric-token',  [AcreditadoAuthController::class, 'revokeBiometricToken']);
+        Route::post('/auth/session-from-biometric', [AcreditadoAuthController::class, 'sessionFromBiometric']);
         Route::post('/auth/solicitar-cancelacion', [AcreditadoAuthController::class, 'solicitarCancelacion']);
 
         // Solicitudes de asesoría
