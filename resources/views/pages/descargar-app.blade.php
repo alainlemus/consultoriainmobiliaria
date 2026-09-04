@@ -97,6 +97,21 @@
                     @endif
                 </div>
 
+                {{-- Mockup compacto solo para mobile/tablet: en desktop se muestra el par de abajo --}}
+                <div class="flex lg:hidden justify-center relative h-[360px]" x-reveal.delay.150>
+                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-gold-500/20 rounded-full blur-3xl phone-glow"></div>
+                    <div class="relative z-10 phone-float-1">
+                        <div class="group relative w-44 h-[350px] bg-dark-800 rounded-[2.25rem] border-4 border-dark-700 shadow-2xl p-2.5 transition-transform duration-500">
+                            <div class="w-full h-full rounded-[1.75rem] overflow-hidden border border-gold-500/20 relative">
+                                <div class="absolute top-1.5 left-1/2 -translate-x-1/2 w-16 h-5 bg-dark-900 rounded-full z-10"></div>
+                                <img src="{{ $shotIos }}"
+                                     alt="Pantalla de acceso de la app en iPhone — Consultoría Inmobiliaria"
+                                     class="w-full h-full object-cover object-top">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Mockups: iPhone (login) + Android (portal del cliente) — capturas reales de la app. --}}
                 <div class="hidden lg:flex items-center justify-center relative h-[480px]" x-reveal.delay.150>
                     {{-- Brillo dorado detrás de los teléfonos --}}
