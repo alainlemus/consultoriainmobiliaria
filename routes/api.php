@@ -98,7 +98,9 @@ Route::prefix('v1')->group(function () {
         // Contratos — texto configurable para generar el PDF en la app (sin conexión)
         Route::get('/contratos/prestacion-servicios/config', [ContratosController::class, 'prestacionServiciosConfig']);
         Route::put('/contratos/prestacion-servicios/config', [ContratosController::class, 'updatePrestacionServiciosConfig']);
-        Route::post('/contratos/generados', [ContratoGeneradoController::class, 'store']);
+        Route::get('/contratos/generados',            [ContratoGeneradoController::class, 'index']);
+        Route::post('/contratos/generados',            [ContratoGeneradoController::class, 'store']);
+        Route::get('/contratos/generados/{id}/ver',    [ContratoGeneradoController::class, 'ver']);
 
         // Documentos
         Route::get('/expedientes/{expedienteId}/documentos',                                   [DocumentoController::class, 'index']);

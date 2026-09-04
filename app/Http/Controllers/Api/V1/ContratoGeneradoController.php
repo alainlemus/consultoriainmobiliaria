@@ -7,6 +7,7 @@ use App\Models\ContratoGenerado;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 
 class ContratoGeneradoController extends Controller
 {
@@ -21,6 +22,59 @@ class ContratoGeneradoController extends Controller
             'tiene_ine_acreditado' => (bool) $c->ine_acreditado_path,
             'tiene_ine_solidario'  => (bool) $c->ine_solidario_path,
         ];
+    }
+
+    /**
+     * GET /api/v1/contratos/generados
+     *
+     * Historial de contratos generados en la app, para reconstruirlo del
+     * lado del cliente (p. ej. tras desinstalar/reinstalar y perder el
+     * historial local en AsyncStorage). Cada asesor ve solo los suyos;
+     * super_admin ve todos.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $query = ContratoGenerado::query()->latest();
+        if (! $user->hasRole('super_admin')) {
+            $query->where('asesor_id', $user->id);
+        }
+
+        $contratos = $query->get()->map(fn (ContratoGenerado $c) => $this->serialize($c));
+
+        return response()->json(['data' => $contratos]);
+    }
+
+    /**
+     * GET /api/v1/contratos/generados/{id}/ver
+     *
+     * URLs firmadas de corta duración (5 min) para el PDF y las INEs de un
+     * contrato generado, usadas por la app para reabrirlo/compartirlo sin
+     * exponer las rutas reales en disco.
+     */
+    public function ver(Request $request, int $id): JsonResponse
+    {
+        $user     = $request->user();
+        $contrato = ContratoGenerado::findOrFail($id);
+
+        if (! $user->hasRole('super_admin') && $contrato->asesor_id !== $user->id) {
+            abort(403);
+        }
+
+        $urls = [];
+        foreach (self::CAMPOS_ARCHIVO as $campo) {
+            if (! $contrato->{"{$campo}_path"}) {
+                continue;
+            }
+            $urls["{$campo}_url"] = URL::temporarySignedRoute(
+                'api.contratos_generados.descargar',
+                now()->addMinutes(5),
+                ['id' => $id, 'campo' => $campo]
+            );
+        }
+
+        return response()->json([...$urls, 'expira_en' => 300]);
     }
 
     /**
