@@ -2,6 +2,8 @@
 
 @section('seo_title', 'Descarga la App — ' . setting('site_name', 'Consultoría Inmobiliaria'))
 @section('seo_description', 'Descarga la app de Consultoría Inmobiliaria: asesores dan seguimiento a expedientes y rutas, clientes consultan su trámite y suben documentos desde el celular.')
+@section('og_title', 'Descarga la App de ' . setting('site_name', 'Consultoría Inmobiliaria'))
+@section('og_description', 'Consulta el avance de tu trámite, sube documentos y contacta a tu asesor desde tu celular. Disponible para iOS y Android.')
 
 @section('content')
 
@@ -125,6 +127,7 @@
                                     <div class="absolute top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-dark-900 border border-gold-500/30 z-10"></div>
                                     <img src="{{ $shotAndroid }}"
                                          alt="Portal del cliente en Android — Consultoría Inmobiliaria"
+                                         loading="lazy"
                                          class="w-full h-full object-cover object-top">
                                 </div>
                             </div>
@@ -137,6 +140,7 @@
                                     <div class="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-6 bg-dark-900 rounded-full z-10"></div>
                                     <img src="{{ $shotIos }}"
                                          alt="Pantalla de acceso de la app en iPhone — Consultoría Inmobiliaria"
+                                         loading="lazy"
                                          class="w-full h-full object-cover object-top">
                                 </div>
                             </div>
