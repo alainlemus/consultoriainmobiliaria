@@ -92,6 +92,7 @@
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p class="text-cream-300 text-xs">&copy; {{ date('Y') }} Consultoría Inmobiliaria. Todos los derechos reservados.</p>
             <div class="flex items-center gap-4">
+                <a href="{{ route('descargar.app') }}" class="text-cream-300/60 hover:text-gold-400 text-xs transition-colors">Descargar App</a>
                 <a href="{{ route('aviso.privacidad') }}" class="text-cream-300/60 hover:text-gold-400 text-xs transition-colors">Aviso de Privacidad</a>
                 <p class="text-gold-500/50 text-xs">Confianza &bull; Transparencia &bull; Resultados</p>
             </div>

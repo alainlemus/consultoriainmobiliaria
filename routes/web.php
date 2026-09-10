@@ -7,6 +7,7 @@ use App\Http\Controllers\ContactoController;
 use App\Http\Controllers\PropiedadController;
 use App\Http\Controllers\KpisReporteController;
 use App\Http\Controllers\ContratosController;
+use App\Http\Controllers\ContratoGeneradoWordController;
 use App\Http\Controllers\TestimonioPublicoController;
 use App\Http\Controllers\SitemapController;
 use App\Models\UbicacionFoto;
@@ -47,6 +48,9 @@ Route::view('/aviso-de-privacidad', 'pages.aviso-privacidad')->name('aviso.priva
 // Eliminación de datos (requerido por Google Play)
 Route::view('/eliminacion-de-datos', 'pages.eliminacion-datos')->name('datos.eliminacion');
 
+// Descarga de la app móvil (asesores y clientes)
+Route::view('/descargar-app', 'pages.descargar-app')->name('descargar.app');
+
 // Reportes KPIs (solo super_admin — protegido en el controller)
 Route::middleware(['web', 'auth'])->prefix('admin/reportes/kpis')->name('kpis.reporte.')->group(function () {
     Route::get('/excel', [KpisReporteController::class, 'excel'])->name('excel');
@@ -58,6 +62,11 @@ Route::middleware(['web', 'auth'])->prefix('admin/contratos')->name('contratos.'
     Route::get('/{expediente}/prestacion-servicios',[ContratosController::class, 'prestacionServicios'])->name('prestacion_servicios');
     Route::get('/{expediente}/convenio-honorarios', [ContratosController::class, 'convenioHonorarios'])->name('convenio_honorarios');
     Route::get('/{expediente}/carta-mandato',       [ContratosController::class, 'cartaMandato'])->name('carta_mandato');
+});
+
+// Exportación a Word de contratos generados desde la app
+Route::middleware(['web', 'auth'])->prefix('admin/contratos-generados')->name('contratos_generados.')->group(function () {
+    Route::get('/{contratoGenerado}/word', [ContratoGeneradoWordController::class, 'export'])->name('word');
 });
 
 // Formulario de testimonio con token de un solo uso (7 días de vigencia)

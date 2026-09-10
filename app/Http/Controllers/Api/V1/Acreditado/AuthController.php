@@ -97,6 +97,51 @@ class AuthController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // POST /v1/acreditado/auth/biometric-token
+    //
+    // Token independiente para Face ID / huella. logout() solo borra
+    // currentAccessToken(), así que con un nombre distinto al de sesión
+    // ('acreditado-app'), cerrar sesión no invalida la biometría.
+    // ─────────────────────────────────────────────────────────────────────────
+    public function biometricToken(Request $request): JsonResponse
+    {
+        $acreditado = $request->user();
+        $acreditado->tokens()->where('name', 'acreditado-app-biometric')->delete();
+        $token = $acreditado->createToken('acreditado-app-biometric')->plainTextToken;
+
+        return response()->json(['token' => $token]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DELETE /v1/acreditado/auth/biometric-token
+    // ─────────────────────────────────────────────────────────────────────────
+    public function revokeBiometricToken(Request $request): JsonResponse
+    {
+        $request->user()->tokens()->where('name', 'acreditado-app-biometric')->delete();
+
+        return response()->json(['message' => 'Credencial de biometría eliminada.']);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /v1/acreditado/auth/session-from-biometric
+    //
+    // Canjea el token de biometría por uno de sesión normal ('acreditado-app')
+    // — logout() solo revoca el de sesión, así que el de biometría sobrevive.
+    // ─────────────────────────────────────────────────────────────────────────
+    public function sessionFromBiometric(Request $request): JsonResponse
+    {
+        $acreditado = $request->user();
+
+        $acreditado->tokens()->where('name', 'acreditado-app')->delete();
+        $token = $acreditado->createToken('acreditado-app')->plainTextToken;
+
+        return response()->json([
+            'token'      => $token,
+            'acreditado' => $acreditado->fresh()->toApiArray(),
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // GET /v1/acreditado/auth/me
     // ─────────────────────────────────────────────────────────────────────────
     public function me(Request $request): JsonResponse

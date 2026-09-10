@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\ComisionController;
 use App\Http\Controllers\Api\V1\ContratosController;
+use App\Http\Controllers\Api\V1\ContratoGeneradoController;
 use App\Http\Controllers\Api\WhatsAppWebhookController;
 use App\Http\Controllers\Api\V1\Acreditado\AuthController as AcreditadoAuthController;
 use App\Http\Controllers\Api\V1\Acreditado\ExpedienteController as AcreditadoExpedienteController;
@@ -54,6 +55,12 @@ Route::get(
     [AuthController::class, 'verFotoPerfil']
 )->middleware('signed')->name('api.user.foto');
 
+// ── Archivo de un contrato generado (pdf / ine_acreditado / ine_solidario) ──
+Route::get(
+    '/contratos-generados/{id}/{campo}/descargar',
+    [ContratoGeneradoController::class, 'descargar']
+)->middleware('signed')->name('api.contratos_generados.descargar');
+
 Route::prefix('v1')->group(function () {
 
     // ── Públicas (sin token) ──────────────────────────────────────────────
@@ -70,6 +77,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/perfil/foto',           [AuthController::class, 'subirFotoPerfil']);
         Route::get('/auth/asesores',               [AuthController::class, 'asesores']);
         Route::post('/auth/solicitar-cancelacion', [AuthController::class, 'solicitarCancelacion']);
+        Route::post('/auth/biometric-token',       [AuthController::class, 'biometricToken']);
+        Route::delete('/auth/biometric-token',     [AuthController::class, 'revokeBiometricToken']);
+        Route::post('/auth/session-from-biometric', [AuthController::class, 'sessionFromBiometric']);
 
         // Prospectos / Contactos
         Route::get('/contactos',                              [ContactoController::class, 'index']);
@@ -88,6 +98,9 @@ Route::prefix('v1')->group(function () {
         // Contratos — texto configurable para generar el PDF en la app (sin conexión)
         Route::get('/contratos/prestacion-servicios/config', [ContratosController::class, 'prestacionServiciosConfig']);
         Route::put('/contratos/prestacion-servicios/config', [ContratosController::class, 'updatePrestacionServiciosConfig']);
+        Route::get('/contratos/generados',            [ContratoGeneradoController::class, 'index']);
+        Route::post('/contratos/generados',            [ContratoGeneradoController::class, 'store']);
+        Route::get('/contratos/generados/{id}/ver',    [ContratoGeneradoController::class, 'ver']);
 
         // Documentos
         Route::get('/expedientes/{expedienteId}/documentos',                                   [DocumentoController::class, 'index']);
@@ -165,6 +178,9 @@ Route::prefix('v1/acreditado')->group(function () {
         Route::put('/auth/perfil',              [AcreditadoAuthController::class, 'updatePerfil']);
         Route::post('/auth/perfil/foto',        [AcreditadoAuthController::class, 'subirFoto']);
         Route::put('/auth/password',            [AcreditadoAuthController::class, 'cambiarPassword']);
+        Route::post('/auth/biometric-token',    [AcreditadoAuthController::class, 'biometricToken']);
+        Route::delete('/auth/biometric-token',  [AcreditadoAuthController::class, 'revokeBiometricToken']);
+        Route::post('/auth/session-from-biometric', [AcreditadoAuthController::class, 'sessionFromBiometric']);
         Route::post('/auth/solicitar-cancelacion', [AcreditadoAuthController::class, 'solicitarCancelacion']);
 
         // Solicitudes de asesoría

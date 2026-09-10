@@ -25,6 +25,13 @@
         <priority>0.8</priority>
     </url>
 
+    {{-- Descarga la app --}}
+    <url>
+        <loc>{{ route('descargar.app') }}</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
     {{-- Aviso de privacidad --}}
     <url>
         <loc>{{ route('aviso.privacidad') }}</loc>
