@@ -126,6 +126,12 @@ class ContratoGeneradoResource extends Resource
             ])
             ->actions([
                 static::accionVer('pdf', 'Ver contrato (PDF)'),
+                \Filament\Actions\Action::make('exportar_word')
+                    ->label('Exportar a Word')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('gray')
+                    ->url(fn (ContratoGenerado $record) => route('contratos_generados.word', $record))
+                    ->openUrlInNewTab(),
                 static::accionVer('ine_acreditado', 'Ver INE del acreditado'),
                 static::accionVer('ine_solidario', 'Ver INE del solidario'),
                 \Filament\Actions\EditAction::make()->label('Editar datos'),
