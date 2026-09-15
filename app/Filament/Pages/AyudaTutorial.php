@@ -184,6 +184,87 @@ class AyudaTutorial extends Page implements HasInfolists
                             ->state('Al tocar un marcador se despliega el detalle con las fotos que el asesor tomó durante la visita.'),
                     ]),
 
+                Section::make('Anuncios Físicos en Campo')
+                    ->description('Lonas, volantes y letreros colocados por los asesores')
+                    ->icon('heroicon-o-megaphone')
+                    ->collapsible()
+                    ->collapsed()
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('an1')
+                            ->label('¿Qué es un anuncio?')
+                            ->icon('heroicon-o-information-circle')
+                            ->state('Es un anuncio físico (lona, hoja en tienda, hoja en poste, volante u otro) que un asesor coloca en campo. Se registra desde la app con ubicación GPS y fotos; en el panel solo se consultan y administran.'),
+                        TextEntry::make('an2')
+                            ->label('Ver fotos y ubicación')
+                            ->icon('heroicon-o-photo')
+                            ->state('El botón "Ver fotos" abre un carrusel con las imágenes tomadas en campo. La dirección aproximada, colonia, municipio y estado quedan registrados automáticamente por GPS.'),
+                        TextEntry::make('an3')
+                            ->label('Estados: Activo / Retirado')
+                            ->icon('heroicon-o-arrow-path')
+                            ->state('Un anuncio nace Activo. Cuando se retira físicamente, usa el botón "Marcar retirado" (o la acción masiva "Marcar como retirados") para reflejarlo en el sistema.'),
+                        TextEntry::make('an4')
+                            ->label('Filtros')
+                            ->icon('heroicon-o-funnel')
+                            ->columnSpanFull()
+                            ->state('Filtra por tipo de anuncio, estado y, como administrador, por asesor. Cada asesor solo ve los anuncios que él mismo colocó.'),
+                    ]),
+
+                Section::make('Contratos Generados y Plantillas')
+                    ->description('Historial de contratos por expediente y personalización de textos')
+                    ->icon('heroicon-o-document-check')
+                    ->collapsible()
+                    ->collapsed()
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('cg1')
+                            ->label('Contratos generados')
+                            ->icon('heroicon-o-document-check')
+                            ->state('Cada vez que se genera un contrato desde un expediente queda un registro aquí con folio, datos del acreditado, del obligado solidario y el asesor que lo generó.'),
+                        TextEntry::make('cg2')
+                            ->label('Ver PDF e identificaciones')
+                            ->icon('heroicon-o-eye')
+                            ->state('Desde la tabla puedes abrir el PDF del contrato y las fotos de INE del acreditado y del obligado solidario sin salir del panel.'),
+                        TextEntry::make('cg3')
+                            ->label('Exportar a Word')
+                            ->icon('heroicon-o-document-arrow-down')
+                            ->state('El botón "Exportar a Word" descarga un .docx editable del contrato — útil cuando el cliente necesita hacer un ajuste manual antes de firmar.'),
+                        TextEntry::make('cg4')
+                            ->label('Consulta desde la app')
+                            ->icon('heroicon-o-device-phone-mobile')
+                            ->state('El acreditado puede consultar su contrato generado directamente desde la app móvil una vez que su expediente quedó vinculado por CURP.'),
+                        TextEntry::make('cg5')
+                            ->label('Personalizar textos y firmas')
+                            ->icon('heroicon-o-pencil-square')
+                            ->columnSpanFull()
+                            ->state('En Configuración → "Contratos para clientes" editas los nombres que aparecen en las firmas, el domicilio jurídico y los textos de introducción/cláusulas del Contrato de Servicios y el Convenio de Honorarios. Usa placeholders como {acreditado}, {folio}, {monto_credito} o {curp}: se sustituyen automáticamente al generar cada contrato.'),
+                    ]),
+
+                Section::make('Acreditados en la App')
+                    ->description('Cuentas de clientes que usan la app móvil')
+                    ->icon('heroicon-o-device-phone-mobile')
+                    ->collapsible()
+                    ->collapsed()
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('ac1')
+                            ->label('¿Qué es un acreditado?')
+                            ->icon('heroicon-o-information-circle')
+                            ->state('Es la cuenta que un cliente crea en la app móvil para dar seguimiento a su trámite. Aquí se listan todas las registradas; no se crean desde el panel.'),
+                        TextEntry::make('ac2')
+                            ->label('Vincular a un expediente')
+                            ->icon('heroicon-o-link')
+                            ->state('Cuando la CURP del acreditado coincide con la de un expediente, queda vinculado automáticamente y el acreditado puede ver su avance, documentos y contrato desde la app.'),
+                        TextEntry::make('ac3')
+                            ->label('Activar o desactivar cuenta')
+                            ->icon('heroicon-o-power')
+                            ->state('El toggle "Cuenta activa" bloquea el acceso a la app sin borrar sus datos — útil si detectas actividad sospechosa o el cliente lo solicita.'),
+                        TextEntry::make('ac4')
+                            ->label('Sesiones activas')
+                            ->icon('heroicon-o-device-phone-mobile')
+                            ->state('El campo "Sesiones activas" muestra en cuántos dispositivos tiene la sesión iniciada el acreditado. Sirve para detectar accesos desde equipos no reconocidos.'),
+                    ]),
+
                 Section::make('WhatsApp — Configuración')
                     ->description('Conectar y gestionar la sesión de WhatsApp')
                     ->icon('heroicon-o-chat-bubble-left-right')
@@ -257,6 +338,23 @@ class AyudaTutorial extends Page implements HasInfolists
                             ->icon('heroicon-o-user-plus')
                             ->columnSpanFull()
                             ->state('El prospecto se crea en el CRM únicamente cuando el contacto completa TODOS los pasos del flujo. Si abandona la conversación a mitad, la sesión expira en 30 minutos y no se guarda ningún dato. Esto evita prospectos incompletos.'),
+                    ]),
+
+                Section::make('App Móvil — Configuración de Descarga')
+                    ->description('Enlaces y capturas de la página pública de descarga')
+                    ->icon('heroicon-o-arrow-down-on-square')
+                    ->collapsible()
+                    ->collapsed()
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('am1')
+                            ->label('Enlaces a las tiendas')
+                            ->icon('heroicon-o-link')
+                            ->state('En Configuración → "App móvil" defines las URLs de App Store y Google Play que se muestran en la página pública /descargar-app. Mientras la app no esté publicada en las tiendas, deja una URL genérica para que los botones no queden rotos.'),
+                        TextEntry::make('am2')
+                            ->label('Capturas de pantalla')
+                            ->icon('heroicon-o-photo')
+                            ->state('También puedes subir las capturas de pantalla (login en iOS, vista del cliente en Android) que se muestran como vista previa en esa misma página.'),
                     ]),
 
                 Section::make('API Móvil')
@@ -386,6 +484,23 @@ class AyudaTutorial extends Page implements HasInfolists
                             ->label('Funciona sin internet')
                             ->icon('heroicon-o-signal-slash')
                             ->state('Las visitas y fotos se guardan aunque no tengas señal. Se sincronizan automáticamente cuando recuperes internet.'),
+                    ]),
+
+                Section::make('Anuncios Físicos')
+                    ->description('Registra lonas y volantes que colocas en campo')
+                    ->icon('heroicon-o-megaphone')
+                    ->collapsible()
+                    ->collapsed()
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('anz1')
+                            ->label('Se registran desde la app')
+                            ->icon('heroicon-o-information-circle')
+                            ->state('Los anuncios (lonas, hojas en tienda o poste, volantes) se dan de alta desde la app con tu ubicación y fotos. En el panel web puedes consultarlos y marcarlos como retirados cuando los quites.'),
+                        TextEntry::make('anz2')
+                            ->label('Solo ves los tuyos')
+                            ->icon('heroicon-o-eye')
+                            ->state('La sección Anuncios del panel muestra únicamente los que tú colocaste, con filtros por tipo y estado.'),
                     ]),
 
                 Section::make('Mis Comisiones')

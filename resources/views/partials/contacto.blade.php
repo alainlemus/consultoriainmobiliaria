@@ -167,6 +167,13 @@
                       @submit="enviando = true">
                     @csrf
 
+                    {{-- Honeypot: campo trampa invisible para humanos, los bots lo suelen rellenar --}}
+                    <div class="absolute -left-[9999px] w-px h-px overflow-hidden" aria-hidden="true">
+                        <label for="sitio_web">No llenar este campo</label>
+                        <input type="text" id="sitio_web" name="sitio_web" tabindex="-1" autocomplete="off">
+                    </div>
+                    <input type="hidden" name="form_iniciado" value="{{ now()->timestamp }}">
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="nombre" class="block text-xs text-cream-300 uppercase tracking-wider mb-1">Nombre *</label>

@@ -35,8 +35,10 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
-// Contacto (POST)
-Route::post('/contacto', [ContactoController::class, 'store'])->name('contacto.store');
+// Contacto (POST) — throttle para frenar envíos masivos de bots
+Route::post('/contacto', [ContactoController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('contacto.store');
 
 // Propiedades
 Route::get('/propiedades', [PropiedadController::class, 'index'])->name('propiedades.index');
