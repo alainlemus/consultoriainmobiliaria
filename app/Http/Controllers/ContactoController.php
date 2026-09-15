@@ -27,6 +27,22 @@ class ContactoController extends Controller
 
     public function store(Request $request)
     {
+        // Honeypot: si el campo trampa viene lleno, es un bot.
+        // Respondemos como si todo hubiera salido bien para no darle pistas.
+        if (filled($request->input('sitio_web'))) {
+            Log::info('Contacto bloqueado por honeypot', ['ip' => $request->ip()]);
+            return redirect()->route('home', '#contacto')
+                ->with('success', '¡Gracias! Recibimos tu mensaje. Te contactaremos pronto.');
+        }
+
+        // Time-trap: un humano tarda al menos unos segundos en llenar el formulario.
+        $inicio = (int) $request->input('form_iniciado');
+        if ($inicio > 0 && (time() - $inicio) < 3) {
+            Log::info('Contacto bloqueado por envío demasiado rápido', ['ip' => $request->ip()]);
+            return redirect()->route('home', '#contacto')
+                ->with('success', '¡Gracias! Recibimos tu mensaje. Te contactaremos pronto.');
+        }
+
         // Validar CAPTCHA antes que el resto
         $respuesta  = (int) $request->input('captcha');
         $esperado   = (int) session('captcha_resultado');
