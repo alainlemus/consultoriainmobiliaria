@@ -89,8 +89,11 @@ class MapaVisitas extends Page
                 'asesor'         => $u->user?->name,
                 'asesor_id'      => $u->user_id,
                 'fotos'          => $u->fotos->map(fn ($f) => [
-                    'id'  => $f->id,
-                    'url' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
+                    'id'    => $f->id,
+                    // Thumbnail liviano para la miniatura del popup (carga perezosa en el JS).
+                    'thumb' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id, 'thumb' => 1], now()->addMinutes(30)),
+                    // Imagen completa, solo se pide al abrir el visor de fotos.
+                    'url'   => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
                 ])->values(),
             ]);
 
@@ -131,8 +134,9 @@ class MapaVisitas extends Page
                 'asesor'      => $a->user?->name,
                 'asesor_id'   => $a->user_id,
                 'fotos'       => $a->fotos->map(fn ($f) => [
-                    'id'  => $f->id,
-                    'url' => \URL::signedRoute('api.anuncio.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
+                    'id'    => $f->id,
+                    'thumb' => \URL::signedRoute('api.anuncio.foto', ['fotoId' => $f->id, 'thumb' => 1], now()->addMinutes(30)),
+                    'url'   => \URL::signedRoute('api.anuncio.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
                 ])->values(),
             ]);
 

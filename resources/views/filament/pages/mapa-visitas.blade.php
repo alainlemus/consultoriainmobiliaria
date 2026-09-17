@@ -313,6 +313,13 @@
                 this.renderAnuncios();
             },
 
+            cargarFotosPopup(popupEl) {
+                popupEl.querySelectorAll('img[data-src]').forEach(img => {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                });
+            },
+
             iconoPara(tipo, semaforo) {
                 const colores = { visita_cliente: '#f59e0b', propiedad: '#7c3aed', escuela: '#3b82f6' };
                 const emojis  = { visita_cliente: '🏠', propiedad: '🏢', escuela: '🏫' };
@@ -419,8 +426,8 @@
                         const listaUrls = u.fotos.map(f => f.url);
                         u.fotos.forEach((f, i) => {
                             const img = document.createElement('img');
-                            img.src = f.url;
-                            img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:pointer;';
+                            img.dataset.src = f.thumb;
+                            img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:pointer;background:#e5e7eb;';
                             img.addEventListener('click', () => window.abrirFotoModal(listaUrls, i));
                             grid.appendChild(img);
                         });
@@ -428,6 +435,8 @@
                     }
 
                     m.bindPopup(popupEl, { maxWidth: 300 });
+                    // Las fotos del popup solo se descargan cuando el usuario lo abre.
+                    m.on('popupopen', () => this.cargarFotosPopup(popupEl));
 
                     m.addTo(this.mapa);
                     this.capas.push(m);
@@ -538,8 +547,8 @@
                         const listaUrls = a.fotos.map(f => f.url);
                         a.fotos.forEach((f, i) => {
                             const img = document.createElement('img');
-                            img.src = f.url;
-                            img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:pointer;';
+                            img.dataset.src = f.thumb;
+                            img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:pointer;background:#e5e7eb;';
                             img.addEventListener('click', () => window.abrirFotoModal(listaUrls, i));
                             grid.appendChild(img);
                         });
@@ -547,6 +556,9 @@
                     }
 
                     m.bindPopup(popupEl, { maxWidth: 300 });
+                    // Las fotos del popup solo se descargan cuando el usuario lo abre.
+                    m.on('popupopen', () => this.cargarFotosPopup(popupEl));
+
                     m.addTo(this.mapa);
                     this.capasAnuncios.push(m);
                 });

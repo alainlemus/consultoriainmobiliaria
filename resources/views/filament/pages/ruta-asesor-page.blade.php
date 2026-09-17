@@ -4,67 +4,20 @@
 
     @php
         $asesores = $this->getAsesores();
-        $primerAsesor = $asesores->first();
 
-        // Obtener todos los días disponibles (unión de todos los asesores)
-        $todosLosDias = \App\Models\RoutePoint::selectRaw('DATE(timestamp) as fecha')
-            ->groupByRaw('DATE(timestamp)')
-            ->orderByDesc('fecha')
-            ->limit(30)
-            ->pluck('fecha')
-            ->toArray();
-
-        $puntosData = [];
-        foreach ($asesores as $asesor) {
-            $dias = \App\Models\RoutePoint::where('user_id', $asesor->id)
-                ->selectRaw('DATE(timestamp) as fecha')
-                ->groupByRaw('DATE(timestamp)')
-                ->orderByDesc('fecha')
-                ->limit(30)
-                ->pluck('fecha')
-                ->toArray();
-
-            $puntosData[$asesor->id] = [];
-            foreach ($dias as $dia) {
-                $puntos = \App\Models\RoutePoint::where('user_id', $asesor->id)
-                    ->whereDate('timestamp', $dia)
-                    ->orderBy('timestamp')
-                    ->get(['id', 'lat', 'lng', 'precision', 'velocidad', 'timestamp'])
-                    ->map(fn($p) => [
-                        'id'        => $p->id,
-                        'lat'       => $p->lat,
-                        'lng'       => $p->lng,
-                        'precision' => $p->precision,
-                        'velocidad' => $p->velocidad,
-                        'hora'      => $p->timestamp->format('H:i:s'),
-                        'timestamp' => $p->timestamp->toIso8601String(),
-                    ])
-                    ->toArray();
-                $puntosData[$asesor->id][$dia] = $puntos;
-            }
-        }
-
-        // Puntos de "todos" por día
-        $puntosTodos = [];
-        foreach ($todosLosDias as $dia) {
-            $puntosTodos[$dia] = [];
-            foreach ($asesores as $asesor) {
-                if (isset($puntosData[$asesor->id][$dia])) {
-                    $puntosTodos[$dia][] = [
-                        'name' => $asesor->name,
-                        'puntos' => $puntosData[$asesor->id][$dia],
-                    ];
-                }
-            }
-        }
+        // Solo se precarga el primer día disponible (de "todos"); el resto se
+        // pide bajo demanda vía Livewire ($wire) al cambiar asesor/fecha,
+        // en vez de traer el historial completo de cada asesor de golpe.
+        $diasTodos = $this->getDiasDisponiblesTodos();
+        $primerDia = $diasTodos[0] ?? null;
+        $puntosTodosInicial = $primerDia ? $this->getRutasTodos($primerDia) : [];
     @endphp
 
     <script type="application/json" id="asesores-data">{!! json_encode($asesores->map(fn($a) => ['id' => $a->id, 'name' => $a->name])) !!}</script>
-    <script type="application/json" id="puntos-data">{!! json_encode($puntosData) !!}</script>
-    <script type="application/json" id="puntos-todos">{!! json_encode($puntosTodos) !!}</script>
-    <script type="application/json" id="dias-todos">{!! json_encode($todosLosDias) !!}</script>
+    <script type="application/json" id="dias-todos-data">{!! json_encode($diasTodos) !!}</script>
+    <script type="application/json" id="puntos-todos-inicial">{!! json_encode($puntosTodosInicial) !!}</script>
 
-    <div class="space-y-6" x-data="rutasAsesores()">
+    <div class="space-y-6" x-data="rutasAsesores($wire)">
 
         <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10 rounded-xl p-4 flex flex-wrap gap-4 items-end">
 
@@ -91,11 +44,12 @@
                 </select>
             </div>
 
-            <div class="ml-auto flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400" x-show="(asesorId !== '' && puntos.length > 0) || (asesorId === '' && puntosTodos.length > 0)">
-                <template x-if="asesorId !== ''">
+            <div class="ml-auto flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <span x-show="cargando" class="text-xs italic">Cargando…</span>
+                <template x-if="!cargando && asesorId !== '' && puntos.length > 0">
                     <span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded" x-text="puntos.length + ' puntos'"></span>
                 </template>
-                <template x-if="asesorId === ''">
+                <template x-if="!cargando && asesorId === '' && puntosTodos.length > 0">
                     <span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded" x-text="puntosTodos.flatMap(p => p.puntos).length + ' puntos'"></span>
                 </template>
                 <span x-show="distanciaKm > 0" x-text="distanciaKm.toFixed(1) + ' km'"></span>
@@ -139,31 +93,24 @@
     <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 
     <script>
-    function rutasAsesores() {
-        const puntosData = JSON.parse(document.getElementById('puntos-data').textContent);
-        const puntosTodos = JSON.parse(document.getElementById('puntos-todos').textContent);
-        const diasTodos = JSON.parse(document.getElementById('dias-todos').textContent);
+    function rutasAsesores($wire) {
+        const diasTodosIniciales    = JSON.parse(document.getElementById('dias-todos-data').textContent);
+        const puntosTodosIniciales  = JSON.parse(document.getElementById('puntos-todos-inicial').textContent);
 
         return {
+            wire: $wire,
             mapa: null,
             polylines: [],
             markersLayer: null,
             puntos: [],
-            puntosTodos: [],
+            puntosTodos: puntosTodosIniciales,
             distanciaKm: 0,
             asesorId: '',
-            fecha: '',
-            diasDisponibles: [],
+            fecha: diasTodosIniciales[0] || '',
+            diasDisponibles: diasTodosIniciales,
+            cargando: false,
 
             init() {
-                // Iniciar con "todos" seleccionado por defecto
-                this.asesorId = '';
-                this.polyline = null;
-                this.diasDisponibles = diasTodos;
-                if (this.diasDisponibles.length > 0) {
-                    this.fecha = this.diasDisponibles[0];
-                    this.puntosTodos = puntosTodos[this.fecha] || [];
-                }
                 this.$nextTick(() => this.iniciarMapa());
                 if (this.puntosTodos.length > 0) {
                     this.$nextTick(() => this.renderRuta());
@@ -180,27 +127,27 @@
                 this.markersLayer = L.layerGroup().addTo(this.mapa);
             },
 
-            onAsesorChange() {
+            async onAsesorChange() {
                 this.puntos = [];
                 this.puntosTodos = [];
                 this.fecha = '';
                 this.distanciaKm = 0;
+                this.cargando = true;
 
-                if (this.asesorId === '') {
-                    // Todos los asesores
-                    this.diasDisponibles = diasTodos;
-                } else {
-                    // Asesor específico
-                    this.diasDisponibles = Object.keys(puntosData[this.asesorId] || {});
-                }
+                this.diasDisponibles = this.asesorId === ''
+                    ? await this.wire.getDiasDisponiblesTodos()
+                    : await this.wire.getDiasDisponiblesAsesor(this.asesorId);
 
                 if (this.diasDisponibles.length > 0) {
                     this.fecha = this.diasDisponibles[0];
-                    this.onFechaChange();
+                    await this.onFechaChange();
+                } else {
+                    this.cargando = false;
+                    this.renderRuta();
                 }
             },
 
-            onFechaChange() {
+            async onFechaChange() {
                 if (!this.fecha) {
                     this.puntos = [];
                     this.puntosTodos = [];
@@ -208,15 +155,17 @@
                     return;
                 }
 
+                this.cargando = true;
+
                 if (this.asesorId === '') {
-                    // Todos los asesores
                     this.puntos = [];
-                    this.puntosTodos = puntosTodos[this.fecha] || [];
+                    this.puntosTodos = await this.wire.getRutasTodos(this.fecha);
                 } else {
-                    // Asesor específico
-                    this.puntos = puntosData[this.asesorId]?.[this.fecha] || [];
+                    this.puntos = await this.wire.getRutasAsesor(this.asesorId, this.fecha);
                     this.puntosTodos = [];
                 }
+
+                this.cargando = false;
                 this.renderRuta();
                 this.calcularDistancia();
             },
