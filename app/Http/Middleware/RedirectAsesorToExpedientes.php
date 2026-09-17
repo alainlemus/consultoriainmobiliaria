@@ -17,6 +17,10 @@ class RedirectAsesorToExpedientes
                 return redirect('/admin/dashboard-asesor');
             }
 
+            if ($user->hasRole('revisor_rutas')) {
+                return redirect('/admin/mapa-visitas');
+            }
+
             // Cualquier rol que no sea super_admin ni admin va a expedientes
             if (! $user->hasRole('super_admin') && ! $user->hasRole('admin')) {
                 return redirect('/admin/expedientes');

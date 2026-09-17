@@ -43,7 +43,7 @@ class MapaVisitas extends Page
     public static function canAccess(): bool
     {
         $user = auth()->user();
-        return $user && ($user->hasRole('super_admin') || $user->hasRole('asesor'));
+        return $user && ($user->hasRole('super_admin') || $user->hasRole('asesor') || $user->hasRole('revisor_rutas'));
     }
 
     public function getAsesores(): Collection
@@ -53,21 +53,25 @@ class MapaVisitas extends Page
             ->get(['id', 'name']);
     }
 
-    public function esSuperAdmin(): bool
+    /**
+     * Roles que ven las visitas/anuncios de todos los asesores en vez de solo las propias
+     * (super_admin y revisor_rutas, este último de solo lectura sobre mapa y rutas).
+     */
+    public function puedeVerTodo(): bool
     {
-        return auth()->user()?->hasRole('super_admin') ?? false;
+        return auth()->user()?->hasRole(['super_admin', 'revisor_rutas']) ?? false;
     }
 
     public function getUbicacionesJson(): string
     {
-        $scope = $this->esSuperAdmin() ? 'all' : 'user_' . auth()->id();
+        $scope = $this->puedeVerTodo() ? 'all' : 'user_' . auth()->id();
         $key   = sprintf('mapa_visitas:v%d:ubicaciones:%s', $this->cacheVersion(), $scope);
 
         return Cache::remember($key, self::CACHE_TTL, function () {
             $query = Ubicacion::with(['contacto:id,nombre', 'user:id,name', 'fotos'])
                 ->orderByDesc('visitado_en');
 
-            if (! $this->esSuperAdmin()) {
+            if (! $this->puedeVerTodo()) {
                 $query->where('user_id', auth()->id());
             }
 
@@ -101,14 +105,14 @@ class MapaVisitas extends Page
      */
     public function getAnunciosJson(): string
     {
-        $scope = $this->esSuperAdmin() ? 'all' : 'activos';
+        $scope = $this->puedeVerTodo() ? 'all' : 'activos';
         $key   = sprintf('mapa_visitas:v%d:anuncios:%s', $this->cacheVersion(), $scope);
 
         return Cache::remember($key, self::CACHE_TTL, function () {
             $query = Anuncio::with(['user:id,name', 'fotos'])
                 ->orderByDesc('colocado_en');
 
-            if (! $this->esSuperAdmin()) {
+            if (! $this->puedeVerTodo()) {
                 $query->where('estado', 'activo');
             }
 
@@ -138,11 +142,11 @@ class MapaVisitas extends Page
 
     public function getStats(): array
     {
-        $scope = $this->esSuperAdmin() ? 'all' : 'user_' . auth()->id();
+        $scope = $this->puedeVerTodo() ? 'all' : 'user_' . auth()->id();
         $key   = sprintf('mapa_visitas:v%d:stats:%s', $this->cacheVersion(), $scope);
 
         return Cache::remember($key, self::CACHE_TTL, function () {
-            $base = $this->esSuperAdmin()
+            $base = $this->puedeVerTodo()
                 ? Ubicacion::query()
                 : Ubicacion::where('user_id', auth()->id());
 
@@ -156,7 +160,7 @@ class MapaVisitas extends Page
                 ")
                 ->first();
 
-            $asesores = $this->esSuperAdmin()
+            $asesores = $this->puedeVerTodo()
                 ? Ubicacion::distinct('user_id')->count('user_id')
                 : 1;
 

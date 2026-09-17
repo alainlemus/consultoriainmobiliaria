@@ -85,6 +85,9 @@ class AdminPanelProvider extends PanelProvider
                 if ($user?->hasRole('asesor')) {
                     return '/admin/dashboard-asesor';
                 }
+                if ($user?->hasRole('revisor_rutas')) {
+                    return '/admin/mapa-visitas';
+                }
                 if ($user?->hasRole('super_admin') || $user?->hasRole('admin')) {
                     return '/admin';
                 }
@@ -213,9 +216,10 @@ class AdminPanelProvider extends PanelProvider
                     $user = filament()->auth()->user();
                     $rol  = $user?->roles->first()?->name;
                     $label = match($rol) {
-                        "super_admin" => "Administrador",
-                        "asesor"      => "Asesor",
-                        default       => ucfirst($rol ?? ""),
+                        "super_admin"   => "Administrador",
+                        "asesor"        => "Asesor",
+                        "revisor_rutas" => "Revisor de Rutas",
+                        default         => ucfirst($rol ?? ""),
                     };
                     $classes = $rol === "super_admin"
                         ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"

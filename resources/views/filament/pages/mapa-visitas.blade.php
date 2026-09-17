@@ -6,7 +6,7 @@
     @php
         $stats        = $this->getStats();
         $asesores     = $this->getAsesores();
-        $esSuperAdmin = $this->esSuperAdmin();
+        $esSuperAdmin = $this->puedeVerTodo();
     @endphp
 
     <div class="space-y-6" x-data="mapaVisitas()" x-init="init()">

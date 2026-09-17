@@ -20,7 +20,7 @@ class RutaAsesorPage extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole('super_admin') ?? false;
+        return auth()->user()?->hasRole(['super_admin', 'revisor_rutas']) ?? false;
     }
 
     public function getAsesores(): Collection
