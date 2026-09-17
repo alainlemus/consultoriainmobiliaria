@@ -26,14 +26,31 @@ class AnuncioResource extends Resource
 
     public static function canAccess(): bool
     {
-        $user = Auth::user();
-        return $user && ($user->hasRole('super_admin') || $user->hasRole('asesor'));
+        return Auth::user()?->can('ViewAny:Anuncio') ?? false;
+    }
+
+    /**
+     * Solo puede editar/retirar/reactivar quien tenga el permiso de edición
+     * del recurso (los roles de solo lectura, como Revisor de Rutas, no).
+     */
+    public static function puedeEditar(): bool
+    {
+        return Auth::user()?->can('Update:Anuncio') ?? false;
+    }
+
+    /**
+     * Roles con el permiso "Ver:TodosLosAsesores" ven los anuncios de todos
+     * los asesores (columna/filtro "Asesor"); el resto solo los propios.
+     */
+    public static function puedeVerTodo(): bool
+    {
+        return Auth::user()?->can('Ver:TodosLosAsesores') ?? false;
     }
 
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()->with(['user:id,name', 'fotos']);
-        if (Auth::check() && Auth::user()->hasRole('asesor')) {
+        if (! static::puedeVerTodo()) {
             $query->where('user_id', Auth::id());
         }
         return $query;
@@ -42,7 +59,7 @@ class AnuncioResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $query = static::getModel()::where('estado', 'activo');
-        if (Auth::check() && Auth::user()->hasRole('asesor')) {
+        if (! static::puedeVerTodo()) {
             $query->where('user_id', Auth::id());
         }
         $count = $query->count();
@@ -131,7 +148,7 @@ class AnuncioResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Asesor')
                     ->sortable()
-                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+                    ->visible(fn () => static::puedeVerTodo()),
 
                 Tables\Columns\TextColumn::make('colocado_en')
                     ->label('Colocado')
@@ -157,7 +174,7 @@ class AnuncioResource extends Resource
                 Tables\Filters\SelectFilter::make('user_id')
                     ->label('Asesor')
                     ->relationship('user', 'name')
-                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+                    ->visible(fn () => static::puedeVerTodo()),
             ])
             ->actions([
                 \Filament\Actions\Action::make('ver_fotos')
@@ -181,17 +198,18 @@ class AnuncioResource extends Resource
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (Anuncio $record) => $record->estado === 'activo')
+                    ->visible(fn (Anuncio $record) => $record->estado === 'activo' && static::puedeEditar())
                     ->action(fn (Anuncio $record) => $record->update(['estado' => 'retirado'])),
 
                 \Filament\Actions\Action::make('reactivar')
                     ->label('Reactivar')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn (Anuncio $record) => $record->estado === 'retirado')
+                    ->visible(fn (Anuncio $record) => $record->estado === 'retirado' && static::puedeEditar())
                     ->action(fn (Anuncio $record) => $record->update(['estado' => 'activo'])),
 
-                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\EditAction::make()
+                    ->visible(fn () => static::puedeEditar()),
             ])
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([
@@ -201,7 +219,7 @@ class AnuncioResource extends Resource
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(fn ($records) => $records->each->update(['estado' => 'retirado'])),
-                ]),
+                ])->visible(fn () => static::puedeEditar()),
             ]);
     }
 

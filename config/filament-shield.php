@@ -27,7 +27,7 @@ return [
             'pages' => true,
             'widgets' => true,
             'resources' => true,
-            'custom_permissions' => false,
+            'custom_permissions' => true,
         ],
     ],
 
@@ -232,7 +232,12 @@ return [
     |
     */
 
-    'custom_permissions' => [],
+    'custom_permissions' => [
+        // No mapea a un modelo ni a una página: controla si el rol ve los
+        // datos (visitas/anuncios/rutas) de TODOS los asesores en vez de
+        // solo los propios. Usado en MapaVisitas, RutaAsesorPage y AnuncioResource.
+        'Ver:TodosLosAsesores',
+    ],
 
     /*
     |--------------------------------------------------------------------------
