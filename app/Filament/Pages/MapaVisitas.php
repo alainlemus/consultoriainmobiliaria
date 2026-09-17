@@ -43,7 +43,7 @@ class MapaVisitas extends Page
     public static function canAccess(): bool
     {
         $user = auth()->user();
-        return $user && ($user->hasRole('super_admin') || $user->hasRole('asesor') || $user->hasRole('revisor_rutas'));
+        return $user && ($user->hasRole('super_admin') || $user->hasRole('asesor') || $user->hasRole('Revisor de Rutas'));
     }
 
     public function getAsesores(): Collection
@@ -55,11 +55,11 @@ class MapaVisitas extends Page
 
     /**
      * Roles que ven las visitas/anuncios de todos los asesores en vez de solo las propias
-     * (super_admin y revisor_rutas, este último de solo lectura sobre mapa y rutas).
+     * (super_admin y Revisor de Rutas, este último de solo lectura sobre mapa y rutas).
      */
     public function puedeVerTodo(): bool
     {
-        return auth()->user()?->hasRole(['super_admin', 'revisor_rutas']) ?? false;
+        return auth()->user()?->hasRole(['super_admin', 'Revisor de Rutas']) ?? false;
     }
 
     public function getUbicacionesJson(): string

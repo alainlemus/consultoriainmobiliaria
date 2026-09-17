@@ -85,7 +85,7 @@ class AdminPanelProvider extends PanelProvider
                 if ($user?->hasRole('asesor')) {
                     return '/admin/dashboard-asesor';
                 }
-                if ($user?->hasRole('revisor_rutas')) {
+                if ($user?->hasRole('Revisor de Rutas')) {
                     return '/admin/mapa-visitas';
                 }
                 if ($user?->hasRole('super_admin') || $user?->hasRole('admin')) {
@@ -218,7 +218,7 @@ class AdminPanelProvider extends PanelProvider
                     $label = match($rol) {
                         "super_admin"   => "Administrador",
                         "asesor"        => "Asesor",
-                        "revisor_rutas" => "Revisor de Rutas",
+                        "Revisor de Rutas" => "Revisor de Rutas",
                         default         => ucfirst($rol ?? ""),
                     };
                     $classes = $rol === "super_admin"

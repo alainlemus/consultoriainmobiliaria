@@ -17,7 +17,7 @@ class RedirectAsesorToExpedientes
                 return redirect('/admin/dashboard-asesor');
             }
 
-            if ($user->hasRole('revisor_rutas')) {
+            if ($user->hasRole('Revisor de Rutas')) {
                 return redirect('/admin/mapa-visitas');
             }
 
