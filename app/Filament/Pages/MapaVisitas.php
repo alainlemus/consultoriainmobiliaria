@@ -42,8 +42,7 @@ class MapaVisitas extends Page
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-        return $user && ($user->hasRole('super_admin') || $user->hasRole('asesor'));
+        return auth()->user()?->can('View:MapaVisitas') ?? false;
     }
 
     public function getAsesores(): Collection
@@ -53,21 +52,25 @@ class MapaVisitas extends Page
             ->get(['id', 'name']);
     }
 
-    public function esSuperAdmin(): bool
+    /**
+     * Roles con el permiso "Ver:TodosLosAsesores" ven las visitas/anuncios de
+     * todos los asesores en vez de solo las propias.
+     */
+    public function puedeVerTodo(): bool
     {
-        return auth()->user()?->hasRole('super_admin') ?? false;
+        return auth()->user()?->can('Ver:TodosLosAsesores') ?? false;
     }
 
     public function getUbicacionesJson(): string
     {
-        $scope = $this->esSuperAdmin() ? 'all' : 'user_' . auth()->id();
+        $scope = $this->puedeVerTodo() ? 'all' : 'user_' . auth()->id();
         $key   = sprintf('mapa_visitas:v%d:ubicaciones:%s', $this->cacheVersion(), $scope);
 
         return Cache::remember($key, self::CACHE_TTL, function () {
             $query = Ubicacion::with(['contacto:id,nombre', 'user:id,name', 'fotos'])
                 ->orderByDesc('visitado_en');
 
-            if (! $this->esSuperAdmin()) {
+            if (! $this->puedeVerTodo()) {
                 $query->where('user_id', auth()->id());
             }
 
@@ -85,8 +88,11 @@ class MapaVisitas extends Page
                 'asesor'         => $u->user?->name,
                 'asesor_id'      => $u->user_id,
                 'fotos'          => $u->fotos->map(fn ($f) => [
-                    'id'  => $f->id,
-                    'url' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
+                    'id'    => $f->id,
+                    // Thumbnail liviano para la miniatura del popup (carga perezosa en el JS).
+                    'thumb' => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id, 'thumb' => 1], now()->addMinutes(30)),
+                    // Imagen completa, solo se pide al abrir el visor de fotos.
+                    'url'   => \URL::signedRoute('api.ubicacion.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
                 ])->values(),
             ]);
 
@@ -101,14 +107,14 @@ class MapaVisitas extends Page
      */
     public function getAnunciosJson(): string
     {
-        $scope = $this->esSuperAdmin() ? 'all' : 'activos';
+        $scope = $this->puedeVerTodo() ? 'all' : 'activos';
         $key   = sprintf('mapa_visitas:v%d:anuncios:%s', $this->cacheVersion(), $scope);
 
         return Cache::remember($key, self::CACHE_TTL, function () {
             $query = Anuncio::with(['user:id,name', 'fotos'])
                 ->orderByDesc('colocado_en');
 
-            if (! $this->esSuperAdmin()) {
+            if (! $this->puedeVerTodo()) {
                 $query->where('estado', 'activo');
             }
 
@@ -127,8 +133,9 @@ class MapaVisitas extends Page
                 'asesor'      => $a->user?->name,
                 'asesor_id'   => $a->user_id,
                 'fotos'       => $a->fotos->map(fn ($f) => [
-                    'id'  => $f->id,
-                    'url' => \URL::signedRoute('api.anuncio.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
+                    'id'    => $f->id,
+                    'thumb' => \URL::signedRoute('api.anuncio.foto', ['fotoId' => $f->id, 'thumb' => 1], now()->addMinutes(30)),
+                    'url'   => \URL::signedRoute('api.anuncio.foto', ['fotoId' => $f->id], now()->addMinutes(30)),
                 ])->values(),
             ]);
 
@@ -138,11 +145,11 @@ class MapaVisitas extends Page
 
     public function getStats(): array
     {
-        $scope = $this->esSuperAdmin() ? 'all' : 'user_' . auth()->id();
+        $scope = $this->puedeVerTodo() ? 'all' : 'user_' . auth()->id();
         $key   = sprintf('mapa_visitas:v%d:stats:%s', $this->cacheVersion(), $scope);
 
         return Cache::remember($key, self::CACHE_TTL, function () {
-            $base = $this->esSuperAdmin()
+            $base = $this->puedeVerTodo()
                 ? Ubicacion::query()
                 : Ubicacion::where('user_id', auth()->id());
 
@@ -156,7 +163,7 @@ class MapaVisitas extends Page
                 ")
                 ->first();
 
-            $asesores = $this->esSuperAdmin()
+            $asesores = $this->puedeVerTodo()
                 ? Ubicacion::distinct('user_id')->count('user_id')
                 : 1;
 

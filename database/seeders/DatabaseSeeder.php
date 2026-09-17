@@ -34,6 +34,9 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Asignando permisos al rol asesor...');
         $this->call(AsesorRoleSeeder::class);
 
+        $this->command->info('Asignando permisos al rol Revisor de Rutas...');
+        $this->call(RevisorRutasRoleSeeder::class);
+
         $this->command->info('Limpiando caché de permisos...');
         Artisan::call('permission:cache-reset');
         $this->command->info('Permisos listos.');

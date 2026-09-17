@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\RoutePoint;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Renderless;
 
 class RutaAsesorPage extends Page
 {
@@ -20,7 +21,7 @@ class RutaAsesorPage extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole('super_admin') ?? false;
+        return auth()->user()?->can('View:RutaAsesorPage') ?? false;
     }
 
     public function getAsesores(): Collection
@@ -30,14 +31,77 @@ class RutaAsesorPage extends Page
             ->get(['id', 'name']);
     }
 
-    public function getRutasJson(string $asesorId, string $fecha): string
+    /**
+     * Días con puntos GPS registrados, para un asesor puntual.
+     */
+    #[Renderless]
+    public function getDiasDisponiblesAsesor(string $asesorId): array
     {
-        $points = RoutePoint::where('user_id', $asesorId)
+        return RoutePoint::where('user_id', $asesorId)
+            ->selectRaw('DATE(timestamp) as fecha')
+            ->groupByRaw('DATE(timestamp)')
+            ->orderByDesc('fecha')
+            ->limit(30)
+            ->pluck('fecha')
+            ->toArray();
+    }
+
+    /**
+     * Días con puntos GPS registrados, entre todos los asesores.
+     */
+    #[Renderless]
+    public function getDiasDisponiblesTodos(): array
+    {
+        return RoutePoint::selectRaw('DATE(timestamp) as fecha')
+            ->groupByRaw('DATE(timestamp)')
+            ->orderByDesc('fecha')
+            ->limit(30)
+            ->pluck('fecha')
+            ->toArray();
+    }
+
+    /**
+     * Puntos de la ruta de un asesor en una fecha concreta.
+     */
+    #[Renderless]
+    public function getRutasAsesor(string $asesorId, string $fecha): array
+    {
+        return RoutePoint::where('user_id', $asesorId)
             ->whereDate('timestamp', $fecha)
             ->orderBy('timestamp')
-            ->get(['id', 'lat', 'lng', 'precision', 'velocidad', 'timestamp']);
+            ->get(['id', 'lat', 'lng', 'precision', 'velocidad', 'timestamp'])
+            ->map(fn (RoutePoint $p) => $this->formatPunto($p))
+            ->toArray();
+    }
 
-        $formatted = $points->map(fn (RoutePoint $p) => [
+    /**
+     * Puntos de la ruta de todos los asesores en una fecha concreta.
+     * Una sola consulta para todos los asesores (evita N+1 por asesor/día).
+     */
+    #[Renderless]
+    public function getRutasTodos(string $fecha): array
+    {
+        $puntosPorAsesor = RoutePoint::whereDate('timestamp', $fecha)
+            ->orderBy('timestamp')
+            ->get(['id', 'user_id', 'lat', 'lng', 'precision', 'velocidad', 'timestamp'])
+            ->groupBy('user_id');
+
+        return $this->getAsesores()
+            ->filter(fn (User $asesor) => $puntosPorAsesor->has($asesor->id))
+            ->map(fn (User $asesor) => [
+                'name'   => $asesor->name,
+                'puntos' => $puntosPorAsesor->get($asesor->id)
+                    ->map(fn (RoutePoint $p) => $this->formatPunto($p))
+                    ->values()
+                    ->toArray(),
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    private function formatPunto(RoutePoint $p): array
+    {
+        return [
             'id'        => $p->id,
             'lat'       => $p->lat,
             'lng'       => $p->lng,
@@ -45,19 +109,6 @@ class RutaAsesorPage extends Page
             'velocidad' => $p->velocidad,
             'hora'      => $p->timestamp->format('H:i:s'),
             'timestamp' => $p->timestamp->toIso8601String(),
-        ]);
-
-        return json_encode($formatted);
-    }
-
-    public function getDiasDisponibles(string $asesorId): array
-    {
-        return RoutePoint::where('user_id', $asesorId)
-            ->selectRaw('DATE(timestamp) as fecha')
-            ->groupByRaw('DATE(timestamp)')
-            ->orderByDesc('fecha')
-            ->limit(14)
-            ->pluck('fecha')
-            ->toArray();
+        ];
     }
 }

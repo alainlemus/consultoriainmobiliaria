@@ -37,6 +37,12 @@ class AsesorRoleSeeder extends Seeder
             // Documentos del expediente: ver y subir archivos
             'ViewAny:DocumentoRequerido', 'View:DocumentoRequerido',
             'Create:DocumentoRequerido',  'Update:DocumentoRequerido',
+
+            // Mapa de Visitas: ve solo sus propias visitas (no tiene Ver:TodosLosAsesores)
+            'View:MapaVisitas',
+
+            // Anuncios: ve y administra solo los suyos (scope por Ver:TodosLosAsesores)
+            'ViewAny:Anuncio', 'View:Anuncio', 'Update:Anuncio',
         ];
 
         // Asegurar que todos los permisos existan antes de asignar
