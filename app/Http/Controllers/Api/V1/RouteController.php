@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\RoutePoint;
+use App\Models\Ubicacion;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -66,12 +67,26 @@ class RouteController extends Controller
         // Devolver TODOS los asesores activos, no solo los que registraron ruta hoy.
         // El filtro anterior impedía ver rutas de días anteriores porque
         // si el asesor no tenía ruta hoy nunca aparecía en la lista.
+        //
+        // "puntos" combina route_points (inicio/fin de ruta) + ubicaciones
+        // (visitas a clientes/escuelas/propiedades con coordenadas) — ambas
+        // fuentes alimentan el recorrido del asesor, ver getPoints().
+        $hoy = now()->toDateString();
+
         $asesores = \App\Models\User::role('asesor')
             ->where('activo', true)
-            ->withCount(['routePoints as puntos_hoy' => fn ($q) => $q->whereDate('timestamp', now()->toDateString())])
-            ->withCount(['routePoints as total_puntos'])
+            ->withCount(['routePoints as rp_hoy'   => fn ($q) => $q->whereDate('timestamp', $hoy)])
+            ->withCount(['routePoints as rp_total'])
+            ->withCount(['ubicaciones as ub_hoy'    => fn ($q) => $q->whereDate('visitado_en', $hoy)->whereNotNull('latitud')])
+            ->withCount(['ubicaciones as ub_total'   => fn ($q) => $q->whereNotNull('latitud')])
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name'])
+            ->map(fn ($a) => [
+                'id'          => $a->id,
+                'name'        => $a->name,
+                'puntos_hoy'  => $a->rp_hoy + $a->ub_hoy,
+                'total_puntos'=> $a->rp_total + $a->ub_total,
+            ]);
 
         return response()->json(['data' => $asesores]);
     }
@@ -83,6 +98,13 @@ class RouteController extends Controller
      * `asesor_id=todos` (solo super_admin) devuelve los puntos de TODOS los
      * asesores para esa fecha, cada uno etiquetado con su asesor_id/nombre
      * para poder pintarlos con colores distintos en el mapa.
+     *
+     * Combina dos fuentes, ordenadas por hora real del evento (no por hora
+     * de sincronización — un asesor sin señal en la sierra puede sincronizar
+     * horas después y el orden cronológico se mantiene igual):
+     *  - route_points: inicio/fin de ruta (toggle "Rastreo de ubicación").
+     *  - ubicaciones:  visitas a clientes/escuelas/propiedades con coordenadas,
+     *    ya capturadas por "Registrar visita" en el mapa.
      */
     public function getPoints(Request $request): JsonResponse
     {
@@ -101,36 +123,60 @@ class RouteController extends Controller
 
         $todos = $asesorId === 'todos';
 
-        $query = RoutePoint::whereDate('timestamp', $fecha)->orderBy('timestamp');
+        $routeQuery = RoutePoint::whereDate('timestamp', $fecha);
+        $ubicacionQuery = Ubicacion::whereDate('visitado_en', $fecha)
+            ->whereNotNull('latitud')
+            ->whereNotNull('longitud');
 
         if ($todos) {
-            $query->whereHas('user', fn ($q) => $q->role('asesor'))->with('user:id,name');
+            $routeQuery->whereHas('user', fn ($q) => $q->role('asesor'))->with('user:id,name');
+            $ubicacionQuery->whereHas('user', fn ($q) => $q->role('asesor'))->with('user:id,name');
         } else {
-            $query->where('user_id', $asesorId);
+            $routeQuery->where('user_id', $asesorId);
+            $ubicacionQuery->where('user_id', $asesorId);
         }
 
-        $points = $query->get([
-            'id', 'user_id', 'lat', 'lng', 'precision', 'velocidad', 'timestamp',
-        ]);
+        $routePoints = $routeQuery->get(['id', 'user_id', 'lat', 'lng', 'precision', 'velocidad', 'timestamp']);
+        $ubicaciones = $ubicacionQuery->get(['id', 'user_id', 'latitud', 'longitud', 'tipo', 'nombre_lugar', 'visitado_en']);
 
-        $formatted = $points->map(fn (RoutePoint $p) => [
-            'id'            => $p->id,
+        $formattedRoute = $routePoints->map(fn (RoutePoint $p) => [
+            'id'            => 'rp_' . $p->id,
             'lat'           => $p->lat,
             'lng'           => $p->lng,
             'precision'     => $p->precision,
             'velocidad'     => $p->velocidad,
+            'tipo'          => 'gps',
+            'nombre_lugar'  => null,
             'hora'          => $p->timestamp->format('H:i:s'),
             'timestamp'     => $p->timestamp->toIso8601String(),
             'asesor_id'     => $p->user_id,
             'asesor_nombre' => $todos ? $p->user?->name : null,
         ]);
 
+        $formattedUbicaciones = $ubicaciones->map(fn (Ubicacion $u) => [
+            'id'            => 'ub_' . $u->id,
+            'lat'           => $u->latitud,
+            'lng'           => $u->longitud,
+            'precision'     => 0,
+            'velocidad'     => 0,
+            'tipo'          => $u->tipo,
+            'nombre_lugar'  => $u->nombre_lugar,
+            'hora'          => $u->visitado_en->format('H:i:s'),
+            'timestamp'     => $u->visitado_en->toIso8601String(),
+            'asesor_id'     => $u->user_id,
+            'asesor_nombre' => $todos ? $u->user?->name : null,
+        ]);
+
+        $puntos = $formattedRoute->concat($formattedUbicaciones)
+            ->sortBy('timestamp')
+            ->values();
+
         return response()->json([
-            'data' => $formatted,
+            'data' => $puntos,
             'meta' => [
                 'asesor_id' => $todos ? null : (int) $asesorId,
                 'fecha'     => $fecha,
-                'total'     => $points->count(),
+                'total'     => $puntos->count(),
             ],
         ]);
     }
@@ -140,6 +186,10 @@ class RouteController extends Controller
      * Devuelve las fechas disponibles para un asesor.
      * `asesor_id=todos` (solo super_admin) devuelve la unión de fechas de
      * todos los asesores.
+     *
+     * Combina route_points (inicio/fin) + ubicaciones (visitas) — un día en
+     * el que el asesor solo registró visitas sin activar el toggle de ruta
+     * también debe aparecer.
      */
     public function getDias(Request $request): JsonResponse
     {
@@ -155,19 +205,35 @@ class RouteController extends Controller
             return response()->json(['data' => []]);
         }
 
-        $query = RoutePoint::query();
+        $routeQuery = RoutePoint::query();
+        $ubicacionQuery = Ubicacion::query()->whereNotNull('latitud')->whereNotNull('longitud');
 
         if ($asesorId === 'todos') {
-            $query->whereHas('user', fn ($q) => $q->role('asesor'));
+            $routeQuery->whereHas('user', fn ($q) => $q->role('asesor'));
+            $ubicacionQuery->whereHas('user', fn ($q) => $q->role('asesor'));
         } else {
-            $query->where('user_id', $asesorId);
+            $routeQuery->where('user_id', $asesorId);
+            $ubicacionQuery->where('user_id', $asesorId);
         }
 
-        $dias = $query->selectRaw('DATE(timestamp) as fecha, COUNT(*) as puntos')
+        $diasRoute = $routeQuery->selectRaw('DATE(timestamp) as fecha, COUNT(*) as puntos')
             ->groupByRaw('DATE(timestamp)')
-            ->orderByDesc('fecha')
-            ->limit(30)
-            ->get();
+            ->pluck('puntos', 'fecha');
+
+        $diasUbicaciones = $ubicacionQuery->selectRaw('DATE(visitado_en) as fecha, COUNT(*) as puntos')
+            ->groupByRaw('DATE(visitado_en)')
+            ->pluck('puntos', 'fecha');
+
+        $dias = collect($diasRoute->keys())
+            ->merge($diasUbicaciones->keys())
+            ->unique()
+            ->map(fn ($fecha) => [
+                'fecha'  => $fecha,
+                'puntos' => ($diasRoute[$fecha] ?? 0) + ($diasUbicaciones[$fecha] ?? 0),
+            ])
+            ->sortByDesc('fecha')
+            ->take(30)
+            ->values();
 
         return response()->json(['data' => $dias]);
     }
