@@ -63,6 +63,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(RoutePoint::class);
     }
 
+    public function ubicaciones(): HasMany
+    {
+        return $this->hasMany(Ubicacion::class);
+    }
+
     public function getFotoPerfilUrlAttribute(): ?string
     {
         if (! $this->foto_perfil) {
