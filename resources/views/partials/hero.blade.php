@@ -45,6 +45,11 @@
                 </a>
                 <a href="#servicios" class="btn-dark">Ver servicios</a>
             </div>
+
+            <p class="text-cream-300/50 text-xs mt-6 max-w-xl">
+                Consultoría Inmobiliaria no forma parte de INFONAVIT ni de FOVISSSTE, ni los representa oficialmente.
+                Somos una consultoría privada que orienta y acompaña a nuestros clientes en su trámite de crédito hipotecario.
+            </p>
         </div>
     </div>
 
