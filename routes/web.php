@@ -10,6 +10,7 @@ use App\Http\Controllers\ContratosController;
 use App\Http\Controllers\ContratoGeneradoWordController;
 use App\Http\Controllers\TestimonioPublicoController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\FovisssteController;
 use App\Models\UbicacionFoto;
 use Illuminate\Support\Facades\Storage;
 
@@ -39,6 +40,12 @@ Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 Route::post('/contacto', [ContactoController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('contacto.store');
+
+// Landing FOVISSSTE — captación de prospectos (tráfico pagado / orgánico)
+Route::get('/fovissste', [FovisssteController::class, 'index'])->name('fovissste.index');
+Route::post('/fovissste', [FovisssteController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('fovissste.store');
 
 // Propiedades
 Route::get('/propiedades', [PropiedadController::class, 'index'])->name('propiedades.index');

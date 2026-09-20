@@ -25,6 +25,13 @@
         <priority>0.8</priority>
     </url>
 
+    {{-- Landing FOVISSSTE --}}
+    <url>
+        <loc>{{ route('fovissste.index') }}</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
     {{-- Descarga la app --}}
     <url>
         <loc>{{ route('descargar.app') }}</loc>
