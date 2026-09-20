@@ -45,7 +45,7 @@
                         <text x="50" y="21" text-anchor="middle" fill="#C9A84C" font-size="6" font-weight="bold" font-family="Arial">BIENES RAÍCES</text>
                     </svg>
                 @endif
-                <div class="hidden sm:block leading-tight">
+                <div class="leading-tight">
                     <span class="block text-gold-400 font-serif font-bold text-lg tracking-wide">CONSULTORÍA</span>
                     <span class="block text-cream-200 text-xs uppercase tracking-[0.3em]">Inmobiliaria</span>
                 </div>
