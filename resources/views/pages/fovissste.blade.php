@@ -1,9 +1,10 @@
 @extends('layouts.app')
 
-@section('seo_title', 'Orientación para tu crédito FOVISSSTE — ' . setting('site_name', 'Consultoría Inmobiliaria'))
-@section('seo_description', '¿Eres trabajador del Estado y tienes FOVISSSTE? Te orientamos sobre tus opciones de crédito y te acompañamos durante tu proceso para adquirir una vivienda. Sin costo ni compromiso.')
-@section('og_title', '¿Eres trabajador del Estado y tienes FOVISSSTE?')
-@section('og_description', 'Te orientamos para conocer tus opciones de crédito y te acompañamos durante tu proceso para adquirir una vivienda.')
+@section('seo_title', 'Crédito FOVISSSTE | Orientación para adquirir vivienda')
+@section('seo_description', '¿Eres trabajador del Estado y tienes FOVISSSTE? Recibe orientación sobre tus opciones de crédito y vivienda.')
+@section('og_title', 'Crédito FOVISSSTE | Orientación para adquirir vivienda')
+@section('og_description', '¿Eres trabajador del Estado y tienes FOVISSSTE? Recibe orientación sobre tus opciones de crédito y vivienda.')
+@section('og_image', asset('images/og/fovissste.jpg'))
 
 @php
     $waNumero  = setting('whatsapp_1', '527711910395');
@@ -58,6 +59,26 @@
                 </p>
             </div>
         </div>
+
+        {{-- Cifras de confianza — mismo componente countUp que usa el hero del home --}}
+        <div class="relative z-20 border-t bg-dark-900/90 backdrop-blur-sm border-gold-500/20">
+            <div class="px-4 mx-auto max-w-4xl">
+                <div class="grid grid-cols-3 divide-x divide-gold-500/20">
+                    <div class="py-5 text-center" x-data="countUp(500, { prefix: '+', duration: 1500 })">
+                        <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl" x-text="display"></div>
+                        <div class="mt-1 text-xs tracking-wider uppercase text-cream-300">Familias asesoradas</div>
+                    </div>
+                    <div class="py-5 text-center" x-data="countUp(3, { duration: 1000 })">
+                        <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl" x-text="display"></div>
+                        <div class="mt-1 text-xs tracking-wider uppercase text-cream-300">Estados de cobertura</div>
+                    </div>
+                    <div class="py-5 text-center">
+                        <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl">Sin costo</div>
+                        <div class="mt-1 text-xs tracking-wider uppercase text-cream-300">La orientación inicial</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
     {{-- ══════════════════════════════════════════════════════════════════
@@ -67,8 +88,11 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-14" x-reveal>
                 <p class="section-subtitle mb-3">Qué recibes</p>
-                <h2 class="section-title mb-4">Te <span class="text-crimson-600">acompañamos</span> en tu proceso</h2>
+                <h2 class="section-title mb-4">Orientación para tu <span class="text-crimson-600">crédito FOVISSSTE</span></h2>
                 <div class="gold-divider"></div>
+                <p class="text-dark-600 mt-4 max-w-2xl mx-auto">
+                    Ya sea que busques casas FOVISSSTE nuevas, usadas o un terreno, te acompañamos en cada paso.
+                </p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -82,7 +106,7 @@
                         [
                             'icon'  => 'M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75',
                             't'     => 'Opciones de vivienda',
-                            'd'     => 'Conoces alternativas de vivienda acordes a tu municipio y a tu situación.',
+                            'd'     => 'Conoces alternativas de vivienda FOVISSSTE acordes a tu municipio y a tu situación.',
                         ],
                         [
                             'icon'  => 'M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z',
@@ -126,6 +150,9 @@
                 <p class="section-subtitle mb-3">Para ti si...</p>
                 <h2 class="section-title mb-4">¿Quién puede solicitar <span class="text-crimson-600">orientación?</span></h2>
                 <div class="gold-divider"></div>
+                <p class="text-dark-600 mt-4 max-w-2xl mx-auto">
+                    Si eres trabajador del Estado y buscas vivienda con FOVISSSTE, esta orientación es para ti.
+                </p>
             </div>
 
             @php
@@ -174,18 +201,25 @@
                     ['n' => 5, 't' => 'Te acompañamos', 'd' => 'Damos seguimiento a tu proceso paso a paso.'],
                 ];
             @endphp
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-                @foreach($pasos as $paso)
-                <div class="flex flex-col items-center text-center group" x-reveal.delay.{{ $loop->index * 100 }}>
-                    <div class="w-16 h-16 bg-white border-2 border-gold-400 rounded-full flex items-center justify-center mb-4 shadow-md group-hover:bg-crimson-600 group-hover:border-crimson-600 transition-all duration-300 z-10">
-                        <span class="font-serif font-bold text-gold-500 text-lg group-hover:text-white transition-colors">{{ $paso['n'] }}</span>
-                    </div>
-                    <div class="bg-white rounded-sm p-4 shadow-sm border border-cream-300 group-hover:border-gold-300 transition-colors w-full flex-1">
-                        <h4 class="font-serif font-semibold text-dark-800 text-sm mb-1">{{ $paso['t'] }}</h4>
-                        <p class="text-dark-500 text-xs leading-relaxed">{{ $paso['d'] }}</p>
-                    </div>
+            <div class="relative" x-reveal>
+                {{-- Línea de tiempo que se "dibuja" al entrar en viewport (solo desktop, decorativa) --}}
+                <div class="hidden lg:block absolute top-8 left-[10%] right-[10%] h-0.5 bg-gold-400/15 overflow-hidden" aria-hidden="true">
+                    <div class="fov-timeline-fill h-full bg-gradient-to-r from-gold-500 via-gold-400 to-crimson-500"></div>
                 </div>
-                @endforeach
+
+                <div class="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                    @foreach($pasos as $paso)
+                    <div class="flex flex-col items-center text-center group" x-reveal.delay.{{ $loop->index * 100 }}>
+                        <div class="w-16 h-16 bg-white border-2 border-gold-400 rounded-full flex items-center justify-center mb-4 shadow-md group-hover:bg-crimson-600 group-hover:border-crimson-600 group-hover:scale-110 transition-all duration-300 z-10">
+                            <span class="font-serif font-bold text-gold-500 text-lg group-hover:text-white transition-colors">{{ $paso['n'] }}</span>
+                        </div>
+                        <div class="bg-white rounded-sm p-4 shadow-sm border border-cream-300 group-hover:border-gold-300 group-hover:-translate-y-1 transition-all duration-300 w-full flex-1">
+                            <h4 class="font-serif font-semibold text-dark-800 text-sm mb-1">{{ $paso['t'] }}</h4>
+                            <p class="text-dark-500 text-xs leading-relaxed">{{ $paso['d'] }}</p>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
             </div>
 
             <div class="mt-12 text-center">
@@ -443,8 +477,8 @@
                         'r' => 'Para esta primera orientación solo necesitamos tus datos de contacto. Conforme avance tu proceso, tu asesor te indicará qué documentos se necesitan.',
                     ],
                     [
-                        'p' => '¿En qué zonas dan seguimiento?',
-                        'r' => 'Atendemos principalmente Hidalgo, Veracruz y San Luis Potosí. Cuéntanos tu municipio en el formulario y te decimos si podemos apoyarte.',
+                        'p' => '¿Dan orientación de crédito FOVISSSTE en Hidalgo?',
+                        'r' => 'Sí. Atendemos principalmente Hidalgo, Veracruz y San Luis Potosí. Cuéntanos tu municipio en el formulario y te decimos si podemos apoyarte.',
                     ],
                     [
                         'p' => '¿Cómo me contactan después de dejar mis datos?',
@@ -504,7 +538,44 @@
         </div>
     </section>
 
+    {{-- ══════════════════════════════════════════════════════════════════
+         CTA fijo en móvil — mantiene "Quiero información" siempre a la mano.
+         Sustituye al botón flotante de WhatsApp solo en pantallas pequeñas
+         (ver estilo abajo) para no encimarse con esta barra.
+         ══════════════════════════════════════════════════════════════════ --}}
+    <div x-data="{ show: false }"
+         x-init="window.addEventListener('scroll', () => { show = window.scrollY > 520 })"
+         x-show="show"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-4"
+         x-cloak
+         class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur-sm border-t border-gold-500/30 px-4 py-3 shadow-2xl">
+        <a href="#formulario" class="btn-gold w-full justify-center">Quiero información</a>
+    </div>
+
 @endsection
+
+@push('styles')
+<style>
+    /* Línea de tiempo del proceso: se "dibuja" al entrar en viewport (junto con x-reveal) */
+    .fov-timeline-fill { width: 0; transition: width 1.1s ease 0.2s; }
+    .reveal-visible .fov-timeline-fill { width: 100%; }
+
+    /* En móvil, el CTA fijo de la landing sustituye al botón flotante de WhatsApp
+       para que no se encimen en la esquina inferior. En escritorio no aplica. */
+    @media (max-width: 1023px) {
+        .whatsapp-float { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .fov-timeline-fill { transition: none; width: 100%; }
+    }
+</style>
+@endpush
 
 @push('jsonld')
 <script type="application/ld+json">
@@ -523,6 +594,49 @@
         }@if(!$loop->last),@endif
         @endforeach
     ]
+}
+</script>
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "BreadcrumbList",
+    "itemListElement": [
+        {
+            "@@type": "ListItem",
+            "position": 1,
+            "name": "Inicio",
+            "item": "{{ route('home') }}"
+        },
+        {
+            "@@type": "ListItem",
+            "position": 2,
+            "name": "Crédito FOVISSSTE",
+            "item": "{{ route('fovissste.index') }}"
+        }
+    ]
+}
+</script>
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "Service",
+    "name": "Orientación para crédito FOVISSSTE",
+    "serviceType": "Asesoría de crédito hipotecario FOVISSSTE",
+    "description": "Orientación y acompañamiento para trabajadores del Estado que buscan conocer sus opciones de crédito FOVISSSTE y adquirir una vivienda.",
+    "provider": {
+        "@@type": "RealEstateAgent",
+        "name": "{{ setting('site_name', 'Consultoría Inmobiliaria') }}",
+        "url": "{{ config('app.url') }}"
+    },
+    "areaServed": [
+        { "@@type": "State", "name": "Hidalgo" },
+        { "@@type": "State", "name": "Veracruz" },
+        { "@@type": "State", "name": "San Luis Potosí" }
+    ],
+    "audience": {
+        "@@type": "Audience",
+        "audienceType": "Trabajadores del Estado afiliados a FOVISSSTE"
+    }
 }
 </script>
 @endpush
