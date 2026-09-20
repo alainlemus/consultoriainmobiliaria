@@ -217,15 +217,16 @@ class ContactoResource extends Resource
                     Forms\Components\Select::make('origen')
                         ->label('Origen')
                         ->options([
-                            'sitio_web'      => 'Sitio web',
-                            'admin'          => 'Admin (super_admin)',
-                            'asesor'         => 'Asesor',
-                            'campo'          => 'Campo / visita directa',
-                            'referido'       => 'Referido',
-                            'whatsapp'       => 'WhatsApp',
-                            'app_movil'      => 'App móvil — Asesor',
-                            'app_acreditado' => 'App móvil — Acreditado',
-                            'otro'           => 'Otro',
+                            'sitio_web'         => 'Sitio web',
+                            'landing_fovissste' => 'Landing FOVISSSTE',
+                            'admin'             => 'Admin (super_admin)',
+                            'asesor'            => 'Asesor',
+                            'campo'             => 'Campo / visita directa',
+                            'referido'          => 'Referido',
+                            'whatsapp'          => 'WhatsApp',
+                            'app_movil'         => 'App móvil — Asesor',
+                            'app_acreditado'    => 'App móvil — Acreditado',
+                            'otro'              => 'Otro',
                         ])
                         ->default(function () {
                             $user = Auth::user();
@@ -407,6 +408,7 @@ class ContactoResource extends Resource
                     ->label('Origen')
                     ->colors([
                         'gray'    => 'sitio_web',
+                        'danger'  => 'landing_fovissste',
                         'primary' => 'campo',
                         'success' => 'referido',
                         'warning' => 'whatsapp',
@@ -416,15 +418,16 @@ class ContactoResource extends Resource
                         'success' => 'app_acreditado',
                     ])
                     ->formatStateUsing(fn ($state, $record) => match($state) {
-                        'sitio_web'      => 'Sitio web',
-                        'campo'          => 'Campo',
-                        'referido'       => 'Referido',
-                        'whatsapp'       => 'WhatsApp',
-                        'app_movil'      => '📱 App — ' . ($record->asesor?->name ?? 'Asesor'),
-                        'app_acreditado' => '👤 App — Acreditado',
-                        'admin'          => 'CRM — ' . ($record->asesor?->name ?? 'Admin'),
-                        'asesor'         => 'CRM — ' . ($record->asesor?->name ?? 'Asesor'),
-                        default          => 'Otro',
+                        'sitio_web'         => 'Sitio web',
+                        'landing_fovissste' => '🎯 Landing FOVISSSTE',
+                        'campo'             => 'Campo',
+                        'referido'          => 'Referido',
+                        'whatsapp'          => 'WhatsApp',
+                        'app_movil'         => '📱 App — ' . ($record->asesor?->name ?? 'Asesor'),
+                        'app_acreditado'    => '👤 App — Acreditado',
+                        'admin'             => 'CRM — ' . ($record->asesor?->name ?? 'Admin'),
+                        'asesor'            => 'CRM — ' . ($record->asesor?->name ?? 'Asesor'),
+                        default             => 'Otro',
                     }),
                 Tables\Columns\BadgeColumn::make('estado_prospecto')
                     ->label('Estado')
@@ -479,15 +482,16 @@ class ContactoResource extends Resource
                 Tables\Filters\SelectFilter::make('origen')
                     ->label('Origen')
                     ->options([
-                        'sitio_web'      => 'Sitio web',
-                        'campo'          => 'Campo',
-                        'referido'       => 'Referido',
-                        'whatsapp'       => 'WhatsApp',
-                        'app_movil'      => 'App móvil — Asesor',
-                        'app_acreditado' => 'App móvil — Acreditado',
-                        'admin'          => 'CRM — Admin',
-                        'asesor'         => 'CRM — Asesor',
-                        'otro'           => 'Otro',
+                        'sitio_web'         => 'Sitio web',
+                        'landing_fovissste' => 'Landing FOVISSSTE',
+                        'campo'             => 'Campo',
+                        'referido'          => 'Referido',
+                        'whatsapp'          => 'WhatsApp',
+                        'app_movil'         => 'App móvil — Asesor',
+                        'app_acreditado'    => 'App móvil — Acreditado',
+                        'admin'             => 'CRM — Admin',
+                        'asesor'            => 'CRM — Asesor',
+                        'otro'              => 'Otro',
                     ]),
                 Tables\Filters\SelectFilter::make('asesor_id')
                     ->label('Asesor')

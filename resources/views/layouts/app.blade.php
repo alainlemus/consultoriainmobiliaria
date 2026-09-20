@@ -4,6 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    {{-- window.dataLayer siempre existe (sin gate de ambiente ni de cookies): es solo un
+         arreglo local en memoria, no envía nada a ningún lado por sí mismo. Cualquier
+         página puede empujarle eventos aunque GTM no esté cargado (quedan inertes). --}}
+    <script>window.dataLayer = window.dataLayer || [];</script>
+
+    @php $gtmId = 'GTM-T9N9FVX9'; @endphp
+    @if(app()->isProduction())
+    {{-- Google Tag Manager — solo en producción (nunca en staging/local, para no mezclar
+         tráfico de pruebas con las conversiones reales de Google Ads/GA4). Además, la carga
+         real del script respeta el mismo gate de consentimiento de cookies que ya usa GA4. --}}
+    <script>
+        function loadGTM() {
+            if (window.__gtmLoaded) return;
+            window.__gtmLoaded = true;
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer','{{ $gtmId }}');
+        }
+        // Si ya aceptó cookies previamente, carga inmediatamente
+        if (localStorage.getItem('cookies_accepted') === 'true') {
+            loadGTM();
+        }
+        // Escucha el mismo evento de aceptación del banner que usa GA4
+        window.addEventListener('cookies:accepted', loadGTM);
+    </script>
+    @endif
+
     {{-- SEO básico --}}
     <title>@yield('seo_title', setting('seo_titulo', 'Consultoría Inmobiliaria'))</title>
     <meta name="description" content="@yield('seo_description', setting('seo_descripcion', 'Asesores expertos en crédito INFONAVIT, FOVISSSTE, avalúos y escrituras.'))">
@@ -65,6 +94,12 @@
     @stack('jsonld')
 </head>
 <body class="antialiased">
+    @if(app()->isProduction())
+    {{-- Google Tag Manager (noscript) — fallback estándar de Google para navegadores sin JS.
+         Solo en producción, igual que el script del <head>. --}}
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtmId }}"
+        height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    @endif
 
     @include('partials.navbar')
 

@@ -150,7 +150,7 @@ class FovisssteController extends Controller
                 'mensaje'               => $detalle,
                 'municipio_uso_credito' => $validated['municipio'],
                 'curp'                  => $validated['curp'] ?? null,
-                'origen'                => 'sitio_web',
+                'origen'                => 'landing_fovissste',
                 'fecha_primer_contacto' => now()->toDateString(),
             ]);
         }
