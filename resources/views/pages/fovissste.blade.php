@@ -263,6 +263,31 @@
                         Hablar por WhatsApp
                     </a>
                 </div>
+
+                {{-- Evento de conversión para GTM/Google Ads — solo en el estado de éxito real
+                     (el backend ya guardó/actualizó el prospecto antes de llegar aquí, ver
+                     FovisssteController@store). sessionStorage evita que un refresh o el
+                     botón atrás/adelante sobre esta misma pestaña vuelva a contar el lead;
+                     el flash de sesión de Laravel ya evita que esta vista se muestre otra
+                     vez en una petición nueva, esto es una capa extra por si el navegador
+                     restaura la página desde caché sin pasar por el servidor. --}}
+                <script>
+                    (function () {
+                        var yaEnviado = false;
+                        try {
+                            yaEnviado = sessionStorage.getItem('fovissste_lead_sent') === '1';
+                        } catch (e) {}
+
+                        if (yaEnviado) return;
+
+                        try {
+                            sessionStorage.setItem('fovissste_lead_sent', '1');
+                        } catch (e) {}
+
+                        window.dataLayer = window.dataLayer || [];
+                        window.dataLayer.push({ event: 'fovissste_lead' });
+                    })();
+                </script>
             @else
                 <form action="{{ route('fovissste.store') }}" method="POST"
                       class="space-y-4 bg-dark-800 border border-dark-600 rounded-sm p-6 sm:p-8"
