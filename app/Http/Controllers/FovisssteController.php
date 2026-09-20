@@ -42,6 +42,7 @@ class FovisssteController extends Controller
         return view('pages.fovissste', [
             'situaciones' => self::SITUACIONES,
             'busquedas'   => self::BUSQUEDAS,
+            'captcha'     => ContactoController::generarCaptcha(),
         ]);
     }
 
@@ -61,6 +62,19 @@ class FovisssteController extends Controller
             return redirect(route('fovissste.index') . '#formulario')
                 ->with('fovissste_enviado', true);
         }
+
+        // Validar CAPTCHA antes que el resto — mismo mecanismo que el formulario de contacto general.
+        $respuestaCaptcha = (int) $request->input('captcha');
+        $esperadoCaptcha  = (int) session('captcha_resultado');
+
+        if ($respuestaCaptcha !== $esperadoCaptcha || $esperadoCaptcha === 0) {
+            session()->forget('captcha_resultado');
+            return back()
+                ->withInput()
+                ->withErrors(['captcha' => 'Respuesta incorrecta. Intenta de nuevo.']);
+        }
+
+        session()->forget('captcha_resultado');
 
         $validated = $request->validate([
             'nombre'              => 'required|string|max:100',
