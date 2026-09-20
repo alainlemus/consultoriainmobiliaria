@@ -65,6 +65,7 @@ class ContactoController extends Controller
             'servicio' => 'required|string|max:60',
             'mensaje'  => 'nullable|string|max:1000',
             'curp'     => 'nullable|string|size:18|regex:/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i',
+            'privacidad' => 'accepted',
         ], [
             'nombre.required'   => 'El nombre es obligatorio.',
             'nombre.max'        => 'El nombre no puede superar 100 caracteres.',
@@ -78,6 +79,7 @@ class ContactoController extends Controller
             'mensaje.max'       => 'El mensaje no puede superar 1000 caracteres.',
             'curp.size'         => 'La CURP debe tener exactamente 18 caracteres.',
             'curp.regex'        => 'La CURP no tiene el formato correcto.',
+            'privacidad.accepted' => 'Debes autorizar el tratamiento de tus datos personales para continuar.',
         ]);
 
         if (isset($validated['curp'])) {

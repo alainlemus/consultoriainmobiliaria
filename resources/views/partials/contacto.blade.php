@@ -274,6 +274,20 @@
                         @enderror
                     </div>
 
+                    <div class="flex items-start gap-3 pt-2">
+                        <input type="checkbox" id="privacidad" name="privacidad" value="1"
+                               required
+                               {{ old('privacidad') ? 'checked' : '' }}
+                               class="mt-1 w-4 h-4 rounded-sm border-dark-600 bg-dark-700 text-gold-500 focus:ring-gold-400 shrink-0">
+                        <label for="privacidad" class="text-xs text-cream-300 leading-relaxed">
+                            Autorizo el tratamiento de mis datos personales de acuerdo con el
+                            <a href="{{ route('aviso.privacidad') }}" target="_blank" rel="noopener" class="text-gold-400 hover:text-gold-300 underline">Aviso de Privacidad</a>. *
+                        </label>
+                    </div>
+                    @error('privacidad')
+                        <p class="text-crimson-500 text-xs -mt-2">{{ $message }}</p>
+                    @enderror
+
                     <button type="submit"
                             :disabled="enviando"
                             class="btn-gold w-full justify-center disabled:opacity-60 disabled:cursor-not-allowed">
