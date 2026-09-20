@@ -35,8 +35,8 @@ class ContactoObserver
             $this->notificarAsesorNuevoProspecto($contacto);
         }
 
-        // 3. WhatsApp a super_admins cuando viene del sitio web
-        if ($contacto->origen === 'sitio_web') {
+        // 3. WhatsApp a super_admins cuando viene del sitio web (o de una landing)
+        if (in_array($contacto->origen, ['sitio_web', 'landing_fovissste'])) {
             $this->notificarAdminsNuevoProspectoWeb($contacto);
         }
 
@@ -79,12 +79,15 @@ class ContactoObserver
         $nombre   = trim("{$contacto->nombre} {$contacto->apellidos}");
         $celular  = $contacto->celular ?? $contacto->telefono ?? '—';
         $servicio = $contacto->servicio ?? '—';
+        $titulo   = $contacto->origen === 'landing_fovissste'
+            ? '🎯 *Nuevo prospecto de la landing FOVISSSTE*'
+            : '🌐 *Nuevo prospecto del sitio web*';
 
-        User::role('super_admin')->get()->each(function (User $admin) use ($nombre, $celular, $servicio) {
+        User::role('super_admin')->get()->each(function (User $admin) use ($nombre, $celular, $servicio, $titulo) {
             if (! $admin->telefono) return;
             WhatsAppService::sendText(
                 $admin->telefono,
-                "🌐 *Nuevo prospecto del sitio web*\n\n" .
+                "{$titulo}\n\n" .
                 "Nombre: *{$nombre}*\n" .
                 "Teléfono: {$celular}\n" .
                 "Servicio: {$servicio}\n\n" .

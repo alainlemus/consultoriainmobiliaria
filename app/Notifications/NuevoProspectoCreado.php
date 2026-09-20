@@ -29,10 +29,11 @@ class NuevoProspectoCreado extends Notification
         $servicio = $this->contacto->servicio ?? 'No especificado';
         $asesor   = $this->contacto->asesor?->name ?? 'Sin asesor';
         $origen   = match ($this->contacto->origen) {
-            'app_movil'      => '📱 App móvil',
-            'app_acreditado' => '👤 App acreditado',
-            'sitio_web'      => '🌐 Sitio web',
-            default          => '💻 Panel admin',
+            'app_movil'         => '📱 App móvil',
+            'app_acreditado'    => '👤 App acreditado',
+            'sitio_web'         => '🌐 Sitio web',
+            'landing_fovissste' => '🎯 Landing FOVISSSTE',
+            default             => '💻 Panel admin',
         };
 
         return FilamentNotification::make()
