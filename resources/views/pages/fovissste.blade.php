@@ -354,6 +354,7 @@
                                placeholder="AAAA000000XAAAAA00"
                                style="text-transform:uppercase"
                                oninput="this.value = this.value.toUpperCase()"
+                               autocomplete="off" autocapitalize="characters" spellcheck="false"
                                class="input-field font-mono tracking-widest @error('curp') border-crimson-500 @enderror">
                         @error('curp')
                             <p class="text-crimson-500 text-xs mt-1">{{ $message }}</p>
