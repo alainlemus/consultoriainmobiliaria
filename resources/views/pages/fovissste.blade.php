@@ -72,9 +72,9 @@
                         <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl" x-text="display"></div>
                         <div class="mt-1 text-xs tracking-wider uppercase text-cream-300">Estados de cobertura</div>
                     </div>
-                    <div class="py-5 text-center">
-                        <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl">Sin costo</div>
-                        <div class="mt-1 text-xs tracking-wider uppercase text-cream-300">La orientación inicial</div>
+                    <div class="py-5 text-center" x-data="countUp(100, { suffix: '%', duration: 1200 })">
+                        <div class="font-serif text-2xl font-bold text-gold-400 sm:text-3xl" x-text="display"></div>
+                        <div class="mt-1 text-xs tracking-wider uppercase text-cream-300">Orientación sin costo</div>
                     </div>
                 </div>
             </div>
