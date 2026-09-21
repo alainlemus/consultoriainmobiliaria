@@ -475,7 +475,7 @@
     {{-- ══════════════════════════════════════════════════════════════════
          PREGUNTAS FRECUENTES
          ══════════════════════════════════════════════════════════════════ --}}
-    <section class="py-20 sm:py-24 bg-cream-50">
+    <section id="preguntas" class="py-20 sm:py-24 bg-cream-50 scroll-mt-20">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12" x-reveal>
                 <p class="section-subtitle mb-3">Dudas comunes</p>
