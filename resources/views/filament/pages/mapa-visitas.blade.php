@@ -9,7 +9,15 @@
         $esSuperAdmin = $this->puedeVerTodo();
     @endphp
 
-    <div class="space-y-6" x-data="mapaVisitas()" x-init="init()">
+    {{--
+        wire:ignore evita que Livewire re-monte este bloque (y con él, el mapa
+        Leaflet) cada vez que hay un re-render de fondo en la página (p. ej.
+        el polling de notificaciones cada 30s en AdminPanelProvider). Sin esto,
+        Alpine vuelve a ejecutar x-init -> iniciarMapa() sobre un contenedor
+        que ya tiene un mapa, Leaflet truena ("Map container is already
+        initialized") y los filtros quedan desincronizados de sus etiquetas.
+    --}}
+    <div class="space-y-6" x-data="mapaVisitas()" x-init="init()" wire:ignore>
 
         {{-- JSON de ubicaciones --}}
         <script type="application/json" id="ubicaciones-data">{!! $this->getUbicacionesJson() !!}</script>
@@ -461,6 +469,7 @@
                     return pasaTipo && pasaAsesor;
                 });
                 this.renderMarcadores();
+                this.renderAnuncios();
             },
 
             toggleAnuncios() {
@@ -479,7 +488,11 @@
                     lona: '📢', hoja_tienda: '🏪', hoja_poste: '📌', volante: '📄', otro: '📣'
                 };
 
-                this.todosAnuncios.forEach(a => {
+                const anunciosFiltrados = this.todosAnuncios.filter(a =>
+                    this.filtroAsesor === '' || String(a.asesor_id) === String(this.filtroAsesor)
+                );
+
+                anunciosFiltrados.forEach(a => {
                     const emoji   = TIPO_EMOJI[a.tipo] ?? '📣';
                     const opacity = a.estado === 'retirado' ? 0.4 : 1;
 
