@@ -88,24 +88,24 @@
 
             {{-- Tipo visitas --}}
             <div class="flex gap-2 flex-wrap">
-                <button @click="setFiltroTipo('todos')"
+                <button @click="activarTodosLosTipos()"
                     class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
-                    :class="filtroTipo === 'todos' ? 'bg-gray-800 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'">
+                    :class="tiposActivos.length === 3 ? 'bg-gray-800 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'">
                     Todos
                 </button>
-                <button @click="setFiltroTipo('visita_cliente')"
+                <button @click="toggleTipo('visita_cliente')"
                     class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
-                    :class="filtroTipo === 'visita_cliente' ? 'bg-amber-500 text-white' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'">
+                    :class="tiposActivos.includes('visita_cliente') ? 'bg-amber-500 text-white' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'">
                     🏠 Clientes
                 </button>
-                <button @click="setFiltroTipo('propiedad')"
+                <button @click="toggleTipo('propiedad')"
                     class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
-                    :class="filtroTipo === 'propiedad' ? 'bg-purple-600 text-white' : 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'">
+                    :class="tiposActivos.includes('propiedad') ? 'bg-purple-600 text-white' : 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'">
                     🏢 Propiedades
                 </button>
-                <button @click="setFiltroTipo('escuela')"
+                <button @click="toggleTipo('escuela')"
                     class="text-xs font-medium px-3 py-1.5 rounded-full transition cursor-pointer"
-                    :class="filtroTipo === 'escuela' ? 'bg-blue-600 text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'">
+                    :class="tiposActivos.includes('escuela') ? 'bg-blue-600 text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'">
                     🏫 Escuelas
                 </button>
                 <button @click="toggleAnuncios()"
@@ -299,17 +299,24 @@
             todos:               datos,
             todosAnuncios:       anuncios,
             marcadoresFiltrados: datos,
-            filtroTipo:          'todos',
+            tiposActivos:        ['visita_cliente', 'propiedad', 'escuela'],
             filtroAsesor:        '',
             mostrarAnuncios:     true,
             capas:               [],
             capasAnuncios:       [],
 
             init() {
-                this.$nextTick(() => this.iniciarMapa());
+                // Llamada directa (sin $nextTick): el div #mapa-visitas ya existe en el
+                // DOM en este punto. $nextTick aquí pasaba por la cola interna de
+                // Livewire (releaseNextTicks), que la volvía a disparar en cada
+                // actualización de Livewire ajena a esta página (p. ej. el polling de
+                // notificaciones), re-creando el mapa Leaflet y rompiendo el estado.
+                this.iniciarMapa();
             },
 
             iniciarMapa() {
+                if (this.mapa) return;
+
                 this.mapa = L.map('mapa-visitas').setView([19.4326, -99.1332], 11);
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -457,14 +464,21 @@
                 }
             },
 
-            setFiltroTipo(tipo) {
-                this.filtroTipo = tipo;
+            toggleTipo(tipo) {
+                this.tiposActivos = this.tiposActivos.includes(tipo)
+                    ? this.tiposActivos.filter(t => t !== tipo)
+                    : [...this.tiposActivos, tipo];
+                this.aplicarFiltros();
+            },
+
+            activarTodosLosTipos() {
+                this.tiposActivos = ['visita_cliente', 'propiedad', 'escuela'];
                 this.aplicarFiltros();
             },
 
             aplicarFiltros() {
                 this.marcadoresFiltrados = this.todos.filter(u => {
-                    const pasaTipo   = this.filtroTipo === 'todos' || u.tipo === this.filtroTipo;
+                    const pasaTipo   = this.tiposActivos.includes(u.tipo);
                     const pasaAsesor = this.filtroAsesor === ''      || String(u.asesor_id) === String(this.filtroAsesor);
                     return pasaTipo && pasaAsesor;
                 });
