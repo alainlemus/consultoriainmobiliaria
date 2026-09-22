@@ -14,8 +14,18 @@ chmod -R 775 /var/www/html/storage
 # Crear symlink de storage
 php artisan storage:link --force || true
 
+# Migraciones
+php artisan migrate --force
+
+# Limpiar caché de config/rutas/permisos (Shield cachea permisos)
+php artisan optimize:clear
+
 # Auto-detectar hostname y actualizar webhook en OpenWA
 php artisan whatsapp:actualizar-webhook || true
+
+# Iniciar crond en segundo plano — ejecuta el scheduler de Laravel
+# (routes/console.php) cada minuto vía /etc/crontabs/root
+crond -l 8
 
 # Ejecutar el comando principal
 exec "$@"
