@@ -25,7 +25,8 @@ RUN apk add --no-cache \
     autoconf \
     build-base \
     unzip \
-    git
+    git \
+    dcron
 
 RUN docker-php-ext-install pdo_mysql bcmath gd zip intl \
     && pecl install imagick \
@@ -68,6 +69,10 @@ RUN chown -R www-data:www-data storage bootstrap/cache \
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Cron del scheduler de Laravel (php artisan schedule:run cada minuto)
+COPY docker-crontab /etc/crontabs/root
+RUN chmod 0644 /etc/crontabs/root
 
 EXPOSE 8000
 
