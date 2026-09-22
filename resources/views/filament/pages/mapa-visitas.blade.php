@@ -9,7 +9,15 @@
         $esSuperAdmin = $this->puedeVerTodo();
     @endphp
 
-    <div class="space-y-6" x-data="mapaVisitas()" x-init="init()">
+    {{--
+        wire:ignore evita que Livewire re-monte este bloque (y con él, el mapa
+        Leaflet) cada vez que hay un re-render de fondo en la página (p. ej.
+        el polling de notificaciones cada 30s en AdminPanelProvider). Sin esto,
+        Alpine vuelve a ejecutar x-init -> iniciarMapa() sobre un contenedor
+        que ya tiene un mapa, Leaflet truena ("Map container is already
+        initialized") y los filtros quedan desincronizados de sus etiquetas.
+    --}}
+    <div class="space-y-6" x-data="mapaVisitas()" x-init="init()" wire:ignore>
 
         {{-- JSON de ubicaciones --}}
         <script type="application/json" id="ubicaciones-data">{!! $this->getUbicacionesJson() !!}</script>
