@@ -461,6 +461,7 @@
                     return pasaTipo && pasaAsesor;
                 });
                 this.renderMarcadores();
+                this.renderAnuncios();
             },
 
             toggleAnuncios() {
@@ -479,7 +480,11 @@
                     lona: '📢', hoja_tienda: '🏪', hoja_poste: '📌', volante: '📄', otro: '📣'
                 };
 
-                this.todosAnuncios.forEach(a => {
+                const anunciosFiltrados = this.todosAnuncios.filter(a =>
+                    this.filtroAsesor === '' || String(a.asesor_id) === String(this.filtroAsesor)
+                );
+
+                anunciosFiltrados.forEach(a => {
                     const emoji   = TIPO_EMOJI[a.tipo] ?? '📣';
                     const opacity = a.estado === 'retirado' ? 0.4 : 1;
 
