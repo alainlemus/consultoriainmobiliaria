@@ -79,14 +79,9 @@ class ContactoResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        // Asesor: sus prospectos pendientes de cierre o nuevos
-        // Admin: todos los pendientes de cierre
-        if (Auth::check() && Auth::user()->hasRole('asesor')) {
-            $count = static::getModel()::where('asesor_id', Auth::id())
-                ->where('estado_prospecto', 'nuevo')->count();
-        } else {
-            $count = static::getModel()::where('estado_prospecto', 'pendiente_cierre')->count();
-        }
+        // Igual que en Expedientes: muestra el total de prospectos activos
+        // que aparecen en el listado (respeta el alcance por asesor).
+        $count = static::getEloquentQuery()->count();
 
         return $count > 0 ? (string) $count : null;
     }
