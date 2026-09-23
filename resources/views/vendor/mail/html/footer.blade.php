@@ -6,7 +6,7 @@
 <td style="text-align:center;">
     @php
       $tel    = setting('telefono_1');
-      $correo = setting('correo_contacto');
+      $correo = setting_email_list('correo_contacto')[0] ?? null;
     @endphp
     @if($tel)
     <p style="margin:4px 0; color:#7a7a6a; font-size:12px; font-family:Arial,sans-serif;">

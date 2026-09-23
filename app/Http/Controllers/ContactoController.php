@@ -122,10 +122,10 @@ class ContactoController extends Controller
         }
 
         // 2. Correo de aviso al admin
-        $correoAdmin = setting('correo_contacto');
-        if ($correoAdmin) {
+        $correosAdmin = setting_email_list('correo_contacto');
+        if (! empty($correosAdmin)) {
             try {
-                Mail::to($correoAdmin)->send(new NuevoContactoAdmin($contacto));
+                Mail::to($correosAdmin)->send(new NuevoContactoAdmin($contacto));
             } catch (\Throwable $e) {
                 Log::error('Error enviando correo al admin: ' . $e->getMessage());
             }

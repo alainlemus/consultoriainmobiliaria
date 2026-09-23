@@ -47,32 +47,51 @@ class EnviarReporteGestion extends Command
             return self::SUCCESS;
         }
 
-        $enviados = 0;
-        foreach ($admins as $admin) {
-            // Usar el correo configurado en Ajustes Generales como destino principal.
-            // Si no está configurado, caer al email del usuario super_admin en BD.
-            $correoDestino = setting('correo_contacto') ?: $admin->email;
+        // Usar los correos configurados en Ajustes Generales como destino principal
+        // (puede haber varios). Si no hay ninguno configurado, caer al email de
+        // cada usuario super_admin en BD.
+        $correosDestino = setting_email_list('correo_contacto');
 
-            if (! $correoDestino) continue;
-
-            Mail::to($correoDestino)
+        if (! empty($correosDestino)) {
+            Mail::to($correosDestino)
                 ->queue(new ReporteGestion(
                     datos:   $datos,
                     tipo:    $tipo,
                     periodo: $periodoLabel,
                 ));
 
-            $enviados++;
+            $enviados = count($correosDestino);
 
-            // Notificación dentro del panel Filament
-            $admin->notify(new ReporteGestionEnviado(
-                tipo:          $tipo,
-                periodo:       $periodoLabel,
-                destinatarios: $enviados,
-            ));
+            foreach ($admins as $admin) {
+                $admin->notify(new ReporteGestionEnviado(
+                    tipo:          $tipo,
+                    periodo:       $periodoLabel,
+                    destinatarios: $enviados,
+                ));
+            }
+        } else {
+            $enviados = 0;
+            foreach ($admins as $admin) {
+                if (! $admin->email) continue;
+
+                Mail::to($admin->email)
+                    ->queue(new ReporteGestion(
+                        datos:   $datos,
+                        tipo:    $tipo,
+                        periodo: $periodoLabel,
+                    ));
+
+                $enviados++;
+
+                $admin->notify(new ReporteGestionEnviado(
+                    tipo:          $tipo,
+                    periodo:       $periodoLabel,
+                    destinatarios: $enviados,
+                ));
+            }
         }
 
-        $this->info("✓ Reporte {$tipo} enviado a {$enviados} admin(s).");
+        $this->info("✓ Reporte {$tipo} enviado a {$enviados} destinatario(s).");
 
         return self::SUCCESS;
     }
