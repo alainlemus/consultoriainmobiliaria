@@ -106,8 +106,8 @@
         @if(setting('telefono_1'))
         <p>Tel: <a href="tel:{{ setting('telefono_1') }}">{{ setting('telefono_1') }}</a></p>
         @endif
-        @if(setting('correo_contacto'))
-        <p><a href="mailto:{{ setting('correo_contacto') }}">{{ setting('correo_contacto') }}</a></p>
+        @if(setting_email_list('correo_contacto'))
+        <p><a href="mailto:{{ setting_email_list('correo_contacto')[0] }}">{{ setting_email_list('correo_contacto')[0] }}</a></p>
         @endif
         <p style="margin-top:10px;">&copy; {{ date('Y') }} {{ setting('site_name', config('app.name')) }}. Todos los derechos reservados.</p>
     </div>

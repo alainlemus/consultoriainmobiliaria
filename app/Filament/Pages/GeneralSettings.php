@@ -118,16 +118,40 @@ class GeneralSettings extends Page
                             'max' => 'El número de WhatsApp 2 no puede superar los 20 caracteres.',
                         ]),
 
-                    Forms\Components\TextInput::make('correo_contacto')
-                        ->label('Correo receptor del formulario de contacto')
-                        ->email()
+                    Forms\Components\TagsInput::make('correo_contacto')
+                        ->label('Correos receptores del formulario de contacto')
+                        ->helperText('Puedes agregar más de uno: escribe el correo y presiona Enter o coma.')
+                        ->placeholder('correo@ejemplo.com')
+                        ->separator(',')
                         ->required()
-                        ->maxLength(150)
                         ->columnSpanFull()
+                        ->afterStateHydrated(function (Forms\Components\TagsInput $component, $state) {
+                            $component->state(
+                                collect(explode(',', (string) $state))
+                                    ->map(fn ($correo) => trim($correo))
+                                    ->filter()
+                                    ->values()
+                                    ->all()
+                            );
+                        })
+                        ->dehydrateStateUsing(fn ($state) => collect($state)
+                            ->map(fn ($correo) => trim((string) $correo))
+                            ->filter()
+                            ->implode(','))
+                        ->rule('array')
+                        ->rule('min:1')
+                        ->rule(function () {
+                            return function (string $attribute, $value, \Closure $fail) {
+                                foreach ((array) $value as $correo) {
+                                    if (! filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+                                        $fail("El correo \"{$correo}\" no es una dirección válida.");
+                                    }
+                                }
+                            };
+                        })
                         ->validationMessages([
-                            'required' => 'El correo de contacto es obligatorio.',
-                            'email'    => 'El correo de contacto debe ser una dirección válida.',
-                            'max'      => 'El correo no puede superar los 150 caracteres.',
+                            'required' => 'Debes agregar al menos un correo de contacto.',
+                            'min'      => 'Debes agregar al menos un correo de contacto.',
                         ]),
                 ])->columns(2),
 
