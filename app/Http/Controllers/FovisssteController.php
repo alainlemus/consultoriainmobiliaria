@@ -31,10 +31,11 @@ class FovisssteController extends Controller
     ];
 
     private const BUSQUEDAS = [
-        'casa_nueva'  => 'Casa nueva',
-        'casa_usada'  => 'Casa usada',
-        'terreno'     => 'Terreno / construcción',
-        'no_se'       => 'Todavía no lo sé',
+        'casa_nueva'   => 'Casa nueva',
+        'casa_usada'   => 'Casa usada',
+        'terreno'      => 'Terreno / construcción',
+        'capitalizar'  => 'Capitalizarme (recibir el dinero en efectivo)',
+        'no_se'        => 'Todavía no lo sé',
     ];
 
     public function index()
@@ -83,7 +84,6 @@ class FovisssteController extends Controller
             'municipio'           => 'required|string|max:100',
             'situacion_fovissste' => 'required|in:' . implode(',', array_keys(self::SITUACIONES)),
             'tipo_busqueda'       => 'required|in:' . implode(',', array_keys(self::BUSQUEDAS)),
-            'zona'                => 'nullable|string|max:150',
             'mensaje'             => 'nullable|string|max:1000',
             'curp'                => 'nullable|string|size:18|regex:/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i',
             'privacidad'          => 'accepted',
@@ -100,7 +100,6 @@ class FovisssteController extends Controller
             'situacion_fovissste.in'       => 'Selecciona una opción válida.',
             'tipo_busqueda.required'       => 'Selecciona qué estás buscando.',
             'tipo_busqueda.in'             => 'Selecciona una opción válida.',
-            'zona.max'                     => 'La zona no puede superar 150 caracteres.',
             'mensaje.max'                  => 'El mensaje no puede superar 1000 caracteres.',
             'curp.size'                    => 'La CURP debe tener exactamente 18 caracteres.',
             'curp.regex'                   => 'La CURP no tiene el formato correcto.',
@@ -112,16 +111,13 @@ class FovisssteController extends Controller
         }
 
         // Detalle estructurado de la solicitud — se guarda en 'mensaje' porque
-        // no hay columnas dedicadas para situación/búsqueda/zona en Contacto,
+        // no hay columnas dedicadas para situación/búsqueda en Contacto,
         // pero queda visible y buscable para el asesor igual que cualquier
         // mensaje del sitio.
         $detalle = "📍 Origen: Landing FOVISSSTE (/fovissste)\n"
             . 'Situación FOVISSSTE: ' . self::SITUACIONES[$validated['situacion_fovissste']] . "\n"
             . 'Busca: ' . self::BUSQUEDAS[$validated['tipo_busqueda']];
 
-        if (filled($validated['zona'] ?? null)) {
-            $detalle .= "\nZona de interés: {$validated['zona']}";
-        }
         if (filled($validated['mensaje'] ?? null)) {
             $detalle .= "\n\nMensaje del prospecto: {$validated['mensaje']}";
         }
