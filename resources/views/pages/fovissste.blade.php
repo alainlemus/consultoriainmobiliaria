@@ -91,7 +91,7 @@
                 <h2 class="section-title mb-4">Orientación para tu <span class="text-crimson-600">crédito FOVISSSTE</span></h2>
                 <div class="gold-divider"></div>
                 <p class="text-dark-600 mt-4 max-w-2xl mx-auto">
-                    Ya sea que busques casas FOVISSSTE nuevas, usadas o un terreno, te acompañamos en cada paso.
+                    Ya sea que quieras capitalizar tu crédito o aún no sepas qué opción te conviene, te acompañamos en cada paso.
                 </p>
             </div>
 
