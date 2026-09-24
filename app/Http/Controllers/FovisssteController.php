@@ -31,9 +31,6 @@ class FovisssteController extends Controller
     ];
 
     private const BUSQUEDAS = [
-        'casa_nueva'   => 'Casa nueva',
-        'casa_usada'   => 'Casa usada',
-        'terreno'      => 'Terreno / construcción',
         'capitalizar'  => 'Capitalizarme (recibir el dinero en efectivo)',
         'no_se'        => 'Todavía no lo sé',
     ];
