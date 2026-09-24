@@ -381,19 +381,6 @@
                     </div>
 
                     <div>
-                        <label for="fov_zona" class="block text-xs text-cream-300 uppercase tracking-wider mb-1">
-                            ¿En qué zona buscas vivienda? <span class="text-dark-400 normal-case">(opcional)</span>
-                        </label>
-                        <input type="text" id="fov_zona" name="zona"
-                               value="{{ old('zona') }}"
-                               placeholder="Ej. Col. Centro, cerca de mi trabajo..."
-                               class="input-field @error('zona') border-crimson-500 @enderror">
-                        @error('zona')
-                            <p class="text-crimson-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
                         <label for="fov_mensaje" class="block text-xs text-cream-300 uppercase tracking-wider mb-1">Mensaje <span class="text-dark-400 normal-case">(opcional)</span></label>
                         <textarea id="fov_mensaje" name="mensaje" rows="3"
                                   placeholder="Cuéntanos brevemente tu situación o consulta..."
