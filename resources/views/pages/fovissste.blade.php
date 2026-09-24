@@ -489,6 +489,22 @@
                         'r' => 'Para esta primera orientación solo necesitamos tus datos de contacto. Conforme avance tu proceso, tu asesor te indicará qué documentos se necesitan.',
                     ],
                     [
+                        'p' => '¿Puedo capitalizar mi crédito FOVISSSTE y recibir el dinero en efectivo?',
+                        'r' => 'Sí, existen opciones para capitalizar tu crédito FOVISSSTE, es decir, convertirlo en efectivo en lugar de usarlo para comprar una vivienda nueva. Te orientamos sobre los requisitos y qué opción aplica a tu caso.',
+                    ],
+                    [
+                        'p' => '¿Necesito tener una vivienda para capitalizar mi crédito?',
+                        'r' => 'No necesariamente. Dependiendo de tu situación, hay opciones para capitalizar tu crédito FOVISSSTE sin comprar una vivienda nueva. En tu orientación te decimos cuál opción aplica en tu caso.',
+                    ],
+                    [
+                        'p' => '¿Cuánto dinero puedo recibir al capitalizar mi crédito?',
+                        'r' => 'El monto depende de tu saldo y las condiciones específicas de tu crédito FOVISSSTE. En tu primera orientación revisamos tu situación particular para darte un panorama claro.',
+                    ],
+                    [
+                        'p' => '¿Cuánto tiempo tarda el proceso de capitalización?',
+                        'r' => 'Los tiempos varían según tu situación y los tiempos de validación de FOVISSSTE. Tu asesor te da un estimado una vez que revisamos tu caso.',
+                    ],
+                    [
                         'p' => '¿Dan orientación de crédito FOVISSSTE en Hidalgo?',
                         'r' => 'Sí. Atendemos principalmente Hidalgo, Veracruz y San Luis Potosí. Cuéntanos tu municipio en el formulario y te decimos si podemos apoyarte.',
                     ],
