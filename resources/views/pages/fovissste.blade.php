@@ -24,7 +24,7 @@
         <div class="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 border rounded-full w-96 h-96 border-gold-500/10"></div>
         <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-dark-800/60"></div>
 
-        <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 lg:pb-28 text-center">
+        <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 lg:pb-32 text-center">
             <div x-reveal>
                 <div class="inline-flex items-center gap-2 px-3 py-1 mb-6 text-xs font-semibold tracking-widest text-white uppercase bg-crimson-600 rounded-sm">
                     <span class="w-1.5 h-1.5 rounded-full bg-gold-400 inline-block"></span>
@@ -53,7 +53,7 @@
                     </a>
                 </div>
 
-                <p class="text-cream-300/50 text-xs mt-8 max-w-xl mx-auto">
+                <p class="text-cream-300/50 text-xs leading-relaxed mt-10 sm:mt-12 max-w-xl mx-auto">
                     Consultoría Inmobiliaria no forma parte de FOVISSSTE ni lo representa oficialmente.
                     Somos una consultoría privada que orienta y acompaña a trabajadores del Estado en su trámite.
                 </p>
@@ -555,8 +555,8 @@
     {{-- ══════════════════════════════════════════════════════════════════
          AVISO DE PRIVACIDAD / INFORMACIÓN LEGAL
          ══════════════════════════════════════════════════════════════════ --}}
-    <section class="py-10 bg-cream-100 border-t border-cream-300">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <section class="py-14 sm:py-16 bg-cream-100 border-t border-cream-300">
+        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p class="text-dark-500 text-xs leading-relaxed">
                 Consultoría Inmobiliaria es una empresa privada de asesoría inmobiliaria y no forma parte de,
                 ni representa oficialmente a, FOVISSSTE (Fondo de la Vivienda del ISSSTE). El uso de tus datos
