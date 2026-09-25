@@ -54,7 +54,7 @@ class EnviarReporteGestion extends Command
 
         if (! empty($correosDestino)) {
             Mail::to($correosDestino)
-                ->queue(new ReporteGestion(
+                ->send(new ReporteGestion(
                     datos:   $datos,
                     tipo:    $tipo,
                     periodo: $periodoLabel,
@@ -75,7 +75,7 @@ class EnviarReporteGestion extends Command
                 if (! $admin->email) continue;
 
                 Mail::to($admin->email)
-                    ->queue(new ReporteGestion(
+                    ->send(new ReporteGestion(
                         datos:   $datos,
                         tipo:    $tipo,
                         periodo: $periodoLabel,
