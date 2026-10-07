@@ -49,7 +49,7 @@
         }
 
         .header-empresa {
-            font-size: 13pt;
+            font-size: 13.5pt;
             font-weight: bold;
             color: #d4af37;
             letter-spacing: 1.5px;
@@ -59,14 +59,15 @@
         .header-slogan {
             font-size: 7.5pt;
             color: #a0936a;
-            margin-top: 1px;
+            margin-top: 2px;
             letter-spacing: 0.5px;
+            padding-bottom: 12px;
         }
 
         .header-divider {
             height: 3px;
             background: linear-gradient(to right, #d4af37, #9b2335, #d4af37);
-            margin-top: 10px;
+            margin-top: 0;
         }
 
         .doc-titulo-bar {
@@ -76,11 +77,11 @@
         }
 
         .doc-titulo-bar span {
-            font-size: 9.5pt;
+            font-size: 8.5pt;
             font-weight: bold;
             color: #ffffff;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 1px;
         }
 
         /* ── FOLIO BADGE ─────────────────────────────── */
@@ -212,23 +213,8 @@
 
     {{-- HEADER --}}
     <div class="header">
-        <div class="header-top">
-            <div class="header-logo">
-                @php
-                    $logoPath = \App\Models\Configuracion::get('logo');
-                    $logoAbs  = $logoPath
-                        ? storage_path('app/public/' . $logoPath)
-                        : null;
-                @endphp
-                @if($logoAbs && file_exists($logoAbs))
-                    <img src="{{ $logoAbs }}" alt="Logo">
-                @endif
-            </div>
-            <div class="header-text">
-                <div class="header-empresa">{{ \App\Models\Configuracion::get('site_name') ?? 'Consultoría Inmobiliaria' }}</div>
-                <div class="header-slogan">Gestión de trámites hipotecarios y patrimoniales</div>
-            </div>
-        </div>
+        <div class="header-empresa">{{ \App\Models\Configuracion::get('site_name') ?? 'Consultoría Inmobiliaria' }}</div>
+        <div class="header-slogan">Gestión de trámites hipotecarios y patrimoniales</div>
         <div class="header-divider"></div>
     </div>
 
@@ -240,8 +226,6 @@
     <div class="folio-area">
         <div class="folio-box">
             Expediente: <strong>{{ $expediente->folio }}</strong>
-            &nbsp;|&nbsp;
-            {{ now()->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }}
         </div>
     </div>
 
