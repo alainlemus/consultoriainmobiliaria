@@ -21,17 +21,17 @@ class ContratoGeneradoPdfService
     {
         $datos = $this->datos($contrato, $papel);
         $pdf = Pdf::loadView('contratos.generado_app', $datos)
-            ->setPaper($papel === 'oficio' ? [0, 0, 612, 936] : 'letter', 'portrait')
-            ->setOption('defaultFont', 'DejaVu Sans');
+            ->setPaper($papel === 'oficio' ? [0, 0, 612, 964] : 'letter', 'portrait')
+            ->setOption('defaultFont', 'Helvetica');
 
         $pdf->render();
         $canvas = $pdf->getDomPDF()->getCanvas();
-        $font   = $pdf->getDomPDF()->getFontMetrics()->getFont('DejaVu Sans');
+        $font   = $pdf->getDomPDF()->getFontMetrics()->getFont('Helvetica');
         $canvas->page_script(function (int $n, int $total, $cv) use ($font, $datos) {
-            $y = $cv->get_height() - 22;
-            $cv->line(48, $y - 6, $cv->get_width() - 48, $y - 6, [0.83, 0.69, 0.22], 0.8);
-            $cv->text(48, $y, "{$datos['siteName']} • Documento generado el {$datos['generado']}", $font, 7.5, [0.59, 0.46, 0.06]);
-            $cv->text($cv->get_width() - 48 - 130, $y, "{$datos['folio']} • Hoja {$n} de {$total}", $font, 7.5, [0.61, 0.14, 0.21]);
+            $y = $cv->get_height() - 30;
+            $cv->line(54, $y - 9, $cv->get_width() - 54, $y - 6, [0.83, 0.69, 0.22], 0.8);
+            $cv->text(54, $y, "{$datos['siteName']} • Documento generado el {$datos['generado']}", $font, 7.5, [0.59, 0.46, 0.06]);
+            $cv->text($cv->get_width() - 54 - 130, $y, "{$datos['folio']} • Hoja {$n} de {$total}", $font, 7.5, [0.61, 0.14, 0.21]);
         });
 
         $carpeta = "contratos-generados/{$contrato->id}";
@@ -95,12 +95,12 @@ class ContratoGeneradoPdfService
         );
 
         $esp = $papel === 'oficio'
-            ? ['fs' => 9.5, 'lh' => 1.6, 'pb' => 12, 'h2t' => 18, 'h2b' => 10, 'cierre' => 22, 'firmaTop' => 40]
-            : ['fs' => 8.5, 'lh' => 1.45, 'pb' => 7, 'h2t' => 14, 'h2b' => 8, 'cierre' => 14, 'firmaTop' => 28];
+            ? ['fs' => 12, 'lh' => 1.65, 'pb' => 14, 'h2t' => 20, 'h2b' => 12, 'cierre' => 24, 'firmaTop' => 48]
+            : ['fs' => 11, 'lh' => 1.5, 'pb' => 8, 'h2t' => 16, 'h2b' => 10, 'cierre' => 16, 'firmaTop' => 40];
 
         return [
             ...$esp,
-            'margenSup' => 18, 'margenInf' => 58,
+            'margenSup' => 24, 'margenInf' => 70,
             'siteName' => $siteName, 'folio' => $c->folio, 'generado' => now()->format('d/m/Y'),
             'intro' => $replace($intro),
             'declPrestador'  => $lineas($cfg('contrato_declaraciones_prestador')),
