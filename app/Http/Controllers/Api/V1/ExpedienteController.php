@@ -14,7 +14,8 @@ class ExpedienteController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user  = $request->user();
-        $query = Expediente::with([
+        // Los expedientes con todos sus documentos validados ya no se ven en la app (solo en el panel)
+        $query = Expediente::visiblesEnApp()->with([
             'contacto:id,nombre,foto',
             'tipoTramite:id,nombre',
             'etapa:id,nombre',

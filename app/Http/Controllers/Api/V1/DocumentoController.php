@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ExtractPdfDataJob;
+use App\Mail\CarpetaExpedienteMail;
 use App\Models\DocumentoExpediente;
+use App\Services\ValidacionDocumentoService;
 use App\Models\Expediente;
 use App\Models\User;
 use App\Notifications\DocumentoSubido;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -359,12 +362,7 @@ class DocumentoController extends Controller
             abort(422, 'Este documento no tiene archivo — no hay nada que validar.');
         }
 
-        $doc->update([
-            'estado'         => 'recibido',
-            'validado_at'    => now(),
-            'validado_por'   => $request->user()->id,
-            'motivo_rechazo' => null,
-        ]);
+        app(ValidacionDocumentoService::class)->validar($doc, $request->user());
 
         return response()->json(['data' => $this->serialize($doc->fresh())]);
     }
@@ -391,18 +389,7 @@ class DocumentoController extends Controller
             abort(422, 'Este documento no tiene archivo — no hay nada que rechazar.');
         }
 
-        $doc->update([
-            'estado'         => 'rechazado',
-            'motivo_rechazo' => $data['motivo'],   // `notas` queda intacta: identifica el documento
-            'validado_at'    => null,
-            'validado_por'   => null,
-        ]);
-
-        if ($exp->acreditadoRegistrado) {
-            $exp->acreditadoRegistrado->notify(
-                new \App\Notifications\DocumentoRechazado($doc, $exp, $data['motivo'])
-            );
-        }
+        app(ValidacionDocumentoService::class)->rechazar($doc, $data['motivo']);
 
         return response()->json(['data' => $this->serialize($doc->fresh())]);
     }
@@ -410,5 +397,31 @@ class DocumentoController extends Controller
     private function soloAdmin(Request $request): void
     {
         abort_unless($request->user()->hasRole('super_admin'), 403, 'Solo un administrador puede validar documentos.');
+    }
+
+    /**
+     * POST /api/v1/expedientes/{expedienteId}/enviar-carpeta
+     *
+     * Solo administradores: envía a su correo un enlace temporal (72 h) para descargar,
+     * en su computadora, el ZIP con todos los documentos del expediente.
+     */
+    public function enviarCarpeta(Request $request, int $expedienteId): JsonResponse
+    {
+        $this->soloAdmin($request);
+
+        $exp   = Expediente::findOrFail($expedienteId);
+        $admin = $request->user();
+
+        abort_unless($exp->documentos()->whereNotNull('ruta_archivo')->exists(), 422, 'Este expediente no tiene documentos para enviar.');
+        abort_unless($admin->email, 422, 'Tu usuario no tiene un correo registrado.');
+
+        $enlace = URL::temporarySignedRoute('expediente.carpeta.firmada', now()->addHours(72), ['expediente' => $exp->id]);
+
+        Mail::to($admin->email)->send(new CarpetaExpedienteMail($exp, $enlace));
+
+        return response()->json([
+            'message' => "Te enviamos la carpeta de {$exp->folio} a {$admin->email}.",
+            'email'   => $admin->email,
+        ]);
     }
 }

@@ -251,7 +251,7 @@ class AcreditadoTest extends TestCase
     {
         Notification::fake();
 
-        // Sin acreditado_id — nadie en la app debe recibir el push
+        // Sin acreditado_id — el acreditado no recibe nada; solo se avisa al asesor del expediente
         $exp = $this->crearExpediente();
         $doc = DocumentoExpediente::create([
             'expediente_id' => $exp->id,
@@ -266,7 +266,8 @@ class AcreditadoTest extends TestCase
             ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", ['motivo' => 'Sin acreditado vinculado'])
             ->assertStatus(200);
 
-        Notification::assertNothingSent();
+        Notification::assertSentTo($this->asesor, DocumentoRechazado::class);
+        Notification::assertCount(1);
     }
 
     public function test_admin_valida_un_documento_y_reemplazarlo_lo_regresa_a_revision(): void

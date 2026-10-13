@@ -134,6 +134,27 @@ class Expediente extends Model
         });
     }
 
+    /**
+     * Completo = tiene documentos con archivo y todos están validados por un administrador.
+     * Un expediente sin documentos o con alguno por validar/rechazado NO está completo.
+     */
+    public function estaCompleto(): bool
+    {
+        $conArchivo = $this->documentos()->whereNotNull('ruta_archivo');
+
+        return (clone $conArchivo)->exists()
+            && ! (clone $conArchivo)->whereNull('validado_at')->exists();
+    }
+
+    /** Lo que se ve en la app: los expedientes ya completos solo se consultan en el panel. */
+    public function scopeVisiblesEnApp($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereDoesntHave('documentos', fn ($d) => $d->whereNotNull('ruta_archivo'))
+              ->orWhereHas('documentos', fn ($d) => $d->whereNotNull('ruta_archivo')->whereNull('validado_at'));
+        });
+    }
+
     // --- Relaciones ---
 
     public function tipoTramite(): BelongsTo

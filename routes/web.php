@@ -113,3 +113,8 @@ Route::middleware(['web', 'auth'])
 Route::middleware(['web', 'auth'])
     ->get('/admin/expedientes/{expediente}/descargar-zip', [ExpedienteZipController::class, 'descargar'])
     ->name('expediente.descargar.zip');
+
+// Misma carpeta, con enlace firmado y temporal (llega por correo al administrador desde la app)
+Route::middleware(['web', 'signed'])
+    ->get('/carpeta-expediente/{expediente}/descargar', [ExpedienteZipController::class, 'descargarFirmado'])
+    ->name('expediente.carpeta.firmada');

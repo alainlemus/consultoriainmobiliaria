@@ -425,9 +425,7 @@ class DocumentosRelationManager extends RelationManager
                     ->icon('heroicon-o-check-badge')
                     ->color('success')
                     ->visible(fn ($record) => auth()->user()?->hasRole('super_admin') && $record->ruta_archivo && $record->validacion !== 'validado')
-                    ->action(fn ($record) => $record->update([
-                        'estado' => 'recibido', 'validado_at' => now(), 'validado_por' => auth()->id(), 'motivo_rechazo' => null,
-                    ]))
+                    ->action(fn ($record) => app(\App\Services\ValidacionDocumentoService::class)->validar($record, auth()->user()))
                     ->requiresConfirmation(false),
 
                 \Filament\Actions\Action::make('rechazar')
@@ -441,11 +439,7 @@ class DocumentosRelationManager extends RelationManager
                         Forms\Components\Textarea::make('motivo')->label('Motivo')->required()->maxLength(500)->rows(3)
                             ->placeholder('Ej: El estado de cuenta tiene más de 3 meses'),
                     ])
-                    ->action(function ($record, array $data) {
-                        $record->update(['estado' => 'rechazado', 'motivo_rechazo' => $data['motivo'], 'validado_at' => null, 'validado_por' => null]);
-                        $exp = $record->expediente;
-                        $exp?->acreditadoRegistrado?->notify(new \App\Notifications\DocumentoRechazado($record, $exp, $data['motivo']));
-                    }),
+                    ->action(fn ($record, array $data) => app(\App\Services\ValidacionDocumentoService::class)->rechazar($record, $data['motivo'])),
 
                 \Filament\Actions\Action::make('marcar_capturado')
                     ->label('Capturado')
@@ -565,9 +559,8 @@ class DocumentosRelationManager extends RelationManager
                     ->icon('heroicon-o-check-badge')
                     ->color('success')
                     ->visible(fn () => auth()->user()?->hasRole('super_admin'))
-                    ->action(fn ($records) => $records->filter(fn ($r) => $r->ruta_archivo)->each->update([
-                        'estado' => 'recibido', 'validado_at' => now(), 'validado_por' => auth()->id(), 'motivo_rechazo' => null,
-                    ])),
+                    ->action(fn ($records) => $records->filter(fn ($r) => $r->ruta_archivo)
+                        ->each(fn ($r) => app(\App\Services\ValidacionDocumentoService::class)->validar($r, auth()->user()))),
                 BulkAction::make('marcar_capturados')
                     ->label('Marcar como capturados')
                     ->icon('heroicon-o-clipboard-document-check')
