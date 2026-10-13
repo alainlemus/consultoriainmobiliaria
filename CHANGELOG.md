@@ -13,6 +13,16 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [Sin publicar]
+
+### Cambiado
+- **Flujo simplificado:** el asesor solo registra prospectos y sube o escanea sus documentos desde la app; el expediente se crea solo con el primer documento. Se quitan las etapas, el estado y el seguimiento del trámite en la interfaz (los datos se conservan).
+- **Panel:** los expedientes muestran cuántos documentos tienen y cuántos están **por capturar**; cada documento se marca como capturado y la insignia del menú avisa lo pendiente. Los PDFs subidos se leen para prellenar datos, sin mover etapas.
+- **Tableros y reporte de gestión** (diario, semanal, mensual) ahora miden prospectos registrados, documentos subidos y por capturar, por asesor. Se quitan el embudo por etapa, los expedientes sin movimiento y la exportación de KPIs.
+- **Comisiones desactivadas:** sin menú, sin cálculo al cerrar, sin avisos ni endpoints (las tablas se conservan).
+- App del acreditado: su trámite aparece "En revisión".
+- Prospectos con expediente se siguen viendo en la lista de Prospectos.
+
 ## [1.0.0] - 2026-10-13
 
 ### Agregado
