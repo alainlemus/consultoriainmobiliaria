@@ -198,7 +198,7 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('cg1')
                             ->label('Contratos generados')
                             ->icon('heroicon-o-document-check')
-                            ->state('Cada vez que se genera un contrato desde un expediente queda un registro aquí con folio, datos del acreditado, del obligado solidario y el asesor que lo generó.'),
+                            ->state('Todos los asesores pueden generar contratos desde la app (Inicio → Contratos). Cada uno queda registrado aquí con folio, datos del acreditado, del obligado solidario y el asesor que lo generó; cada asesor ve en su app solo los suyos y tú ves todos.'),
                         TextEntry::make('cg2')
                             ->label('Ver PDF e identificaciones')
                             ->icon('heroicon-o-eye')
