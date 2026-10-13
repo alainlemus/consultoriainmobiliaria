@@ -18,6 +18,11 @@ class DocumentoExpediente extends Model
         'estado',
         'notas',
         'ruta_archivo',
+        'capturado_at',
+    ];
+
+    protected $casts = [
+        'capturado_at' => 'datetime',
     ];
 
     // ─── IDs de TipoTramite ───────────────────────────────────────────────────

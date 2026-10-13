@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ExtractPdfDataJob;
 use App\Models\Contacto;
 use App\Models\DocumentoExpediente;
 use App\Models\Expediente;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Notifications\DocumentoSubido;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -206,12 +208,18 @@ class DocumentoController extends Controller
             'tipo'          => $tipo,
             'nombre'        => $tipo,
             'seccion'       => $seccion,
-            'estado'        => 'pendiente',
+            'estado'        => 'recibido',
             'notas'         => $request->input('notas'),
             'ruta_archivo'  => $ruta,
         ]);
 
         $this->notificarDocumentoSubido($doc, $exp);
+
+        // Lee los PDFs para prellenar los datos del expediente. Con varias subidas
+        // seguidas basta una corrida: el candado evita encolar una por documento.
+        if (Cache::add("ocr-expediente-{$exp->id}", true, now()->addMinutes(2))) {
+            ExtractPdfDataJob::dispatch($exp->id)->delay(now()->addMinutes(2));
+        }
 
         return response()->json(['data' => $this->serialize($doc), 'expediente_id' => $exp->id], 201);
     }

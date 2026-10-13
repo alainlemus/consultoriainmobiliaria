@@ -7,6 +7,8 @@ use App\Models\Expediente;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use App\Jobs\ExtractPdfDataJob;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
@@ -30,6 +32,7 @@ class DocumentosProspectoTest extends TestCase
     public function test_subir_documento_crea_el_expediente_y_acumula_documentos_del_mismo_tipo(): void
     {
         Storage::fake('local');
+        Queue::fake();
         $asesor   = $this->asesor();
         $contacto = Contacto::create(['nombre' => 'Ana Prueba', 'telefono' => '5512345678', 'asesor_id' => $asesor->id]);
 
@@ -48,6 +51,8 @@ class DocumentosProspectoTest extends TestCase
         $this->assertSame($asesor->id, $exp->asesor_id);
         $this->assertSame('Ana Prueba', $exp->acreditado_nombre);
         $this->assertSame(2, $exp->documentos()->count());
+        $this->assertSame(2, $exp->documentos()->where('estado', 'recibido')->whereNull('capturado_at')->count());
+        Queue::assertPushed(ExtractPdfDataJob::class, 1); // una sola corrida de OCR por tanda de subidas
 
         $this->getJson("/api/v1/contactos/{$contacto->id}/documentos")
             ->assertOk()
@@ -58,6 +63,7 @@ class DocumentosProspectoTest extends TestCase
     public function test_listado_de_prospectos_sigue_mostrando_los_que_ya_tienen_expediente(): void
     {
         Storage::fake('local');
+        Queue::fake();
         $asesor   = $this->asesor();
         $contacto = Contacto::create(['nombre' => 'Luis', 'asesor_id' => $asesor->id]);
 
@@ -69,7 +75,8 @@ class DocumentosProspectoTest extends TestCase
         $this->getJson('/api/v1/contactos')
             ->assertOk()
             ->assertJsonPath('data.0.id', $contacto->id)
-            ->assertJsonPath('data.0.documentos_count', 1);
+            ->assertJsonPath('data.0.documentos_count', 1)
+            ->assertJsonPath('meta.con_documentos', 1);
     }
 
     public function test_un_asesor_no_puede_subir_documentos_a_prospectos_ajenos(): void
