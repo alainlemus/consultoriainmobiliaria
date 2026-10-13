@@ -18,7 +18,7 @@ class ExpedienteController extends Controller
             'contacto:id,nombre,foto',
             'tipoTramite:id,nombre',
             'etapa:id,nombre',
-        ]);
+        ])->withCount(['documentos as documentos_count' => fn ($q) => $q->whereNotNull('ruta_archivo')]);
 
         if (! $user->hasRole('super_admin')) {
             // Asesor: siempre ve solo los suyos

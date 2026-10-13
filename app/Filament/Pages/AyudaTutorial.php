@@ -103,7 +103,7 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('p3')
                             ->label('Estados del prospecto')
                             ->icon('heroicon-o-arrow-path')
-                            ->state('Nuevo → Contactado → Calificado → Convertido o Descartado. Un prospecto con documentos se sigue viendo en la lista: el expediente se crea solo al subir el primer documento.'),
+                            ->state('Nuevo → Contactado → Calificado → Convertido (cuando se abre su expediente) o Descartado. Los prospectos convertidos pasan a Expedientes.'),
                         TextEntry::make('p4')
                             ->label('Eliminar prospectos')
                             ->icon('heroicon-o-trash')
@@ -120,7 +120,7 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('e1')
                             ->label('Folio automático')
                             ->icon('heroicon-o-hashtag')
-                            ->state('El expediente se crea solo cuando el asesor sube el primer documento de un prospecto desde la app, con folio EXP-2026-0001. También puedes crearlo a mano desde el panel.'),
+                            ->state('El expediente es del cliente: se abre desde el prospecto (app o panel) y genera el folio EXP-2026-0001. No es necesario asignarlo manualmente.'),
                         TextEntry::make('e2')
                             ->label('Documentos por capturar')
                             ->icon('heroicon-o-arrow-path')
@@ -409,26 +409,26 @@ class AyudaTutorial extends Page implements HasInfolists
                             ->icon('heroicon-o-arrow-path')
                             ->state('Avanza el estado: Nuevo → Contactado → Calificado → Convertido. Mantén el seguimiento actualizado para que el admin vea tu progreso.'),
                         TextEntry::make('pr4')
-                            ->label('Expediente automático')
+                            ->label('Abrir expediente')
                             ->icon('heroicon-o-folder-plus')
-                            ->state('Ya no hay que abrir expedientes: al subir el primer documento del prospecto, el expediente se crea solo y el prospecto sigue en tu lista.'),
+                            ->state('Cuando el prospecto se confirma como cliente, toca "Iniciar expediente" en su detalle: pasa a Expedientes y deja la lista de prospectos.'),
                     ]),
 
-                Section::make('Documentos')
-                    ->description('Escanea y sube los documentos de tus prospectos')
+                Section::make('Expedientes')
+                    ->description('Los documentos de tus clientes')
                     ->icon('heroicon-o-folder-open')
                     ->collapsible()
                     ->collapsed()
                     ->columns(2)
                     ->schema([
                         TextEntry::make('ex1')
-                            ->label('Ver mis prospectos')
+                            ->label('Ver mis expedientes')
                             ->icon('heroicon-o-list-bullet')
-                            ->state('Los prospectos aparecen en la pestaña Prospectos. Cada uno muestra cuántos documentos tiene (📎).'),
+                            ->state('Tus clientes aparecen en la pestaña Expedientes. Cada uno muestra cuántos documentos tiene (📎).'),
                         TextEntry::make('ex2')
                             ->label('Subir documentos')
                             ->icon('heroicon-o-arrow-up-tray')
-                            ->state('Entra al prospecto → Documentos → "Escanear o subir documento". Elige el tipo (INE, CURP, comprobante, etc.) y escanea o selecciona un PDF o foto.'),
+                            ->state('Entra al expediente → "Escanear o subir documento". Elige el tipo (INE, CURP, comprobante, etc.) y escanea o selecciona un PDF o foto.'),
                         TextEntry::make('ex3')
                             ->label('Ver documentos')
                             ->icon('heroicon-o-eye')
