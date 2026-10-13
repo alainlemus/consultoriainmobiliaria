@@ -106,4 +106,26 @@ class DocumentosExpedienteTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $libre->id);
     }
+
+    public function test_al_reemplazar_un_documento_vuelve_a_quedar_por_capturar(): void
+    {
+        Storage::fake('local');
+        Queue::fake();
+        $exp = $this->expediente($this->asesor());
+
+        $this->postJson("/api/v1/expedientes/{$exp->id}/documentos", [
+            'archivo'        => UploadedFile::fake()->create('a.pdf', 100, 'application/pdf'),
+            'tipo_documento' => 'Estado de cuenta',
+        ])->assertCreated();
+
+        $doc = $exp->documentos()->first();
+        $doc->update(['capturado_at' => now()]);
+
+        $this->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/reemplazar", [
+            'archivo' => UploadedFile::fake()->create('nuevo.pdf', 100, 'application/pdf'),
+        ])->assertOk();
+
+        $this->assertNull($doc->fresh()->capturado_at);
+        $this->assertSame('recibido', $doc->fresh()->estado);
+    }
 }

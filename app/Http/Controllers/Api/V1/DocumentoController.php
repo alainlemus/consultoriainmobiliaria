@@ -333,7 +333,9 @@ class DocumentoController extends Controller
         $doc->update([
             // No se sobreescribe 'nombre': conserva el nombre descriptivo asignado al subir
             'ruta_archivo' => $ruta,
-            'estado'       => 'pendiente',
+            'estado'       => 'recibido',
+            // El archivo nuevo hay que volver a revisarlo y capturarlo en el panel
+            'capturado_at' => null,
         ]);
 
         return response()->json(['data' => $this->serialize($doc->fresh())]);
