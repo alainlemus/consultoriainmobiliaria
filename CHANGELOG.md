@@ -20,6 +20,7 @@ La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmo
 - **Panel:** los expedientes muestran cuántos documentos tienen y cuántos están **por capturar**; cada documento se marca como capturado. El menú muestra el total de expedientes. Los PDFs subidos se leen para prellenar datos, sin mover etapas.
 - **Tableros y reporte de gestión** (diario, semanal, mensual) ahora miden prospectos, expedientes, documentos subidos y por capturar, por asesor. Se quitan el embudo por etapa, los expedientes sin movimiento y la exportación de KPIs.
 - **Comisiones desactivadas:** sin menú, sin cálculo al cerrar, sin avisos ni endpoints (las tablas se conservan).
+- **Validación de documentos:** solo un administrador valida o rechaza (con motivo) desde el panel o la app; el motivo ya no pisa la nota que identifica el documento. Los archivos del mismo tipo subidos juntos ya no se pisan.
 - App del acreditado: su trámite aparece "En revisión".
 
 ## [1.0.0] - 2026-10-13
