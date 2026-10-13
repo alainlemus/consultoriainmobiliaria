@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 class DocumentosRelationManager extends RelationManager
 {
     protected static string $relationship = 'documentos';
-    protected static ?string $title       = 'Checklist de documentos';
+    protected static ?string $title       = 'Documentos';
     protected static ?string $modelLabel  = 'documento';
 
     // Asesor puede ver y editar estado/notas/archivo, pero no crear ni eliminar
@@ -53,25 +53,9 @@ class DocumentosRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
-        // Determinar descripción contextual según etapa del expediente
-        $expediente  = $this->getOwnerRecord();
-        $etapaOrden  = $expediente?->etapa?->orden ?? 0;
-        $etapaNombre = $expediente?->etapa?->nombre ?? '';
-
-        // Categorías relevantes por etapa para el filtro sugerido
-        $descripcion = match (true) {
-            $etapaOrden === 1 => 'Etapa 1 — Sube los documentos del acreditado, vendedor y vivienda para avanzar.',
-            $etapaOrden === 2 => 'Etapa 2 — Verifica que todos los documentos requeridos estén recibidos.',
-            $etapaOrden === 3 => 'Etapa 3 — Agrega los documentos de catastro y el preavalúo.',
-            $etapaOrden === 4 => 'Etapa 4 — Sube los documentos de la carpeta SOFOM para enviar a la unidad de valuación.',
-            $etapaOrden === 5 => 'Etapa 5 — El expediente completo está en notaría. Agrega el avalúo cerrado e instrucción notarial.',
-            $etapaOrden >= 6 => 'Etapa 6+ — Documentos para firma y guarda valores.',
-            default           => 'Marca cada documento conforme sea recibido.',
-        };
-
         return $table
             ->heading('Documentos del expediente')
-            ->description($descripcion)
+            ->description('Documentos subidos desde la app y el panel. Márcalos como capturados al terminar.')
             ->columns([
                 Tables\Columns\TextColumn::make('seccion')
                     ->label('Sección')
@@ -92,6 +76,7 @@ class DocumentosRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('categoria')
                     ->label('Carpeta')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->badge()
                     ->color(fn (?string $state) => match (true) {
                         str_starts_with($state ?? '', 'sofom/') => 'warning',
@@ -104,7 +89,6 @@ class DocumentosRelationManager extends RelationManager
                     })
                     ->formatStateUsing(fn (?string $state) => $state ? strtoupper($state) : '—')
                     ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: false)
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('nombre')
@@ -112,8 +96,37 @@ class DocumentosRelationManager extends RelationManager
                     ->searchable()
                     ->weight('medium'),
 
+                // La nota es lo que identifica rápido cada documento (ej. "INE del dueño de la casa").
+                Tables\Columns\TextColumn::make('notas')
+                    ->label('Nota')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->wrap()
+                    ->limit(80)
+                    ->color('warning')
+                    ->weight('medium'),
+
+                Tables\Columns\TextColumn::make('validacion')
+                    ->label('Validación')
+                    ->badge()
+                    ->getStateUsing(fn ($record) => $record->ruta_archivo ? $record->validacion : null)
+                    ->formatStateUsing(fn (?string $state) => match ($state) {
+                        'validado'    => 'Validado',
+                        'rechazado'   => 'Rechazado',
+                        'en_revision' => 'Por validar',
+                        default       => '—',
+                    })
+                    ->color(fn (?string $state) => match ($state) {
+                        'validado'    => 'success',
+                        'rechazado'   => 'danger',
+                        'en_revision' => 'warning',
+                        default       => 'gray',
+                    })
+                    ->tooltip(fn ($record) => $record->validacion === 'rechazado' ? $record->motivo_rechazo : ($record->validado_at ? 'Validado el ' . $record->validado_at->format('d/m/Y H:i') . ($record->validadoPor ? ' por ' . $record->validadoPor->name : '') : null)),
+
                 Tables\Columns\BadgeColumn::make('estado')
                     ->label('Estado')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->colors([
                         'danger'  => 'pendiente',
                         'success' => 'recibido',
@@ -125,6 +138,17 @@ class DocumentosRelationManager extends RelationManager
                         default     => 'Pendiente',
                     }),
 
+                Tables\Columns\IconColumn::make('capturado_at')
+                    ->label('Capturado')
+                    ->getStateUsing(fn ($record) => $record->ruta_archivo ? $record->capturado_at !== null : null)
+                    ->boolean()
+                    ->trueColor('success')
+                    ->falseColor('warning')
+                    ->alignCenter()
+                    ->tooltip(fn ($record) => $record->ruta_archivo
+                        ? ($record->capturado_at ? 'Capturado el ' . $record->capturado_at->format('d/m/Y H:i') : 'Por capturar')
+                        : null),
+
                 Tables\Columns\IconColumn::make('ruta_archivo')
                     ->label('Archivo')
                     ->boolean()
@@ -133,11 +157,6 @@ class DocumentosRelationManager extends RelationManager
                     ->trueColor('primary')
                     ->falseColor('gray')
                     ->tooltip(fn ($record) => $record->ruta_archivo ? 'Archivo adjunto' : 'Sin archivo'),
-
-                Tables\Columns\TextColumn::make('notas')
-                    ->label('Notas')
-                    ->placeholder('—')
-                    ->limit(35),
             ])
             ->defaultSort('categoria')
             ->filters([
@@ -157,6 +176,21 @@ class DocumentosRelationManager extends RelationManager
                         ? $query->where('categoria', $data['value'])
                         : $query
                     ),
+
+                Tables\Filters\SelectFilter::make('validacion')
+                    ->label('Validación')
+                    ->options(['en_revision' => 'Por validar', 'validado' => 'Validados', 'rechazado' => 'Rechazados'])
+                    ->query(fn ($query, $data) => match ($data['value'] ?? null) {
+                        'en_revision' => $query->whereNotNull('ruta_archivo')->whereNull('validado_at')->where('estado', '!=', 'rechazado'),
+                        'validado'    => $query->whereNotNull('validado_at'),
+                        'rechazado'   => $query->where('estado', 'rechazado'),
+                        default       => $query,
+                    }),
+
+                Tables\Filters\Filter::make('por_capturar')
+                    ->label('Por capturar')
+                    ->toggle()
+                    ->query(fn ($query) => $query->whereNotNull('ruta_archivo')->whereNull('capturado_at')),
 
                 Tables\Filters\SelectFilter::make('seccion')
                     ->label('Sección')
@@ -385,29 +419,42 @@ class DocumentosRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                // Acciones rápidas de estado (un clic, sin modal)
-                \Filament\Actions\Action::make('marcar_recibido')
-                    ->label('Recibido')
-                    ->icon('heroicon-o-check-circle')
+                // Solo un administrador valida o rechaza documentos
+                \Filament\Actions\Action::make('validar')
+                    ->label('Validar')
+                    ->icon('heroicon-o-check-badge')
                     ->color('success')
-                    ->visible(fn ($record) => $record->estado !== 'recibido')
-                    ->action(fn ($record) => $record->update(['estado' => 'recibido']))
+                    ->visible(fn ($record) => auth()->user()?->hasRole('super_admin') && $record->ruta_archivo && $record->validacion !== 'validado')
+                    ->action(fn ($record) => app(\App\Services\ValidacionDocumentoService::class)->validar($record, auth()->user()))
                     ->requiresConfirmation(false),
 
-                \Filament\Actions\Action::make('marcar_no_aplica')
-                    ->label('No aplica')
+                \Filament\Actions\Action::make('rechazar')
+                    ->label('Rechazar')
                     ->icon('heroicon-o-x-circle')
-                    ->color('gray')
-                    ->visible(fn ($record) => $record->estado !== 'no_aplica')
-                    ->action(fn ($record) => $record->update(['estado' => 'no_aplica']))
+                    ->color('danger')
+                    ->visible(fn ($record) => auth()->user()?->hasRole('super_admin') && $record->ruta_archivo && $record->validacion !== 'rechazado')
+                    ->modalHeading('Rechazar documento')
+                    ->modalDescription('Escribe qué debe corregirse. Si el acreditado usa la app, recibirá el motivo.')
+                    ->form([
+                        Forms\Components\Textarea::make('motivo')->label('Motivo')->required()->maxLength(500)->rows(3)
+                            ->placeholder('Ej: El estado de cuenta tiene más de 3 meses'),
+                    ])
+                    ->action(fn ($record, array $data) => app(\App\Services\ValidacionDocumentoService::class)->rechazar($record, $data['motivo'])),
+
+                \Filament\Actions\Action::make('marcar_capturado')
+                    ->label('Capturado')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->ruta_archivo && ! $record->capturado_at)
+                    ->action(fn ($record) => $record->update(['capturado_at' => now()]))
                     ->requiresConfirmation(false),
 
-                \Filament\Actions\Action::make('marcar_pendiente')
-                    ->label('Pendiente')
+                \Filament\Actions\Action::make('desmarcar_capturado')
+                    ->label('Por capturar')
                     ->icon('heroicon-o-arrow-uturn-left')
-                    ->color('danger')
-                    ->visible(fn ($record) => $record->estado !== 'pendiente')
-                    ->action(fn ($record) => $record->update(['estado' => 'pendiente']))
+                    ->color('gray')
+                    ->visible(fn ($record) => $record->ruta_archivo && $record->capturado_at)
+                    ->action(fn ($record) => $record->update(['capturado_at' => null]))
                     ->requiresConfirmation(false),
 
                 \Filament\Actions\Action::make('ver_archivo')
@@ -458,6 +505,32 @@ class DocumentosRelationManager extends RelationManager
                         return new \Illuminate\Support\HtmlString($html);
                     }),
 
+                \Filament\Actions\ActionGroup::make([
+                // Acciones rápidas de estado (un clic, sin modal)
+                \Filament\Actions\Action::make('marcar_recibido')
+                    ->label('Recibido')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->estado !== 'recibido')
+                    ->action(fn ($record) => $record->update(['estado' => 'recibido']))
+                    ->requiresConfirmation(false),
+
+                \Filament\Actions\Action::make('marcar_no_aplica')
+                    ->label('No aplica')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('gray')
+                    ->visible(fn ($record) => $record->estado !== 'no_aplica')
+                    ->action(fn ($record) => $record->update(['estado' => 'no_aplica']))
+                    ->requiresConfirmation(false),
+
+                \Filament\Actions\Action::make('marcar_pendiente')
+                    ->label('Pendiente')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('danger')
+                    ->visible(fn ($record) => $record->estado !== 'pendiente')
+                    ->action(fn ($record) => $record->update(['estado' => 'pendiente']))
+                    ->requiresConfirmation(false),
+
                 // Editar notas y subir/reemplazar archivo
                 \Filament\Actions\EditAction::make()
                     ->label('Editar / Subir')
@@ -478,8 +551,21 @@ class DocumentosRelationManager extends RelationManager
                         $record->update($data);
                         return $record;
                     }),
+                ])->icon('heroicon-m-ellipsis-vertical')->tooltip('Más acciones'),
             ])
             ->bulkActions([
+                BulkAction::make('validar_documentos')
+                    ->label('Validar seleccionados')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->visible(fn () => auth()->user()?->hasRole('super_admin'))
+                    ->action(fn ($records) => $records->filter(fn ($r) => $r->ruta_archivo)
+                        ->each(fn ($r) => app(\App\Services\ValidacionDocumentoService::class)->validar($r, auth()->user()))),
+                BulkAction::make('marcar_capturados')
+                    ->label('Marcar como capturados')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->color('success')
+                    ->action(fn ($records) => $records->each->update(['capturado_at' => now()])),
                 BulkAction::make('marcar_recibidos')
                     ->label('Marcar seleccionados como recibidos')
                     ->icon('heroicon-o-check-circle')

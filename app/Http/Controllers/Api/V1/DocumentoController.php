@@ -3,12 +3,17 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ExtractPdfDataJob;
+use App\Mail\CarpetaExpedienteMail;
 use App\Models\DocumentoExpediente;
+use App\Services\ValidacionDocumentoService;
 use App\Models\Expediente;
 use App\Models\User;
 use App\Notifications\DocumentoSubido;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -38,6 +43,50 @@ class DocumentoController extends Controller
             'url'            => null,   // se obtiene via /ver
             'tiene_archivo'  => (bool) $doc->ruta_archivo,
         ];
+    }
+
+    /**
+     * Guarda el archivo del request en el disco privado (convirtiendo HEIC a JPEG)
+     * y devuelve la ruta relativa.
+     */
+    private function guardarArchivo(Request $request, int $expedienteId): string
+    {
+        $archivo = $request->file('archivo');
+
+        // Detectar si el archivo es HEIC aunque venga con extensión .jpeg (iPhone)
+        $mimeReal = mime_content_type($archivo->getRealPath()) ?: '';
+        $heicMimes = ['image/heic', 'image/heif', 'image/x-heic', 'image/x-heif'];
+        $esHeic    = in_array(strtolower($mimeReal), $heicMimes);
+
+        if ($esHeic && class_exists(\Imagick::class)) {
+            // Convertir HEIC → JPEG con Imagick
+            try {
+                $im = new \Imagick($archivo->getRealPath());
+                $im->setImageFormat('jpeg');
+                $im->setImageCompressionQuality(90);
+                $jpegContent = $im->getImageBlob();
+                $im->clear();
+
+                $ext    = 'jpg';
+                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '_' . Str::lower(Str::random(5)) . '.' . $ext;
+                $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
+
+                Storage::disk(self::DISK)->put($ruta, $jpegContent);
+            } catch (\Throwable) {
+                // Si falla la conversión, guardar el original
+                $ext    = $archivo->getClientOriginalExtension() ?: 'heic';
+                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '_' . Str::lower(Str::random(5)) . '.' . $ext;
+                $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
+                Storage::disk(self::DISK)->putFileAs("expedientes/{$expedienteId}/docs", $archivo, $nombre);
+            }
+        } else {
+            $ext    = $archivo->getClientOriginalExtension();
+            $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '_' . Str::lower(Str::random(5)) . '.' . $ext;
+            $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
+            Storage::disk(self::DISK)->putFileAs("expedientes/{$expedienteId}/docs", $archivo, $nombre);
+        }
+
+        return $ruta;
     }
 
     // ── Endpoints ─────────────────────────────────────────────────────────────
@@ -72,68 +121,62 @@ class DocumentoController extends Controller
             'notas'          => ['nullable', 'string'],
         ]);
 
-        $archivo = $request->file('archivo');
-
-        // Detectar si el archivo es HEIC aunque venga con extensión .jpeg (iPhone)
-        $mimeReal = mime_content_type($archivo->getRealPath()) ?: '';
-        $heicMimes = ['image/heic', 'image/heif', 'image/x-heic', 'image/x-heif'];
-        $esHeic    = in_array(strtolower($mimeReal), $heicMimes);
-
-        if ($esHeic && class_exists(\Imagick::class)) {
-            // Convertir HEIC → JPEG con Imagick
-            try {
-                $im = new \Imagick($archivo->getRealPath());
-                $im->setImageFormat('jpeg');
-                $im->setImageCompressionQuality(90);
-                $jpegContent = $im->getImageBlob();
-                $im->clear();
-
-                $ext    = 'jpg';
-                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
-                $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
-
-                Storage::disk(self::DISK)->put($ruta, $jpegContent);
-            } catch (\Throwable) {
-                // Si falla la conversión, guardar el original
-                $ext    = $archivo->getClientOriginalExtension() ?: 'heic';
-                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
-                $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
-                Storage::disk(self::DISK)->putFileAs("expedientes/{$expedienteId}/docs", $archivo, $nombre);
-            }
-        } else {
-            $ext    = $archivo->getClientOriginalExtension();
-            $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
-            $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
-            Storage::disk(self::DISK)->putFileAs("expedientes/{$expedienteId}/docs", $archivo, $nombre);
-        }
+        $ruta = $this->guardarArchivo($request, $expedienteId);
 
         $seccion = $request->input('seccion');
 
-        // Si ya existe un doc de este tipo+sección, borrar el archivo anterior
-        $existente = DocumentoExpediente::where('expediente_id', $expedienteId)
-            ->where('tipo', $request->tipo_documento)
-            ->where('seccion', $seccion)
-            ->first();
-        if ($existente?->ruta_archivo) {
-            Storage::disk(self::DISK)->delete($existente->ruta_archivo);
+        // Sin sección (app actual): cada subida es un documento nuevo; si ya hay uno del mismo
+        // tipo se guarda como "INE (2)", "INE (3)"… y la nota los distingue (ej. "INE del dueño").
+        // Con sección (checklist del panel y apps anteriores): reemplaza el de ese tipo y sección.
+        if (! $seccion) {
+            $seccion = 'acreditado';
+            $tipo    = $request->tipo_documento;
+            for ($n = 2; DocumentoExpediente::where('expediente_id', $expedienteId)->where('tipo', $tipo)->where('seccion', $seccion)->exists(); $n++) {
+                $tipo = "{$request->tipo_documento} ({$n})";
+            }
+
+            $doc = DocumentoExpediente::create([
+                'expediente_id' => $expedienteId,
+                'tipo'          => $tipo,
+                'nombre'        => $tipo,
+                'seccion'       => $seccion,
+                'estado'        => 'recibido',
+                'notas'         => $request->input('notas'),
+                'ruta_archivo'  => $ruta,
+            ]);
+        } else {
+            // Si ya existe un doc de este tipo+sección, borrar el archivo anterior
+            $existente = DocumentoExpediente::where('expediente_id', $expedienteId)
+                ->where('tipo', $request->tipo_documento)
+                ->where('seccion', $seccion)
+                ->first();
+            if ($existente?->ruta_archivo) {
+                Storage::disk(self::DISK)->delete($existente->ruta_archivo);
+            }
+
+            $doc = DocumentoExpediente::updateOrCreate(
+                [
+                    'expediente_id' => $expedienteId,
+                    'tipo'          => $request->tipo_documento,
+                    'seccion'       => $seccion,
+                ],
+                [
+                    // Usamos el nombre descriptivo del documento, no el nombre técnico del archivo
+                    'nombre'       => $request->tipo_documento,
+                    'estado'       => 'pendiente',
+                    'notas'        => $request->input('notas'),
+                    'ruta_archivo' => $ruta,
+                ]
+            );
         }
 
-        $doc = DocumentoExpediente::updateOrCreate(
-            [
-                'expediente_id' => $expedienteId,
-                'tipo'          => $request->tipo_documento,
-                'seccion'       => $seccion,
-            ],
-            [
-                // Usamos el nombre descriptivo del documento, no el nombre técnico del archivo
-                'nombre'       => $request->tipo_documento,
-                'estado'       => 'pendiente',
-                'notas'        => $request->input('notas'),
-                'ruta_archivo' => $ruta,
-            ]
-        );
-
         $this->notificarDocumentoSubido($doc, $exp);
+
+        // Lee los PDFs para prellenar los datos del expediente. Con varias subidas
+        // seguidas basta una corrida: el candado evita encolar una por documento.
+        if (Cache::add("ocr-expediente-{$exp->id}", true, now()->addMinutes(2))) {
+            ExtractPdfDataJob::dispatch($exp->id)->delay(now()->addMinutes(2));
+        }
 
         return response()->json(['data' => $this->serialize($doc)], 201);
     }
@@ -293,8 +336,33 @@ class DocumentoController extends Controller
         $doc->update([
             // No se sobreescribe 'nombre': conserva el nombre descriptivo asignado al subir
             'ruta_archivo' => $ruta,
-            'estado'       => 'pendiente',
+            'estado'       => 'recibido',
+            // El archivo nuevo hay que volver a revisarlo, validarlo y capturarlo
+            'capturado_at'   => null,
+            'validado_at'    => null,
+            'validado_por'   => null,
+            'motivo_rechazo' => null,
         ]);
+
+        return response()->json(['data' => $this->serialize($doc->fresh())]);
+    }
+
+    /**
+     * POST /api/v1/expedientes/{expedienteId}/documentos/{documentoId}/validar
+     *
+     * Solo un administrador da por válido un documento (los asesores solo lo ven).
+     */
+    public function validar(Request $request, int $expedienteId, int $documentoId): JsonResponse
+    {
+        $this->soloAdmin($request);
+
+        $doc = DocumentoExpediente::where('expediente_id', $expedienteId)->findOrFail($documentoId);
+
+        if (! $doc->ruta_archivo) {
+            abort(422, 'Este documento no tiene archivo — no hay nada que validar.');
+        }
+
+        app(ValidacionDocumentoService::class)->validar($doc, $request->user());
 
         return response()->json(['data' => $this->serialize($doc->fresh())]);
     }
@@ -302,18 +370,16 @@ class DocumentoController extends Controller
     /**
      * POST /api/v1/expedientes/{expedienteId}/documentos/{documentoId}/rechazar
      *
-     * El asesor marca un documento ya subido como no válido (ilegible,
-     * incompleto, etc.) con un motivo. El archivo se conserva (para que el
-     * asesor pueda revisar qué se subió), pero el estado pasa a 'rechazado'
-     * y el acreditado recibe un push explicando qué debe corregir.
+     * Solo un administrador rechaza un documento (ilegible, vencido, incorrecto…) con un
+     * motivo. El archivo se conserva; el estado pasa a 'rechazado' y, si el acreditado
+     * usa la app, recibe un push con el motivo.
      */
     public function rechazar(Request $request, int $expedienteId, int $documentoId): JsonResponse
     {
-        $exp = Expediente::findOrFail($expedienteId);
-        $this->authorizeAccess($request, $exp);
+        $this->soloAdmin($request);
 
-        $doc = DocumentoExpediente::where('expediente_id', $expedienteId)
-            ->findOrFail($documentoId);
+        $exp = Expediente::findOrFail($expedienteId);
+        $doc = DocumentoExpediente::where('expediente_id', $expedienteId)->findOrFail($documentoId);
 
         $data = $request->validate([
             'motivo' => ['required', 'string', 'max:500'],
@@ -323,17 +389,39 @@ class DocumentoController extends Controller
             abort(422, 'Este documento no tiene archivo — no hay nada que rechazar.');
         }
 
-        $doc->update([
-            'estado' => 'rechazado',
-            'notas'  => $data['motivo'],
-        ]);
-
-        if ($exp->acreditadoRegistrado) {
-            $exp->acreditadoRegistrado->notify(
-                new \App\Notifications\DocumentoRechazado($doc, $exp, $data['motivo'])
-            );
-        }
+        app(ValidacionDocumentoService::class)->rechazar($doc, $data['motivo']);
 
         return response()->json(['data' => $this->serialize($doc->fresh())]);
+    }
+
+    private function soloAdmin(Request $request): void
+    {
+        abort_unless($request->user()->hasRole('super_admin'), 403, 'Solo un administrador puede validar documentos.');
+    }
+
+    /**
+     * POST /api/v1/expedientes/{expedienteId}/enviar-carpeta
+     *
+     * Solo administradores: envía a su correo un enlace temporal (72 h) para descargar,
+     * en su computadora, el ZIP con todos los documentos del expediente.
+     */
+    public function enviarCarpeta(Request $request, int $expedienteId): JsonResponse
+    {
+        $this->soloAdmin($request);
+
+        $exp   = Expediente::findOrFail($expedienteId);
+        $admin = $request->user();
+
+        abort_unless($exp->documentos()->whereNotNull('ruta_archivo')->exists(), 422, 'Este expediente no tiene documentos para enviar.');
+        abort_unless($admin->email, 422, 'Tu usuario no tiene un correo registrado.');
+
+        $enlace = URL::temporarySignedRoute('expediente.carpeta.firmada', now()->addHours(72), ['expediente' => $exp->id]);
+
+        Mail::to($admin->email)->send(new CarpetaExpedienteMail($exp, $enlace));
+
+        return response()->json([
+            'message' => "Te enviamos la carpeta de {$exp->folio} a {$admin->email}.",
+            'email'   => $admin->email,
+        ]);
     }
 }

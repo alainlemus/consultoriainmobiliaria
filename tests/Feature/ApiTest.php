@@ -282,7 +282,7 @@ class ApiTest extends TestCase
             ])
             ->assertStatus(201)
             ->assertJsonPath('data.tipo', 'identificacion_oficial')
-            ->assertJsonPath('data.estado', 'pendiente');
+            ->assertJsonPath('data.estado', 'recibido'); // sin sección: documento nuevo, ya recibido
     }
 
     // ── Sync batch ────────────────────────────────────────────────────────

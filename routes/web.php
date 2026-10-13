@@ -1,11 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Support\AppVersion;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\ContactoController;
 use App\Http\Controllers\PropiedadController;
-use App\Http\Controllers\KpisReporteController;
 use App\Http\Controllers\ContratosController;
 use App\Http\Controllers\ContratoGeneradoWordController;
 use App\Http\Controllers\TestimonioPublicoController;
@@ -30,6 +30,9 @@ Route::get('/admin/password-reset/reset/{token}', function (string $token) {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Sitemap XML
+// Versión del despliegue, para monitoreo (sin datos sensibles).
+Route::get('/version.json', fn () => response()->json(AppVersion::toArray()))->name('version');
+
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // Blog / ConsulTips
@@ -61,10 +64,6 @@ Route::view('/eliminacion-de-datos', 'pages.eliminacion-datos')->name('datos.eli
 Route::view('/descargar-app', 'pages.descargar-app')->name('descargar.app');
 
 // Reportes KPIs (solo super_admin — protegido en el controller)
-Route::middleware(['web', 'auth'])->prefix('admin/reportes/kpis')->name('kpis.reporte.')->group(function () {
-    Route::get('/excel', [KpisReporteController::class, 'excel'])->name('excel');
-    Route::get('/pdf',   [KpisReporteController::class, 'pdf'])->name('pdf');
-});
 
 // Contratos PDF por expediente
 Route::middleware(['web', 'auth'])->prefix('admin/contratos')->name('contratos.')->group(function () {
@@ -114,3 +113,8 @@ Route::middleware(['web', 'auth'])
 Route::middleware(['web', 'auth'])
     ->get('/admin/expedientes/{expediente}/descargar-zip', [ExpedienteZipController::class, 'descargar'])
     ->name('expediente.descargar.zip');
+
+// Misma carpeta, con enlace firmado y temporal (llega por correo al administrador desde la app)
+Route::middleware(['web', 'signed'])
+    ->get('/carpeta-expediente/{expediente}/descargar', [ExpedienteZipController::class, 'descargarFirmado'])
+    ->name('expediente.carpeta.firmada');

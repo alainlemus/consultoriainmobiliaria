@@ -4,11 +4,11 @@ namespace App\Filament\Resources\ExpedienteResource\Pages;
 
 use App\Filament\Resources\ExpedienteResource;
 use App\Mail\SolicitudTestimonio;
-use App\Models\EtapaTramite;
-use App\Models\SeguimientoExpediente;
 use App\Models\TestimonioToken;
 use Filament\Actions;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Resources\Pages\Enums\ContentTabPosition;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\ActionSize;
@@ -47,27 +47,9 @@ class EditExpediente extends EditRecord
         return $data;
     }
 
-    protected static array $estadoConfig = [
-        'en_proceso' => ['label' => 'En proceso',  'bg' => '#1d4ed8', 'text' => '#eff6ff'],
-        'aprobado'   => ['label' => 'Aprobado',    'bg' => '#15803d', 'text' => '#f0fdf4'],
-        'firmado'    => ['label' => 'Firmado',      'bg' => '#7e22ce', 'text' => '#faf5ff'],
-        'pausado'    => ['label' => 'Pausado',      'bg' => '#b45309', 'text' => '#fffbeb'],
-        'cerrado'    => ['label' => 'Cerrado',      'bg' => '#374151', 'text' => '#f9fafb'],
-    ];
-
     public function getHeading(): string | HtmlString
     {
         $folio  = $this->record->folio ?? 'Expediente';
-        $estado = $this->record->estado ?? '';
-        $cfg    = static::$estadoConfig[$estado] ?? ['label' => ucfirst($estado), 'bg' => '#6b7280', 'text' => '#ffffff'];
-
-        $badgeEstado = sprintf(
-            '<span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;background:%s;color:%s;white-space:nowrap;">%s</span>',
-            $cfg['bg'],
-            $cfg['text'],
-            e($cfg['label'])
-        );
-
         $tipoTramite = $this->record->tipoTramite?->nombre;
         $badgeTipo = $tipoTramite
             ? sprintf(
@@ -89,11 +71,35 @@ class EditExpediente extends EditRecord
         return new HtmlString(
             '<div style="max-width:100%;">'
                 . '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">'
-                    . $folioHtml . $badgeEstado . $badgeTipo
+                    . $folioHtml . $badgeTipo
                 . '</div>'
                 . $nombreHtml
             . '</div>'
         );
+    }
+
+    // Abre en la pestaña de documentos (el primer relation manager).
+    public ?string $activeRelationManager = '0';
+
+    // Documentos primero: es lo que el equipo revisa y captura; los datos van en la otra pestaña.
+    public function hasCombinedRelationManagerTabsWithContent(): bool
+    {
+        return true;
+    }
+
+    public function getContentTabLabel(): ?string
+    {
+        return 'Datos del expediente';
+    }
+
+    public function getContentTabIcon(): string
+    {
+        return 'heroicon-o-clipboard-document-list';
+    }
+
+    public function getContentTabPosition(): ?ContentTabPosition
+    {
+        return ContentTabPosition::After;
     }
 
     protected function getHeaderActions(): array
@@ -107,52 +113,6 @@ class EditExpediente extends EditRecord
                 ->url(fn () => route('expediente.descargar.zip', $this->record))
                 ->openUrlInNewTab()
                 ->visible(fn () => $this->record->documentos()->whereNotNull('ruta_archivo')->exists()),
-            Action::make('avanzar_etapa')
-                ->label(function () {
-                    $siguiente = $this->siguienteEtapa();
-                    return $siguiente
-                        ? 'Avanzar → ' . preg_replace('/^\d+\.\s*/', '', $siguiente->nombre)
-                        : 'Avanzar etapa';
-                })
-                ->icon('heroicon-o-arrow-right-circle')
-                ->color('success')
-                ->visible(function () {
-                    if (! auth()->user()?->hasRole('super_admin')) return false;
-                    return $this->siguienteEtapa() !== null;
-                })
-                ->requiresConfirmation()
-                ->modalHeading(fn () => 'Avanzar a: ' . ($this->siguienteEtapa()?->nombre ?? ''))
-                ->modalDescription('Se registrará automáticamente en la bitácora de seguimiento.')
-                ->modalSubmitActionLabel('Sí, avanzar')
-                ->action(function () {
-                    $etapaAnterior  = $this->record->etapa;
-                    $siguienteEtapa = $this->siguienteEtapa();
-
-                    if (! $siguienteEtapa) {
-                        Notification::make()->title('Ya está en la última etapa')->warning()->send();
-                        return;
-                    }
-
-                    $this->record->update(['etapa_tramite_id' => $siguienteEtapa->id]);
-
-                    SeguimientoExpediente::create([
-                        'expediente_id'     => $this->record->id,
-                        'usuario_id'        => auth()->id(),
-                        'tipo'              => 'cambio_etapa',
-                        'descripcion'       => 'Avance de etapa: "' . ($etapaAnterior?->nombre ?? '—') . '" → "' . $siguienteEtapa->nombre . '"',
-                        'etapa_anterior_id' => $etapaAnterior?->id,
-                        'etapa_nueva_id'    => $siguienteEtapa->id,
-                    ]);
-
-                    Notification::make()
-                        ->title('Etapa avanzada')
-                        ->body('Ahora en: ' . preg_replace('/^\d+\.\s*/', '', $siguienteEtapa->nombre))
-                        ->success()
-                        ->send();
-
-                    $this->redirect(ExpedienteResource::getUrl('edit', ['record' => $this->record]));
-                }),
-
             // ── Solicitar Testimonio ─────────────────────────────────────────
             Action::make('solicitar_testimonio')
                 ->label('Solicitar Testimonio')
@@ -208,7 +168,8 @@ class EditExpediente extends EditRecord
                         ->send();
                 }),
 
-            // ── Contratos PDF ────────────────────────────────────────────────
+            // ── Contratos PDF (agrupados para no saturar el encabezado) ──────
+            ActionGroup::make([
             Action::make('contrato_servicios')
                 ->label('Contrato de Servicios')
                 ->icon('heroicon-o-document-text')
@@ -262,6 +223,10 @@ class EditExpediente extends EditRecord
                     route('contratos.carta_mandato', $this->record->id)
                 )),
 
+            ])->label('Contratos')->icon('heroicon-o-document-duplicate')->button()->color('gray'),
+
+            // ── Acciones poco frecuentes ─────────────────────────────────────
+            ActionGroup::make([
             Actions\DeleteAction::make()
                 ->visible(fn () => auth()->user()?->hasRole('super_admin'))
                 ->requiresConfirmation()
@@ -341,17 +306,7 @@ class EditExpediente extends EditRecord
 
                     $this->redirect(ExpedienteResource::getUrl('index'));
                 }),
+            ])->label('Más')->icon('heroicon-m-ellipsis-vertical')->button()->color('gray'),
         ];
-    }
-
-    // ── Helper: obtiene la siguiente etapa del trámite ───────────────────────
-    private function siguienteEtapa(): ?EtapaTramite
-    {
-        $etapaActual = $this->record->etapa;
-
-        return EtapaTramite::where('tipo_tramite_id', $this->record->tipo_tramite_id)
-            ->where('orden', '>', $etapaActual?->orden ?? 0)
-            ->orderBy('orden')
-            ->first();
     }
 }

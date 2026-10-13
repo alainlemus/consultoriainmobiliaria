@@ -2,12 +2,11 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Comision;
 use App\Models\Contacto;
+use App\Models\DocumentoExpediente;
 use App\Models\Expediente;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
 class CrmStatsOverview extends BaseWidget
@@ -19,47 +18,49 @@ class CrmStatsOverview extends BaseWidget
         return auth()->check() && auth()->user()->hasRole('super_admin');
     }
 
+    protected function getColumns(): int
+    {
+        return 5;
+    }
+
     protected function getStats(): array
     {
         $data = Cache::remember('dashboard:crm_stats', 90, function () {
             return [
-                'activos' => Expediente::whereIn('estado', ['en_proceso', 'aprobado', 'firmado'])->count(),
-                'cerradosMes' => Expediente::where('estado', 'cerrado')
-                    ->whereMonth('fecha_cierre', now()->month)
-                    ->whereYear('fecha_cierre', now()->year)
-                    ->count(),
-                'ingresosEstimados' => Expediente::whereIn('estado', ['en_proceso', 'aprobado', 'firmado', 'cerrado'])
-                    ->sum('honorarios_monto'),
-                'prospectoNuevos' => Contacto::where('estado_prospecto', 'nuevo')->count(),
-                'comisionesPendientes' => Comision::where('estado', 'aprobada')->sum('monto_comision'),
+                'prospectosMes'    => Contacto::whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count(),
+                'prospectosNuevos' => Contacto::where('estado_prospecto', 'nuevo')->count(),
+                'expedientes'      => Expediente::count(),
+                'documentosMes'    => DocumentoExpediente::whereNotNull('ruta_archivo')
+                    ->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count(),
+                'porCapturar'      => DocumentoExpediente::whereNotNull('ruta_archivo')->whereNull('capturado_at')->count(),
             ];
         });
 
         return [
-            Stat::make('Expedientes activos', $data['activos'])
-                ->description('En proceso, aprobados o firmados')
-                ->descriptionIcon('heroicon-m-folder-open')
+            Stat::make('Prospectos del mes', $data['prospectosMes'])
+                ->description(now()->translatedFormat('F Y'))
+                ->descriptionIcon('heroicon-m-user-plus')
                 ->color('primary'),
 
-            Stat::make('Cerrados este mes', $data['cerradosMes'])
-                ->description(now()->translatedFormat('F Y'))
-                ->descriptionIcon('heroicon-m-check-badge')
-                ->color('success'),
-
-            Stat::make('Prospectos nuevos', $data['prospectoNuevos'])
-                ->description('Sin atender del sitio web')
-                ->descriptionIcon('heroicon-m-user-plus')
+            Stat::make('Prospectos nuevos', $data['prospectosNuevos'])
+                ->description('Sin atender')
+                ->descriptionIcon('heroicon-m-user-group')
                 ->color('warning'),
 
-            Stat::make('Honorarios estimados', '$' . number_format($data['ingresosEstimados'], 0, '.', ','))
-                ->description('Expedientes activos + cerrados')
-                ->descriptionIcon('heroicon-m-banknotes')
+            Stat::make('Expedientes', $data['expedientes'])
+                ->description('Clientes con expediente abierto')
+                ->descriptionIcon('heroicon-m-folder-open')
+                ->color('info'),
+
+            Stat::make('Documentos del mes', $data['documentosMes'])
+                ->description('Subidos desde la app')
+                ->descriptionIcon('heroicon-m-document-arrow-up')
                 ->color('success'),
 
-            Stat::make('Comisiones por pagar', '$' . number_format($data['comisionesPendientes'], 0, '.', ','))
-                ->description('Comisiones aprobadas pendientes de pago')
-                ->descriptionIcon('heroicon-m-currency-dollar')
-                ->color('danger'),
+            Stat::make('Por capturar', $data['porCapturar'])
+                ->description('Documentos pendientes de capturar en el panel')
+                ->descriptionIcon('heroicon-m-clipboard-document-list')
+                ->color($data['porCapturar'] > 0 ? 'warning' : 'success'),
         ];
     }
 }

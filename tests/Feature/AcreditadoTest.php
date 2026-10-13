@@ -152,7 +152,7 @@ class AcreditadoTest extends TestCase
 
     // ─── Documento rechazado ────────────────────────────────────────────────
 
-    public function test_asesor_puede_rechazar_documento_con_motivo(): void
+    public function test_admin_puede_rechazar_documento_con_motivo(): void
     {
         Notification::fake();
 
@@ -167,7 +167,7 @@ class AcreditadoTest extends TestCase
             'ruta_archivo'  => 'expedientes/1/docs/ine.jpg',
         ]);
 
-        $this->actingAs($this->asesor, 'sanctum')
+        $this->actingAs($this->admin(), 'sanctum')
             ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", [
                 'motivo' => 'La foto sale borrosa, no se alcanza a leer la CURP',
             ])
@@ -177,7 +177,7 @@ class AcreditadoTest extends TestCase
         $this->assertDatabaseHas('documentos_expediente', [
             'id'     => $doc->id,
             'estado' => 'rechazado',
-            'notas'  => 'La foto sale borrosa, no se alcanza a leer la CURP',
+            'motivo_rechazo' => 'La foto sale borrosa, no se alcanza a leer la CURP',
         ]);
 
         Notification::assertSentTo(
@@ -199,7 +199,7 @@ class AcreditadoTest extends TestCase
             'ruta_archivo'  => 'expedientes/1/docs/ine.jpg',
         ]);
 
-        $this->actingAs($this->asesor, 'sanctum')
+        $this->actingAs($this->admin(), 'sanctum')
             ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", [])
             ->assertStatus(422);
     }
@@ -216,14 +216,14 @@ class AcreditadoTest extends TestCase
             'ruta_archivo'  => null,
         ]);
 
-        $this->actingAs($this->asesor, 'sanctum')
+        $this->actingAs($this->admin(), 'sanctum')
             ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", [
                 'motivo' => 'No hay nada que rechazar',
             ])
             ->assertStatus(422);
     }
 
-    public function test_otro_asesor_no_puede_rechazar_documento_ajeno(): void
+    public function test_un_asesor_no_puede_rechazar_ni_validar_documentos(): void
     {
         $exp = $this->crearExpediente(); // dueño: $this->asesor
         $doc = DocumentoExpediente::create([
@@ -235,10 +235,13 @@ class AcreditadoTest extends TestCase
             'ruta_archivo'  => 'expedientes/1/docs/ine.jpg',
         ]);
 
-        $this->actingAs($this->otroAsesor, 'sanctum')
+        $this->actingAs($this->asesor, 'sanctum')   // incluso siendo el dueño del expediente
             ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", [
                 'motivo' => 'Intento no autorizado',
             ])
+            ->assertStatus(403);
+        $this->actingAs($this->asesor, 'sanctum')
+            ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/validar")
             ->assertStatus(403);
 
         $this->assertDatabaseHas('documentos_expediente', ['id' => $doc->id, 'estado' => 'recibido']);
@@ -248,7 +251,7 @@ class AcreditadoTest extends TestCase
     {
         Notification::fake();
 
-        // Sin acreditado_id — nadie en la app debe recibir el push
+        // Sin acreditado_id — el acreditado no recibe nada; solo se avisa al asesor del expediente
         $exp = $this->crearExpediente();
         $doc = DocumentoExpediente::create([
             'expediente_id' => $exp->id,
@@ -259,52 +262,50 @@ class AcreditadoTest extends TestCase
             'ruta_archivo'  => 'expedientes/1/docs/ine.jpg',
         ]);
 
-        $this->actingAs($this->asesor, 'sanctum')
+        $this->actingAs($this->admin(), 'sanctum')
             ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", ['motivo' => 'Sin acreditado vinculado'])
             ->assertStatus(200);
 
-        Notification::assertNothingSent();
+        Notification::assertSentTo($this->asesor, DocumentoRechazado::class);
+        Notification::assertCount(1);
+    }
+
+    public function test_admin_valida_un_documento_y_reemplazarlo_lo_regresa_a_revision(): void
+    {
+        $exp = $this->crearExpediente();
+        $doc = DocumentoExpediente::create([
+            'expediente_id' => $exp->id, 'tipo' => 'ine', 'nombre' => 'INE', 'seccion' => 'acreditado',
+            'estado' => 'recibido', 'ruta_archivo' => 'expedientes/1/docs/ine.jpg', 'notas' => 'INE del dueño',
+        ]);
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/validar")
+            ->assertOk()
+            ->assertJsonPath('data.validacion', 'validado');
+
+        $this->assertNotNull($doc->fresh()->validado_at);
+
+        // Rechazar conserva la nota que identifica el documento
+        $this->actingAs($this->admin(), 'sanctum')
+            ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", ['motivo' => 'Vencida'])
+            ->assertOk()
+            ->assertJsonPath('data.validacion', 'rechazado');
+
+        $doc->refresh();
+        $this->assertSame('INE del dueño', $doc->notas);
+        $this->assertSame('Vencida', $doc->motivo_rechazo);
+        $this->assertNull($doc->validado_at);
+    }
+
+    private function admin(): User
+    {
+        $admin = User::factory()->create(['activo' => true]);
+        $admin->assignRole('super_admin');
+
+        return $admin;
     }
 
     // ─── Cambio de etapa notifica también al acreditado vinculado ─────────
-
-    public function test_acreditado_vinculado_recibe_notificacion_de_cambio_de_etapa(): void
-    {
-        Notification::fake();
-
-        $acreditado = $this->crearAcreditado();
-        $exp = $this->crearExpediente(['acreditado_id' => $acreditado->id]);
-
-        $exp->update(['etapa_tramite_id' => $this->etapa2->id]);
-
-        Notification::assertSentTo($this->asesor, EtapaExpedienteCambiada::class);
-        Notification::assertSentTo($acreditado, EtapaExpedienteCambiada::class);
-    }
-
-    public function test_expediente_sin_acreditado_vinculado_no_falla_al_cambiar_etapa(): void
-    {
-        Notification::fake();
-
-        $exp = $this->crearExpediente(); // sin acreditado_id
-        $exp->update(['etapa_tramite_id' => $this->etapa2->id]);
-
-        Notification::assertSentTo($this->asesor, EtapaExpedienteCambiada::class);
-        // No debe reventar ni mandarle nada a ningún Acreditado
-        Notification::assertNotSentTo($this->asesor, DocumentoRechazado::class);
-    }
-
-    public function test_notificacion_etapa_al_acreditado_no_usa_canal_database(): void
-    {
-        // El acreditado no tiene bandeja de notificaciones en la app —
-        // via() no debe incluir 'database' para ese notifiable (sí para User).
-        $acreditado = $this->crearAcreditado();
-        $exp = $this->crearExpediente(['acreditado_id' => $acreditado->id]);
-
-        $notif = new EtapaExpedienteCambiada($exp, 'Precalificación', 'Documentación');
-
-        $this->assertNotContains('database', $notif->via($acreditado));
-        $this->assertContains('database', $notif->via($this->asesor));
-    }
 
     // ─── PushService no cruza tokens entre User y Acreditado ───────────────
 

@@ -2,8 +2,8 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Comision;
 use App\Models\Contacto;
+use App\Models\DocumentoExpediente;
 use App\Models\Expediente;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -24,61 +24,39 @@ class AsesorStatsOverview extends BaseWidget
         $id = Auth::id();
 
         $data = Cache::remember("dashboard:asesor_stats:{$id}", 90, function () use ($id) {
+            $mios = Contacto::where('asesor_id', $id)->whereNotIn('estado_prospecto', ['descartado', 'convertido'])->whereDoesntHave('expedientes');
+
             return [
-                'prospectos' => Contacto::where('asesor_id', $id)
-                    ->whereNotIn('estado_prospecto', ['descartado', 'convertido'])
+                'prospectos'    => (clone $mios)->count(),
+                'prospectosMes' => Contacto::where('asesor_id', $id)->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count(),
+                'expedientes'   => Expediente::where('asesor_id', $id)->count(),
+                'documentosMes' => DocumentoExpediente::whereNotNull('ruta_archivo')
+                    ->whereHas('expediente', fn ($q) => $q->where('asesor_id', $id))
+                    ->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)
                     ->count(),
-                'pendientesCierre' => Contacto::where('asesor_id', $id)
-                    ->where('estado_prospecto', 'pendiente_cierre')
-                    ->count(),
-                'expedientesActivos' => Expediente::where('asesor_id', $id)
-                    ->whereIn('estado', ['en_proceso', 'aprobado', 'firmado'])
-                    ->count(),
-                'expedientesCerrados' => Expediente::where('asesor_id', $id)
-                    ->where('estado', 'cerrado')
-                    ->count(),
-                'comisionesPendientes' => Comision::where('asesor_id', $id)
-                    ->where('estado', 'pendiente')
-                    ->sum('monto_comision'),
-                'comisionesAprobadas' => Comision::where('asesor_id', $id)
-                    ->where('estado', 'aprobada')
-                    ->sum('monto_comision'),
-                'comisionesTotal' => Comision::where('asesor_id', $id)
-                    ->where('estado', 'pagada')
-                    ->sum('monto_comision'),
             ];
         });
 
         return [
-            Stat::make('Prospectos activos', $data['prospectos'])
-                ->description('Sin contar descartados ni convertidos')
+            Stat::make('Mis prospectos', $data['prospectos'])
+                ->description('En evaluación')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('primary'),
 
-            Stat::make('Pendientes de cierre', $data['pendientesCierre'])
-                ->description('Listos para iniciar expediente')
-                ->descriptionIcon('heroicon-m-clock')
-                ->color('warning'),
+            Stat::make('Registrados este mes', $data['prospectosMes'])
+                ->description(now()->translatedFormat('F Y'))
+                ->descriptionIcon('heroicon-m-user-plus')
+                ->color('success'),
 
-            Stat::make('Expedientes en proceso', $data['expedientesActivos'])
-                ->description('Activos, aprobados o firmados')
+            Stat::make('Mis expedientes', $data['expedientes'])
+                ->description('Clientes con expediente')
                 ->descriptionIcon('heroicon-m-folder-open')
                 ->color('info'),
 
-            Stat::make('Expedientes cerrados', $data['expedientesCerrados'])
-                ->description('Trámites concluidos')
-                ->descriptionIcon('heroicon-m-check-badge')
-                ->color('success'),
-
-            Stat::make('Comisiones por cobrar', '$' . number_format($data['comisionesPendientes'] + $data['comisionesAprobadas'], 0, '.', ','))
-                ->description('Pendientes + aprobadas')
-                ->descriptionIcon('heroicon-m-banknotes')
+            Stat::make('Documentos del mes', $data['documentosMes'])
+                ->description('Subidos desde la app')
+                ->descriptionIcon('heroicon-m-document-arrow-up')
                 ->color('warning'),
-
-            Stat::make('Comisiones cobradas', '$' . number_format($data['comisionesTotal'], 0, '.', ','))
-                ->description('Historial total pagado')
-                ->descriptionIcon('heroicon-m-currency-dollar')
-                ->color('success'),
         ];
     }
 }

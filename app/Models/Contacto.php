@@ -70,6 +70,7 @@ class Contacto extends Model
         return $this->hasMany(Expediente::class);
     }
 
+
     /**
      * Busca un prospecto existente por teléfono o CURP (los dos campos que
      * identifican a la misma persona a través de los distintos canales de

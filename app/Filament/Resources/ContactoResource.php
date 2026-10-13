@@ -70,7 +70,8 @@ class ContactoResource extends Resource
             $query->where('asesor_id', Auth::id());
         }
 
-        // Excluir prospectos que ya no son prospectos activos
+        // Excluir prospectos que ya no son prospectos activos (los que ya son
+        // cliente viven en Expedientes).
         $query->whereNotIn('estado_prospecto', ['convertido', 'descartado'])
               ->whereDoesntHave('expedientes');
 
@@ -390,11 +391,11 @@ class ContactoResource extends Resource
                 Tables\Columns\TextColumn::make('telefono')
                     ->label('Teléfono'),
                 Tables\Columns\TextColumn::make('email')
-                    ->label('Correo')->searchable()->toggleable(),
+                    ->label('Correo')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('curp')
                     ->label('CURP')
                     ->searchable()
-                    ->toggleable()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->fontFamily('mono')
                     ->placeholder('Sin CURP')
                     ->copyable()
@@ -446,15 +447,15 @@ class ContactoResource extends Resource
                         default            => $state,
                     }),
                 Tables\Columns\TextColumn::make('estado_ubicacion')
-                    ->label('Estado')
+                    ->label('Entidad')
                     ->placeholder('—')
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('simulador_screenshot')
                     ->label('Captura')
                     ->formatStateUsing(fn ($state) => $state ? '📸 Sí' : '—')
                     ->placeholder('—')
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('asesor.name')
                     ->label('Asesor')
                     ->placeholder('Sin asesor asignado')
@@ -598,6 +599,8 @@ class ContactoResource extends Resource
                     ->visible(fn (Contacto $record) => Auth::user()?->hasRole('super_admin')
                         && ! in_array($record->estado_prospecto, ['convertido', 'descartado'])),
 
+                \Filament\Actions\ActionGroup::make([
+
                 \Filament\Actions\Action::make('descartar')
                     ->label('No cerró')
                     ->icon('heroicon-o-x-circle')
@@ -607,14 +610,15 @@ class ContactoResource extends Resource
                     ->modalDescription('El prospecto regresará a estado "Descartado".')
                     ->action(fn (Contacto $record) => $record->update(['estado_prospecto' => 'descartado']))
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+                \Filament\Actions\DeleteAction::make()
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+                ])->icon('heroicon-m-ellipsis-vertical')->tooltip('Más acciones'),
 
                 \Filament\Actions\EditAction::make()
                     ->visible(fn (Contacto $record) =>
                         Auth::user()?->hasRole('super_admin') ||
                         ! in_array($record->estado_prospecto, ['pendiente_cierre', 'contrato_firmado', 'convertido'])
                     ),
-                \Filament\Actions\DeleteAction::make()
-                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([

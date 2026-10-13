@@ -11,10 +11,6 @@ Artisan::command('inspire', function () {
 // Publica automáticamente los artículos cuya fecha programada ya llegó
 Schedule::command('posts:publicar-programados')->everyMinute();
 
-// Notifica a asesores sobre expedientes sin movimiento en los últimos 7 días
-// Se ejecuta cada mañana a las 8 AM
-Schedule::command('expedientes:alertar-sin-movimiento')->dailyAt('08:00');
-
 // ── Reportes de gestión para super_admin ──────────────────────────────────
 // Diario: lunes a viernes a las 8 PM (cubre el día actual)
 Schedule::command('reportes:enviar --tipo=diario')

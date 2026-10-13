@@ -10,7 +10,6 @@ use App\Http\Controllers\Api\V1\AnuncioController;
 use App\Http\Controllers\Api\V1\RouteController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
-use App\Http\Controllers\Api\V1\ComisionController;
 use App\Http\Controllers\Api\V1\ContratosController;
 use App\Http\Controllers\Api\V1\ContratoGeneradoController;
 use App\Http\Controllers\Api\WhatsAppWebhookController;
@@ -108,6 +107,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/expedientes/{expedienteId}/documentos/{documentoId}/ver',                 [DocumentoController::class, 'ver']);
         Route::delete('/expedientes/{expedienteId}/documentos/{documentoId}',                  [DocumentoController::class, 'destroy']);
         Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/reemplazar',         [DocumentoController::class, 'reemplazar']);
+        Route::post('/expedientes/{expedienteId}/enviar-carpeta',                              [DocumentoController::class, 'enviarCarpeta']);
+        Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/validar',            [DocumentoController::class, 'validar']);
         Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/rechazar',           [DocumentoController::class, 'rechazar']);
 
         // Ubicaciones GPS
@@ -137,9 +138,6 @@ Route::prefix('v1')->group(function () {
         // Dispositivos FCM
         Route::post('/dispositivos',      [DeviceTokenController::class, 'store']);
 
-        // Comisiones del asesor
-        Route::get('/comisiones',         [ComisionController::class, 'index']);
-        Route::get('/comisiones/resumen', [ComisionController::class, 'resumen']);
     });
 
     // ── Rutas para CRM (autenticación por sesión web, no token) ──────────────

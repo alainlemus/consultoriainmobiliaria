@@ -10,12 +10,14 @@ use Illuminate\Support\Facades\Auth;
 
 class ProspectosPendientesCierreWidget extends BaseWidget
 {
-    protected static ?int $sort = 1;
+    protected static ?int $sort = 3;
     protected int | string | array $columnSpan = 'full';
 
     public static function canView(): bool
     {
-        return Auth::user()?->hasRole('super_admin') ?? false;
+        // Solo aparece cuando hay algo que atender (si no, es una tabla vacía que empuja los números).
+        return (Auth::user()?->hasRole('super_admin') ?? false)
+            && Contacto::where('estado_prospecto', 'pendiente_cierre')->exists();
     }
 
     protected function getTableHeading(): string

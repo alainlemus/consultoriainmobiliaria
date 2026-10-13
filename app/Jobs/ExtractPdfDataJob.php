@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Models\EtapaTramite;
 use App\Models\Expediente;
 use App\Services\PdfExtractorService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -15,7 +14,6 @@ use Illuminate\Support\Facades\Storage;
  * - Marca ocr_procesando = true al iniciar
  * - Extrae datos de todos los PDFs con prioridad por tipo de documento
  * - Rellena solo campos vacíos del expediente
- * - Detecta la etapa automáticamente según las carpetas de documentos
  * - Marca ocr_procesando = false al terminar (incluso si falla)
  * - Notifica al asesor con los resultados
  */
@@ -39,7 +37,6 @@ class ExtractPdfDataJob implements ShouldQueue
 
         try {
             $this->procesarOcr($expediente, $extractor);
-            $this->detectarYAvanzarEtapa($expediente);
         } finally {
             $expediente->updateQuietly(['ocr_procesando' => false]);
         }
@@ -134,90 +131,5 @@ class ExtractPdfDataJob implements ShouldQueue
         if ($asesor) {
             $asesor->notify(new \App\Notifications\OcrCompletado($expediente, count($actualizacion)));
         }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Detección automática de etapa según carpetas de documentos
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Evalúa las categorías de documentos presentes y avanza la etapa
-     * si corresponde a una etapa superior a la actual.
-     *
-     * Reglas (en orden de prioridad descendente):
-     *   notaria              → "En notaría" o equivalente
-     *   sofom/ con CUV       → "Avalúo realizado"
-     *   sofom/ sin CUV       → "Trámites previos"
-     *   catastro o avaluo    → "Trámites previos"
-     *   acreditada + vendedor + vivienda → "Documentos completos"
-     */
-    private function detectarYAvanzarEtapa(Expediente $expediente): void
-    {
-        if (! $expediente->tipo_tramite_id) return;
-
-        $expediente->refresh();
-
-        $categorias = $expediente->documentos()
-            ->whereNotNull('categoria')
-            ->whereNotNull('ruta_archivo')
-            ->pluck('categoria')
-            ->map(fn ($c) => strtolower($c))
-            ->unique()
-            ->values()
-            ->toArray();
-
-        if (empty($categorias)) return;
-
-        $nombreEtapaObjetivo = $this->determinarEtapaObjetivo($categorias, $expediente);
-        if (! $nombreEtapaObjetivo) return;
-
-        $etapaObjetivo = EtapaTramite::where('tipo_tramite_id', $expediente->tipo_tramite_id)
-            ->where('nombre', 'like', '%' . $nombreEtapaObjetivo . '%')
-            ->orderBy('orden')
-            ->first();
-
-        if (! $etapaObjetivo) return;
-
-        // Solo avanzar, nunca retroceder
-        $etapaActual = $expediente->etapa;
-        if ($etapaActual && $etapaObjetivo->orden <= $etapaActual->orden) return;
-
-        $expediente->updateQuietly(['etapa_tramite_id' => $etapaObjetivo->id]);
-
-        Log::info("Etapa auto-avanzada para {$expediente->folio}: '{$etapaActual?->nombre}' → '{$etapaObjetivo->nombre}' (carpetas: " . implode(', ', $categorias) . ")");
-    }
-
-    private function determinarEtapaObjetivo(array $categorias, Expediente $expediente): ?string
-    {
-        $tiene = fn (string $prefijo) => collect($categorias)
-            ->contains(fn ($c) => str_starts_with($c, $prefijo));
-
-        // Regla 1: NOTARIA → En notaría
-        if ($tiene('notaria')) {
-            return 'notaría';
-        }
-
-        // Regla 2: SOFOM con subcarpetas
-        if (collect($categorias)->contains(fn ($c) => str_starts_with($c, 'sofom/'))) {
-            return ($expediente->cuv || $expediente->cuv_activa)
-                ? 'Avalúo realizado'
-                : 'Trámites previos';
-        }
-
-        // Regla 3: CATASTRO o AVALUO → Trámites previos
-        if ($tiene('catastro') || $tiene('avaluo')) {
-            return 'Trámites previos';
-        }
-
-        // Regla 4: acreditada + vendedor + vivienda (en cualquier subcarpeta) → Documentos completos
-        $a  = collect($categorias)->contains(fn ($c) => str_contains($c, 'acreditada') || str_contains($c, 'acreditado'));
-        $v  = collect($categorias)->contains(fn ($c) => str_contains($c, 'vendedor'));
-        $vi = collect($categorias)->contains(fn ($c) => str_contains($c, 'vivienda'));
-
-        if ($a && $v && $vi) {
-            return 'Documentos completos';
-        }
-
-        return null;
     }
 }

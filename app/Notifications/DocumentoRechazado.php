@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Channels\PushChannel;
 use App\Models\Acreditado;
+use App\Models\User;
 use App\Models\DocumentoExpediente;
 use App\Models\Expediente;
 use App\Notifications\Concerns\SendsPushNotification;
@@ -28,9 +29,8 @@ class DocumentoRechazado extends Notification
 
     public function via(object $notifiable): array
     {
-        // Si algún día esto se dispara también hacia un User (asesor/admin),
-        // no tiene sentido de push-only — pero hoy solo se dispara al Acreditado.
-        return $notifiable instanceof Acreditado && $this->viaPush() ? [PushChannel::class] : [];
+        // Push al acreditado (si usa la app) y al asesor del expediente.
+        return ($notifiable instanceof Acreditado || $notifiable instanceof User) && $this->viaPush() ? [PushChannel::class] : [];
     }
 
     protected function pushTitle(): string

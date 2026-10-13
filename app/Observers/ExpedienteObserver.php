@@ -3,10 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Expediente;
-use App\Models\Comision;
 use App\Models\User;
-use App\Notifications\EtapaExpedienteCambiada;
-use App\Notifications\ExpedienteCerrado;
 use App\Notifications\NuevoExpedienteCreado;
 use App\Notifications\PagoExpedienteRecibido;
 use App\Support\DiasHabiles;
@@ -49,9 +46,6 @@ class ExpedienteObserver
 
     public function updated(Expediente $exp): void
     {
-        $this->generarComisionAlCerrar($exp);
-        $this->notificarAlCerrar($exp);
-        $this->notificarCambioEtapa($exp);
         $this->notificarPagoRecibido($exp);
     }
 
@@ -124,75 +118,6 @@ class ExpedienteObserver
             // Cambiar estado a cerrado automáticamente
             if ($exp->estado !== 'cerrado') {
                 $exp->estado = 'cerrado';
-            }
-        }
-    }
-
-    // ── Notificar al asesor (después de guardar para tener el id) ─────────────
-
-    private function generarComisionAlCerrar(Expediente $exp): void
-    {
-        // Solo cuando acaba de cambiar a "cerrado" y tiene honorarios
-        if (! $exp->wasChanged('estado') || $exp->estado !== 'cerrado') {
-            return;
-        }
-
-        if (empty($exp->honorarios_monto) || $exp->honorarios_monto <= 0) {
-            return;
-        }
-
-        // No duplicar si ya existe una comisión para este expediente
-        if ($exp->comision()->exists()) {
-            return;
-        }
-
-        Comision::create([
-            'expediente_id'       => $exp->id,
-            'asesor_id'           => $exp->asesor_id,
-            'monto_base'          => $exp->monto_total_estimado ?? $exp->honorarios_monto,
-            'porcentaje_comision' => $exp->honorarios_porcentaje ?? 0,
-            'monto_comision'      => $exp->honorarios_monto,
-            'estado'              => 'pendiente',
-            'fecha_generacion'    => now()->toDateString(),
-        ]);
-    }
-
-    private function notificarAlCerrar(Expediente $exp): void
-    {
-        if (
-            $exp->wasChanged('estado') &&
-            $exp->estado === 'cerrado' &&
-            $exp->getOriginal('estado') !== 'cerrado' &&
-            ! empty($exp->honorarios_monto) &&
-            $exp->honorarios_monto > 0
-        ) {
-            // Flag anti-duplicado: evitar doble disparo en SQLite tests
-            $key = 'cierre_notificado_' . $exp->id;
-            if (cache()->has($key)) return;
-            cache()->put($key, true, now()->addSeconds(5));
-
-            $asesor = $exp->asesor;
-            if ($asesor) {
-                $asesor->notify(new ExpedienteCerrado($exp));
-            }
-        }
-    }
-
-    private function notificarCambioEtapa(Expediente $exp): void
-    {
-        if ($exp->wasChanged('etapa_tramite_id') && $exp->etapa_tramite_id) {
-            $etapaAnterior = \App\Models\EtapaTramite::find($exp->getOriginal('etapa_tramite_id'))?->nombre ?? '—';
-            $etapaNueva    = $exp->etapa?->nombre ?? '—';
-
-            $asesor = $exp->asesor;
-            if ($asesor) {
-                $asesor->notify(new EtapaExpedienteCambiada($exp, $etapaAnterior, $etapaNueva));
-            }
-
-            // El acreditado (si ya vinculó su cuenta de la app) también se
-            // entera del avance — solo push, ver EtapaExpedienteCambiada::via()
-            if ($exp->acreditadoRegistrado) {
-                $exp->acreditadoRegistrado->notify(new EtapaExpedienteCambiada($exp, $etapaAnterior, $etapaNueva));
             }
         }
     }
