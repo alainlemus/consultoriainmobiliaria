@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Notifications\Notifiable;
@@ -56,6 +57,18 @@ class User extends Authenticatable implements FilamentUser
     public function expedientes(): HasMany
     {
         return $this->hasMany(Expediente::class, 'asesor_id');
+    }
+
+    /** Prospectos asignados al asesor. */
+    public function contactos(): HasMany
+    {
+        return $this->hasMany(Contacto::class, 'asesor_id');
+    }
+
+    /** Documentos de los expedientes del asesor (los que sube desde la app). */
+    public function documentos(): HasManyThrough
+    {
+        return $this->hasManyThrough(DocumentoExpediente::class, Expediente::class, 'asesor_id');
     }
 
     public function routePoints(): HasMany

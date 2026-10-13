@@ -26,6 +26,7 @@ class PanelExpedientesSimplificadoTest extends TestCase
         parent::setUp();
 
         Role::findOrCreate('super_admin', 'web');
+        Role::findOrCreate('asesor', 'web');
         $admin = User::factory()->create(['activo' => true]);
         $admin->assignRole('super_admin');
         foreach (['ViewAny', 'View', 'Create', 'Update'] as $accion) {
@@ -76,5 +77,28 @@ class PanelExpedientesSimplificadoTest extends TestCase
             ->callTableAction('marcar_capturado', $doc);
 
         $this->assertNotNull($doc->fresh()->capturado_at);
+    }
+
+    public function test_los_widgets_de_prospectos_y_documentos_se_renderizan(): void
+    {
+        foreach ([
+            \App\Filament\Widgets\CrmStatsOverview::class,
+            \App\Filament\Widgets\RankingAsesoresWidget::class,
+            \App\Filament\Widgets\ActividadAnualChart::class,
+        ] as $widget) {
+            Livewire::test($widget)->assertSuccessful();
+        }
+
+        Livewire::test(\App\Filament\Pages\PanelAsesores::class)->assertSuccessful();
+    }
+
+    public function test_los_widgets_del_asesor_se_renderizan(): void
+    {
+        $asesor = User::factory()->create(['activo' => true]);
+        $asesor->assignRole('asesor');
+        $this->actingAs($asesor);
+
+        Livewire::test(\App\Filament\Widgets\AsesorStatsOverview::class)->assertSuccessful();
+        Livewire::test(\App\Filament\Widgets\AsesorProspectosWidget::class)->assertSuccessful();
     }
 }

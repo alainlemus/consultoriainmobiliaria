@@ -60,14 +60,10 @@ class AdminPanelProvider extends PanelProvider
                 Widgets\AccountWidget::class,
                 \App\Filament\Widgets\ProspectosPendientesCierreWidget::class,
                 \App\Filament\Widgets\CrmStatsOverview::class,
-                \App\Filament\Widgets\ExpedientesAnualesChart::class,
-                \App\Filament\Widgets\KpisMensualesWidget::class,
-                \App\Filament\Widgets\FunnelEtapasWidget::class,
-                \App\Filament\Widgets\ExpedientesSinMovimientoWidget::class,
+                \App\Filament\Widgets\ActividadAnualChart::class,
                 \App\Filament\Widgets\RankingAsesoresWidget::class,
                 \App\Filament\Widgets\AsesorStatsOverview::class,
                 \App\Filament\Widgets\AsesorProspectosWidget::class,
-                \App\Filament\Widgets\AsesorExpedientesWidget::class,
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),

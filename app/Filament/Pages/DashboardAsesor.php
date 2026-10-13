@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Widgets\AsesorExpedientesWidget;
 use App\Filament\Widgets\AsesorProspectosWidget;
 use App\Filament\Widgets\AsesorStatsOverview;
 use Filament\Pages\Dashboard as BaseDashboard;
@@ -30,7 +29,6 @@ class DashboardAsesor extends BaseDashboard
         return [
             AsesorStatsOverview::class,
             AsesorProspectosWidget::class,
-            AsesorExpedientesWidget::class,
         ];
     }
 

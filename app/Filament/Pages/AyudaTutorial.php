@@ -48,16 +48,16 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('kpi1')
                             ->label('Indicadores principales')
                             ->icon('heroicon-o-arrow-trending-up')
-                            ->state('Al ingresar verás 4 tarjetas: Expedientes activos, Prospectos nuevos, Comisiones pendientes y Total recaudado. Estos números se actualizan en tiempo real.'),
+                            ->state('Al ingresar verás 5 tarjetas: Prospectos del mes, Prospectos nuevos, Sin documentos, Documentos del mes y Por capturar. Se actualizan en tiempo real.'),
                         TextEntry::make('kpi2')
                             ->label('Tabla de asesores')
                             ->icon('heroicon-o-trophy')
-                            ->state('La sección "Rendimiento de Asesores" muestra un ranking con expedientes y comisiones de cada asesor. Úsala para identificar a los más productivos.'),
+                            ->state('La tabla "Ranking de Asesores" muestra, por asesor, los prospectos y documentos del mes. Úsala para ver quién está registrando y subiendo más.'),
                         TextEntry::make('kpi3')
-                            ->label('Expedientes sin movimiento')
+                            ->label('Prospectos y documentos por mes')
                             ->icon('heroicon-o-exclamation-triangle')
                             ->columnSpanFull()
-                            ->state('El widget inferior alerta sobre expedientes con más de 30 días sin actualización. Dales seguimiento para no perder trámites.'),
+                            ->state('La gráfica de barras compara, mes a mes, los prospectos registrados y los documentos subidos desde la app.'),
                     ]),
 
                 Section::make('Gestión de Usuarios')
@@ -82,7 +82,7 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('u4')
                             ->label('Datos bancarios')
                             ->icon('heroicon-o-building-library')
-                            ->state('Los campos Banco y CLABE los llena el asesor desde su app. Los puedes consultar aquí para el pago de comisiones.'),
+                            ->state('Las comisiones están desactivadas por ahora; el banco y la CLABE del asesor ya no se piden en la app.'),
                     ]),
 
                 Section::make('Prospectos')
@@ -103,7 +103,7 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('p3')
                             ->label('Estados del prospecto')
                             ->icon('heroicon-o-arrow-path')
-                            ->state('Nuevo → Contactado → Calificado → Convertido (al abrir expediente) o Descartado. Los prospectos convertidos desaparecen de la lista principal.'),
+                            ->state('Nuevo → Contactado → Calificado → Convertido o Descartado. Un prospecto con documentos se sigue viendo en la lista: el expediente se crea solo al subir el primer documento.'),
                         TextEntry::make('p4')
                             ->label('Eliminar prospectos')
                             ->icon('heroicon-o-trash')
@@ -120,46 +120,24 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('e1')
                             ->label('Folio automático')
                             ->icon('heroicon-o-hashtag')
-                            ->state('Al crear un expediente se genera automáticamente el folio con formato EXP-2026-0001. No es necesario asignarlo manualmente.'),
+                            ->state('El expediente se crea solo cuando el asesor sube el primer documento de un prospecto desde la app, con folio EXP-2026-0001. También puedes crearlo a mano desde el panel.'),
                         TextEntry::make('e2')
-                            ->label('Estados del expediente')
+                            ->label('Documentos por capturar')
                             ->icon('heroicon-o-arrow-path')
-                            ->state('En proceso → Documentación → Autorizado → Escrituración → Cerrado. Solo cuando está Cerrado se activan las comisiones para el asesor.'),
+                            ->state('En la lista, la columna "Por capturar" cuenta los documentos subidos desde la app que aún no capturas. Ábrelos, captura sus datos y márcalos como Capturado; el número del menú baja solo.'),
                         TextEntry::make('e3')
                             ->label('Documentos')
                             ->icon('heroicon-o-paper-clip')
-                            ->state('Cada expediente tiene su gestor de documentos. Puedes subir y ver documentos desde el panel. Los documentos subidos por la app también aparecen aquí.'),
+                            ->state('Cada expediente tiene su gestor de documentos. Los documentos subidos por la app llegan aquí; el sistema intenta leer los PDFs para prellenar los datos del acreditado.'),
                         TextEntry::make('e4')
                             ->label('Honorarios')
                             ->icon('heroicon-o-currency-dollar')
-                            ->state('En la pestaña "Trámite" configura el porcentaje y monto de honorarios. Estos datos se usan para calcular las comisiones del asesor.'),
+                            ->state('En la pestaña "Trámite" configura el porcentaje y monto de honorarios.'),
                         TextEntry::make('e5')
                             ->label('Contratos')
                             ->icon('heroicon-o-document-text')
                             ->columnSpanFull()
                             ->state('Desde "Contratos" puedes generar PDF de: Contrato de Servicios, Convenio de Honorarios y Carta Mandato. Se llenan automáticamente con los datos del expediente.'),
-                    ]),
-
-                Section::make('Comisiones')
-                    ->description('Control de pagos a asesores')
-                    ->icon('heroicon-o-banknotes')
-                    ->collapsible()
-                    ->collapsed()
-                    ->columns(2)
-                    ->schema([
-                        TextEntry::make('c1')
-                            ->label('¿Cuándo se genera una comisión?')
-                            ->icon('heroicon-o-plus-circle')
-                            ->state('Las comisiones se crean manualmente desde el panel al cerrar un expediente. Ve a Comisiones → Nueva comisión y asocia el expediente.'),
-                        TextEntry::make('c2')
-                            ->label('Estados de comisión')
-                            ->icon('heroicon-o-arrow-path')
-                            ->state('Pendiente → el asesor la ve en su app. Aprobada → lista para pagar. Pagada → el asesor la ve en su historial. Rechazada → no aparece en la app.'),
-                        TextEntry::make('c3')
-                            ->label('Datos de pago')
-                            ->icon('heroicon-o-credit-card')
-                            ->columnSpanFull()
-                            ->state('Consulta el Banco y CLABE del asesor en su perfil antes de transferir. Después marca la comisión como Pagada.'),
                     ]),
 
                 Section::make('Mapa de Visitas')
@@ -403,7 +381,7 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('i2')
                             ->label('Completa tu perfil')
                             ->icon('heroicon-o-user-circle')
-                            ->state('Ve a la pestaña Perfil y llena tu información: teléfono, banco y CLABE interbancaria. Estos datos son necesarios para recibir el pago de tus comisiones.'),
+                            ->state('Ve a la pestaña Perfil y revisa tu información de contacto.'),
                         TextEntry::make('i3')
                             ->label('Sube tu foto de perfil')
                             ->icon('heroicon-o-camera')
@@ -431,34 +409,34 @@ class AyudaTutorial extends Page implements HasInfolists
                             ->icon('heroicon-o-arrow-path')
                             ->state('Avanza el estado: Nuevo → Contactado → Calificado → Convertido. Mantén el seguimiento actualizado para que el admin vea tu progreso.'),
                         TextEntry::make('pr4')
-                            ->label('Abrir expediente')
+                            ->label('Expediente automático')
                             ->icon('heroicon-o-folder-plus')
-                            ->state('Cuando el prospecto esté listo, toca "Abrir Expediente" en su tarjeta. Quedará convertido en expediente activo y desaparecerá de la lista de prospectos.'),
+                            ->state('Ya no hay que abrir expedientes: al subir el primer documento del prospecto, el expediente se crea solo y el prospecto sigue en tu lista.'),
                     ]),
 
-                Section::make('Expedientes')
-                    ->description('Gestión de trámites de crédito')
+                Section::make('Documentos')
+                    ->description('Escanea y sube los documentos de tus prospectos')
                     ->icon('heroicon-o-folder-open')
                     ->collapsible()
                     ->collapsed()
                     ->columns(2)
                     ->schema([
                         TextEntry::make('ex1')
-                            ->label('Ver mis expedientes')
+                            ->label('Ver mis prospectos')
                             ->icon('heroicon-o-list-bullet')
-                            ->state('En la pestaña Expedientes verás solo los asignados a ti. Puedes filtrar por estado o buscar por nombre del cliente.'),
+                            ->state('Los prospectos aparecen en la pestaña Prospectos. Cada uno muestra cuántos documentos tiene (📎).'),
                         TextEntry::make('ex2')
                             ->label('Subir documentos')
                             ->icon('heroicon-o-arrow-up-tray')
-                            ->state('Entra al expediente → Documentos → selecciona el tipo (INE, CURP, comprobante, etc.) y toma la foto o elige de tu galería.'),
+                            ->state('Entra al prospecto → Documentos → "Escanear o subir documento". Elige el tipo (INE, CURP, comprobante, etc.) y escanea o selecciona un PDF o foto.'),
                         TextEntry::make('ex3')
                             ->label('Ver documentos')
                             ->icon('heroicon-o-eye')
-                            ->state('Toca cualquier documento para abrirlo directamente en tu navegador. Los PDFs se muestran en línea sin necesidad de descargarlos.'),
+                            ->state('Toca cualquier documento para abrirlo en tu navegador, o 🗑️ para eliminarlo.'),
                         TextEntry::make('ex4')
-                            ->label('Estado del trámite')
+                            ->label('Revisión')
                             ->icon('heroicon-o-arrow-path')
-                            ->state('El admin actualiza el estado: En proceso → Documentación → Autorizado → Escrituración → Cerrado. Al cerrarse, verás tu comisión generada.'),
+                            ->state('Tu administrador captura los documentos en el panel. Tú solo registras prospectos y subes sus documentos.'),
                     ]),
 
                 Section::make('Mapa de Visitas')
@@ -503,31 +481,6 @@ class AyudaTutorial extends Page implements HasInfolists
                             ->state('La sección Anuncios del panel muestra únicamente los que tú colocaste, con filtros por tipo y estado.'),
                     ]),
 
-                Section::make('Mis Comisiones')
-                    ->description('Consulta tus ingresos')
-                    ->icon('heroicon-o-banknotes')
-                    ->collapsible()
-                    ->collapsed()
-                    ->columns(2)
-                    ->schema([
-                        TextEntry::make('co1')
-                            ->label('¿Cuándo aparece una comisión?')
-                            ->icon('heroicon-o-clock')
-                            ->state('Las comisiones aparecen cuando el admin las registra al cerrar un expediente. Verás el monto, fecha y expediente asociado.'),
-                        TextEntry::make('co2')
-                            ->label('Estados de tu comisión')
-                            ->icon('heroicon-o-arrow-path')
-                            ->state('Pendiente → generada, no pagada aún. Aprobada → lista para transferencia. Pagada → ya depositada en tu cuenta.'),
-                        TextEntry::make('co3')
-                            ->label('¿Cómo recibo el pago?')
-                            ->icon('heroicon-o-building-library')
-                            ->state('El pago se hace vía transferencia a la CLABE de tu perfil. Verifica que esté correcta antes de que se cierre tu primer expediente.'),
-                        TextEntry::make('co4')
-                            ->label('Resumen mensual')
-                            ->icon('heroicon-o-chart-pie')
-                            ->state('Al inicio de Comisiones verás: total pendiente, total pagado y número de expedientes cerrados en el mes.'),
-                    ]),
-
                 Section::make('Mi Perfil')
                     ->description('Gestiona tu información personal')
                     ->icon('heroicon-o-user-circle')
@@ -538,7 +491,7 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('pf1')
                             ->label('Editar información')
                             ->icon('heroicon-o-pencil')
-                            ->state('En la pestaña Perfil toca cualquier campo para editarlo: nombre, teléfono, banco y CLABE.'),
+                            ->state('En la pestaña Perfil toca cualquier campo para editarlo: nombre y teléfono.'),
                         TextEntry::make('pf2')
                             ->label('Cambiar foto de perfil')
                             ->icon('heroicon-o-camera')

@@ -2,11 +2,9 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Expediente;
 use App\Models\User;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Auth;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -23,46 +21,45 @@ class RankingAsesoresWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
+        $contactosDelMes  = fn (Builder $q) => $q->whereYear('contactos.created_at', now()->year)->whereMonth('contactos.created_at', now()->month);
+        $documentosDelMes = fn (Builder $q) => $q->whereNotNull('documentos_expediente.ruta_archivo')
+            ->whereYear('documentos_expediente.created_at', now()->year)
+            ->whereMonth('documentos_expediente.created_at', now()->month);
+
         return $table
             ->query(
                 User::query()
                     ->role('asesor')
                     ->where('activo', true)
                     ->withCount([
-                        'expedientes as activos' => fn (Builder $q) =>
-                            $q->whereIn('estado', ['en_proceso', 'aprobado', 'firmado']),
-                        'expedientes as cerrados_mes' => fn (Builder $q) =>
-                            $q->where('estado', 'cerrado')
-                              ->whereMonth('fecha_cierre', now()->month)
-                              ->whereYear('fecha_cierre', now()->year),
+                        'contactos as prospectos_mes' => $contactosDelMes,
+                        'contactos as prospectos_total',
+                        'documentos as documentos_mes' => $documentosDelMes,
                     ])
-                    ->withSum([
-                        'expedientes as honorarios_mes' => fn (Builder $q) =>
-                            $q->where('estado', 'cerrado')
-                              ->whereMonth('fecha_cierre', now()->month)
-                              ->whereYear('fecha_cierre', now()->year),
-                    ], 'honorarios_monto')
-                    ->orderByDesc('cerrados_mes')
+                    ->orderByDesc('prospectos_mes')
+                    ->orderByDesc('documentos_mes')
             )
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Asesor'),
 
-                Tables\Columns\TextColumn::make('activos')
-                    ->label('Activos')
+                Tables\Columns\TextColumn::make('prospectos_mes')
+                    ->label('Prospectos del mes')
                     ->alignCenter()
                     ->badge()
                     ->color('primary'),
 
-                Tables\Columns\TextColumn::make('cerrados_mes')
-                    ->label('Cerrados este mes')
+                Tables\Columns\TextColumn::make('documentos_mes')
+                    ->label('Documentos del mes')
                     ->alignCenter()
                     ->badge()
                     ->color('success'),
 
-                Tables\Columns\TextColumn::make('honorarios_mes')
-                    ->label('Honorarios mes')
-                    ->formatStateUsing(fn ($state) => '$' . number_format((float) $state, 0, '.', ',')),
+                Tables\Columns\TextColumn::make('prospectos_total')
+                    ->label('Prospectos en total')
+                    ->alignCenter()
+                    ->badge()
+                    ->color('gray'),
             ])
             ->paginated(false);
     }

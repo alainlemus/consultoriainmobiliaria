@@ -6,7 +6,6 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\ContactoController;
 use App\Http\Controllers\PropiedadController;
-use App\Http\Controllers\KpisReporteController;
 use App\Http\Controllers\ContratosController;
 use App\Http\Controllers\ContratoGeneradoWordController;
 use App\Http\Controllers\TestimonioPublicoController;
@@ -65,10 +64,6 @@ Route::view('/eliminacion-de-datos', 'pages.eliminacion-datos')->name('datos.eli
 Route::view('/descargar-app', 'pages.descargar-app')->name('descargar.app');
 
 // Reportes KPIs (solo super_admin — protegido en el controller)
-Route::middleware(['web', 'auth'])->prefix('admin/reportes/kpis')->name('kpis.reporte.')->group(function () {
-    Route::get('/excel', [KpisReporteController::class, 'excel'])->name('excel');
-    Route::get('/pdf',   [KpisReporteController::class, 'pdf'])->name('pdf');
-});
 
 // Contratos PDF por expediente
 Route::middleware(['web', 'auth'])->prefix('admin/contratos')->name('contratos.')->group(function () {

@@ -3,11 +3,9 @@
 namespace Tests\Feature;
 
 use App\Mail\ReporteGestion;
-use App\Models\Comision;
 use App\Models\Contacto;
 use App\Models\EtapaTramite;
 use App\Models\Expediente;
-use App\Models\SeguimientoExpediente;
 use App\Models\TipoTramite;
 use App\Models\User;
 use App\Notifications\ReporteGestionEnviado;
@@ -216,101 +214,42 @@ class EnviarReporteGestionTest extends TestCase
     public function test_service_genera_estructura_completa(): void
     {
         $service = app(ReporteGestionService::class);
-        $desde   = Carbon::now()->startOfDay();
-        $hasta   = Carbon::now()->endOfDay();
-        $datos   = $service->generar($desde, $hasta, 'diario');
+        $datos   = $service->generar(Carbon::now()->startOfDay(), Carbon::now()->endOfDay(), 'diario');
 
-        $this->assertArrayHasKey('tipo', $datos);
-        $this->assertArrayHasKey('desde', $datos);
-        $this->assertArrayHasKey('hasta', $datos);
-        $this->assertArrayHasKey('expedientes', $datos);
-        $this->assertArrayHasKey('prospectos', $datos);
-        $this->assertArrayHasKey('comisiones', $datos);
-        $this->assertArrayHasKey('seguimientos', $datos);
-        $this->assertArrayHasKey('sin_movimiento', $datos);
-        $this->assertArrayHasKey('documentos', $datos);
-        $this->assertArrayHasKey('por_asesor', $datos);
+        foreach (['tipo', 'desde', 'hasta', 'prospectos', 'documentos', 'por_asesor'] as $llave) {
+            $this->assertArrayHasKey($llave, $datos);
+        }
     }
 
-    public function test_service_cuenta_expedientes_del_periodo(): void
+    public function test_service_cuenta_prospectos_y_documentos_del_periodo(): void
     {
-        $service = app(ReporteGestionService::class);
+        $service  = app(ReporteGestionService::class);
+        $conDocs  = Contacto::create(['nombre' => 'Con documentos', 'asesor_id' => $this->asesor->id]);
+        Contacto::create(['nombre' => 'Sin documentos', 'asesor_id' => $this->asesor->id]);
 
-        // Crear 2 expedientes hoy
-        $this->crearExpediente();
-        $this->crearExpediente(['acreditado_nombre' => 'Cliente Dos']);
+        $exp = Expediente::paraContacto($conDocs, $this->asesor);
+        $exp->documentos()->create(['tipo' => 'INE', 'nombre' => 'INE', 'seccion' => 'acreditado', 'estado' => 'recibido', 'ruta_archivo' => 'x/ine.pdf']);
 
-        $desde = Carbon::now()->startOfDay();
-        $hasta = Carbon::now()->endOfDay();
-        $datos = $service->generar($desde, $hasta, 'diario');
+        $datos = $service->generar(Carbon::now()->startOfDay(), Carbon::now()->endOfDay(), 'diario');
 
-        $this->assertEquals(2, $datos['expedientes']['abiertos_periodo']);
-    }
-
-    public function test_service_cuenta_expedientes_cerrados_del_periodo(): void
-    {
-        $service = app(ReporteGestionService::class);
-
-        $exp = $this->crearExpediente(['honorarios_monto' => 10000]);
-        $exp->update(['estado' => 'cerrado']);
-
-        $desde = Carbon::now()->startOfDay();
-        $hasta = Carbon::now()->endOfDay();
-        $datos = $service->generar($desde, $hasta, 'diario');
-
-        $this->assertEquals(1, $datos['expedientes']['cerrados_periodo']);
-    }
-
-    public function test_service_cuenta_comisiones_generadas(): void
-    {
-        $service = app(ReporteGestionService::class);
-
-        $exp = $this->crearExpediente();
-        Comision::create([
-            'expediente_id'       => $exp->id,
-            'asesor_id'           => $this->asesor->id,
-            'monto_base'          => 25000,
-            'porcentaje_comision' => 8,
-            'monto_comision'      => 25000,
-            'estado'              => 'pendiente',
-            'fecha_generacion'    => now()->toDateString(),
-        ]);
-
-        $desde = Carbon::now()->startOfDay();
-        $hasta = Carbon::now()->endOfDay();
-        $datos = $service->generar($desde, $hasta, 'diario');
-
-        $this->assertEquals(1, $datos['comisiones']['generadas_count']);
-        $this->assertEquals(25000, $datos['comisiones']['generadas_monto']);
-    }
-
-    public function test_service_detecta_expedientes_sin_movimiento(): void
-    {
-        $service = app(ReporteGestionService::class);
-
-        // Expediente creado hace 10 días sin seguimiento
-        Carbon::setTestNow(Carbon::now()->subDays(10));
-        $exp = $this->crearExpediente();
-        Carbon::setTestNow();
-
-        $desde = Carbon::now()->startOfDay();
-        $hasta = Carbon::now()->endOfDay();
-        $datos = $service->generar($desde, $hasta, 'diario');
-
-        $this->assertGreaterThanOrEqual(1, $datos['sin_movimiento']['total']);
+        $this->assertEquals(2, $datos['prospectos']['nuevos_periodo']);
+        $this->assertEquals(1, $datos['prospectos']['sin_documentos']);
+        $this->assertEquals(1, $datos['documentos']['subidos_periodo']);
+        $this->assertEquals(1, $datos['documentos']['por_capturar']);
     }
 
     public function test_service_incluye_actividad_por_asesor(): void
     {
-        $service = app(ReporteGestionService::class);
+        $service  = app(ReporteGestionService::class);
+        $contacto = Contacto::create(['nombre' => 'Ana', 'asesor_id' => $this->asesor->id]);
+        $exp = Expediente::paraContacto($contacto, $this->asesor);
+        $exp->documentos()->create(['tipo' => 'CURP', 'nombre' => 'CURP', 'seccion' => 'acreditado', 'estado' => 'recibido', 'ruta_archivo' => 'x/curp.pdf']);
 
-        $this->crearExpediente();
-
-        $desde = Carbon::now()->startOfDay();
-        $hasta = Carbon::now()->endOfDay();
-        $datos = $service->generar($desde, $hasta, 'diario');
+        $datos = $service->generar(Carbon::now()->startOfDay(), Carbon::now()->endOfDay(), 'diario');
 
         $this->assertNotEmpty($datos['por_asesor']);
         $this->assertEquals($this->asesor->name, $datos['por_asesor'][0]['asesor']);
+        $this->assertEquals(1, $datos['por_asesor'][0]['prospectos']);
+        $this->assertEquals(1, $datos['por_asesor'][0]['documentos']);
     }
 }
