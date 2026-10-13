@@ -96,6 +96,16 @@ class DocumentosRelationManager extends RelationManager
                     ->searchable()
                     ->weight('medium'),
 
+                // La nota es lo que identifica rápido cada documento (ej. "INE del dueño de la casa").
+                Tables\Columns\TextColumn::make('notas')
+                    ->label('Nota')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->wrap()
+                    ->limit(80)
+                    ->color('warning')
+                    ->weight('medium'),
+
                 Tables\Columns\BadgeColumn::make('estado')
                     ->label('Estado')
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -129,11 +139,6 @@ class DocumentosRelationManager extends RelationManager
                     ->trueColor('primary')
                     ->falseColor('gray')
                     ->tooltip(fn ($record) => $record->ruta_archivo ? 'Archivo adjunto' : 'Sin archivo'),
-
-                Tables\Columns\TextColumn::make('notas')
-                    ->label('Notas')
-                    ->placeholder('—')
-                    ->limit(35),
             ])
             ->defaultSort('categoria')
             ->filters([

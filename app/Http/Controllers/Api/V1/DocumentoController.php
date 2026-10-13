@@ -65,20 +65,20 @@ class DocumentoController extends Controller
                 $im->clear();
 
                 $ext    = 'jpg';
-                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
+                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '_' . Str::lower(Str::random(5)) . '.' . $ext;
                 $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
 
                 Storage::disk(self::DISK)->put($ruta, $jpegContent);
             } catch (\Throwable) {
                 // Si falla la conversión, guardar el original
                 $ext    = $archivo->getClientOriginalExtension() ?: 'heic';
-                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
+                $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '_' . Str::lower(Str::random(5)) . '.' . $ext;
                 $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
                 Storage::disk(self::DISK)->putFileAs("expedientes/{$expedienteId}/docs", $archivo, $nombre);
             }
         } else {
             $ext    = $archivo->getClientOriginalExtension();
-            $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '.' . $ext;
+            $nombre = Str::slug($request->tipo_documento) . '_' . now()->format('YmdHis') . '_' . Str::lower(Str::random(5)) . '.' . $ext;
             $ruta   = "expedientes/{$expedienteId}/docs/{$nombre}";
             Storage::disk(self::DISK)->putFileAs("expedientes/{$expedienteId}/docs", $archivo, $nombre);
         }
@@ -122,9 +122,9 @@ class DocumentoController extends Controller
 
         $seccion = $request->input('seccion');
 
-        // Sin sección (app actual): cada subida es un documento nuevo; si ya hay uno del
-        // mismo tipo se guarda como "INE (2)", "INE (3)"… Con sección (checklist del panel
-        // y apps anteriores): reemplaza el documento de ese tipo y sección.
+        // Sin sección (app actual): cada subida es un documento nuevo; si ya hay uno del mismo
+        // tipo se guarda como "INE (2)", "INE (3)"… y la nota los distingue (ej. "INE del dueño").
+        // Con sección (checklist del panel y apps anteriores): reemplaza el de ese tipo y sección.
         if (! $seccion) {
             $seccion = 'acreditado';
             $tipo    = $request->tipo_documento;

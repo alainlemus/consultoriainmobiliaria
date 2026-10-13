@@ -128,4 +128,25 @@ class DocumentosExpedienteTest extends TestCase
         $this->assertNull($doc->fresh()->capturado_at);
         $this->assertSame('recibido', $doc->fresh()->estado);
     }
+
+    public function test_varios_del_mismo_tipo_se_distinguen_por_la_nota_y_no_se_pisan_los_archivos(): void
+    {
+        Storage::fake('local');
+        Queue::fake();
+        $exp = $this->expediente($this->asesor());
+
+        // Mismo tipo y mismo segundo: cada archivo conserva su propia ruta
+        foreach ([null, 'INE del dueño de la casa', 'INE del cónyuge'] as $nota) {
+            $this->postJson("/api/v1/expedientes/{$exp->id}/documentos", [
+                'archivo'        => UploadedFile::fake()->create('ine.pdf', 100, 'application/pdf'),
+                'tipo_documento' => 'INE',
+                'notas'          => $nota,
+            ])->assertCreated();
+        }
+
+        $docs = $exp->documentos()->orderBy('id')->get();
+        $this->assertSame(['INE', 'INE (2)', 'INE (3)'], $docs->pluck('tipo')->all());
+        $this->assertSame([null, 'INE del dueño de la casa', 'INE del cónyuge'], $docs->pluck('notas')->all());
+        $this->assertCount(3, $docs->pluck('ruta_archivo')->unique());
+    }
 }
