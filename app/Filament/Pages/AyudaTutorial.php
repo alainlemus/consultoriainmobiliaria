@@ -128,7 +128,7 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('e3')
                             ->label('Documentos')
                             ->icon('heroicon-o-paper-clip')
-                            ->state('Cada expediente tiene su gestor de documentos. Los documentos subidos por la app llegan aquí; el sistema intenta leer los PDFs para prellenar los datos del acreditado.'),
+                            ->state('Cada expediente abre en su pestaña Documentos: ahí están los que subió el asesor desde la app, con la nota que los identifica (ej. "INE del dueño de la casa"). Solo un administrador puede Validar o Rechazar (con motivo) cada documento; los asesores ven el resultado. El sistema intenta leer los PDFs para prellenar los datos del acreditado.'),
                         TextEntry::make('e4')
                             ->label('Honorarios')
                             ->icon('heroicon-o-currency-dollar')
@@ -428,7 +428,7 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('ex2')
                             ->label('Subir documentos')
                             ->icon('heroicon-o-arrow-up-tray')
-                            ->state('Entra al expediente → "Escanear o subir documento". Elige el tipo (INE, CURP, comprobante, etc.) y escanea o selecciona un PDF o foto.'),
+                            ->state('Entra al expediente → "Escanear o subir documento". Elige el tipo y lee el recuadro de requisitos (vigencia, últimos 3 talones, no mayor a 3 meses…). Escribe una nota para identificarlo si subes varios del mismo tipo y confirma el aviso antes de subir.'),
                         TextEntry::make('ex3')
                             ->label('Ver documentos')
                             ->icon('heroicon-o-eye')
@@ -436,7 +436,7 @@ class AyudaTutorial extends Page implements HasInfolists
                         TextEntry::make('ex4')
                             ->label('Revisión')
                             ->icon('heroicon-o-arrow-path')
-                            ->state('Tu administrador captura los documentos en el panel. Tú solo registras prospectos y subes sus documentos.'),
+                            ->state('Cada documento muestra En revisión, Validado o Rechazado (con el motivo). Solo un administrador valida o rechaza; si te rechazan uno, usa Reemplazar para subir el correcto.'),
                     ]),
 
                 Section::make('Mapa de Visitas')
