@@ -793,7 +793,8 @@ public static function canDelete(Model $record): bool
                 Tables\Columns\TextColumn::make('tipoTramite.nombre')
                     ->label('Tipo')
                     ->badge()
-                    ->color('primary'),
+                    ->color('primary')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('documentos_count')
                     ->label('Documentos')
                     ->counts(['documentos' => fn (Builder $q) => $q->whereNotNull('ruta_archivo')])
@@ -818,17 +819,18 @@ public static function canDelete(Model $record): bool
                     ->label('Monto crédito')
                     ->money('MXN')
                     ->placeholder('Sin monto de crédito')
-                    ->toggleable()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->tooltip('Monto del crédito aprobado por la institución'),
                 Tables\Columns\TextColumn::make('honorarios_monto')
                     ->label('Honorarios')
                     ->money('MXN')
                     ->placeholder('Sin porcentaje de honorarios asignado')
-                    ->toggleable()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->visible(fn () => Auth::user()?->hasRole('super_admin'))
                     ->tooltip('Honorarios pactados con el cliente'),
                 Tables\Columns\IconColumn::make('honorarios_pagados')
                     ->label('Cobrado')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->boolean()
                     ->alignCenter()
                     ->visible(fn () => Auth::user()?->hasRole('super_admin'))

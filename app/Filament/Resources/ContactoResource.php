@@ -397,11 +397,11 @@ class ContactoResource extends Resource
                     ->alignCenter()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('email')
-                    ->label('Correo')->searchable()->toggleable(),
+                    ->label('Correo')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('curp')
                     ->label('CURP')
                     ->searchable()
-                    ->toggleable()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->fontFamily('mono')
                     ->placeholder('Sin CURP')
                     ->copyable()
@@ -453,15 +453,15 @@ class ContactoResource extends Resource
                         default            => $state,
                     }),
                 Tables\Columns\TextColumn::make('estado_ubicacion')
-                    ->label('Estado')
+                    ->label('Entidad')
                     ->placeholder('—')
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('simulador_screenshot')
                     ->label('Captura')
                     ->formatStateUsing(fn ($state) => $state ? '📸 Sí' : '—')
                     ->placeholder('—')
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('asesor.name')
                     ->label('Asesor')
                     ->placeholder('Sin asesor asignado')
@@ -603,7 +603,18 @@ class ContactoResource extends Resource
                             ->send();
                     })
                     ->visible(fn (Contacto $record) => Auth::user()?->hasRole('super_admin')
-                        && ! in_array($record->estado_prospecto, ['convertido', 'descartado'])),
+                        && ! in_array($record->estado_prospecto, ['convertido', 'descartado'])
+                        && ! $record->expedientes()->exists()),
+
+                // El expediente se crea solo al subir el primer documento desde la app.
+                \Filament\Actions\Action::make('ver_expediente')
+                    ->label('Ver documentos')
+                    ->icon('heroicon-o-folder-open')
+                    ->color('success')
+                    ->url(fn (Contacto $record) => ExpedienteResource::getUrl('edit', ['record' => $record->expedientes()->latest()->first()]))
+                    ->visible(fn (Contacto $record) => Auth::user()?->can('ViewAny:Expediente') && $record->expedientes()->exists()),
+
+                \Filament\Actions\ActionGroup::make([
 
                 \Filament\Actions\Action::make('descartar')
                     ->label('No cerró')
@@ -614,14 +625,15 @@ class ContactoResource extends Resource
                     ->modalDescription('El prospecto regresará a estado "Descartado".')
                     ->action(fn (Contacto $record) => $record->update(['estado_prospecto' => 'descartado']))
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+                \Filament\Actions\DeleteAction::make()
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
+                ])->icon('heroicon-m-ellipsis-vertical')->tooltip('Más acciones'),
 
                 \Filament\Actions\EditAction::make()
                     ->visible(fn (Contacto $record) =>
                         Auth::user()?->hasRole('super_admin') ||
                         ! in_array($record->estado_prospecto, ['pendiente_cierre', 'contrato_firmado', 'convertido'])
                     ),
-                \Filament\Actions\DeleteAction::make()
-                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([

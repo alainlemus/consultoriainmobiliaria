@@ -31,6 +31,7 @@ class RankingAsesoresWidget extends BaseWidget
                 User::query()
                     ->role('asesor')
                     ->where('activo', true)
+                    ->has('contactos') // solo asesores con prospectos
                     ->withCount([
                         'contactos as prospectos_mes' => $contactosDelMes,
                         'contactos as prospectos_total',

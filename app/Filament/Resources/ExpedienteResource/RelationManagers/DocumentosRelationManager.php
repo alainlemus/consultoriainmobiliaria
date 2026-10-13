@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 class DocumentosRelationManager extends RelationManager
 {
     protected static string $relationship = 'documentos';
-    protected static ?string $title       = 'Checklist de documentos';
+    protected static ?string $title       = 'Documentos';
     protected static ?string $modelLabel  = 'documento';
 
     // Asesor puede ver y editar estado/notas/archivo, pero no crear ni eliminar
@@ -53,25 +53,9 @@ class DocumentosRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
-        // Determinar descripción contextual según etapa del expediente
-        $expediente  = $this->getOwnerRecord();
-        $etapaOrden  = $expediente?->etapa?->orden ?? 0;
-        $etapaNombre = $expediente?->etapa?->nombre ?? '';
-
-        // Categorías relevantes por etapa para el filtro sugerido
-        $descripcion = match (true) {
-            $etapaOrden === 1 => 'Etapa 1 — Sube los documentos del acreditado, vendedor y vivienda para avanzar.',
-            $etapaOrden === 2 => 'Etapa 2 — Verifica que todos los documentos requeridos estén recibidos.',
-            $etapaOrden === 3 => 'Etapa 3 — Agrega los documentos de catastro y el preavalúo.',
-            $etapaOrden === 4 => 'Etapa 4 — Sube los documentos de la carpeta SOFOM para enviar a la unidad de valuación.',
-            $etapaOrden === 5 => 'Etapa 5 — El expediente completo está en notaría. Agrega el avalúo cerrado e instrucción notarial.',
-            $etapaOrden >= 6 => 'Etapa 6+ — Documentos para firma y guarda valores.',
-            default           => 'Marca cada documento conforme sea recibido.',
-        };
-
         return $table
             ->heading('Documentos del expediente')
-            ->description($descripcion)
+            ->description('Documentos subidos desde la app y el panel. Márcalos como capturados al terminar.')
             ->columns([
                 Tables\Columns\TextColumn::make('seccion')
                     ->label('Sección')
@@ -92,6 +76,7 @@ class DocumentosRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('categoria')
                     ->label('Carpeta')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->badge()
                     ->color(fn (?string $state) => match (true) {
                         str_starts_with($state ?? '', 'sofom/') => 'warning',
@@ -104,7 +89,6 @@ class DocumentosRelationManager extends RelationManager
                     })
                     ->formatStateUsing(fn (?string $state) => $state ? strtoupper($state) : '—')
                     ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: false)
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('nombre')
@@ -114,6 +98,7 @@ class DocumentosRelationManager extends RelationManager
 
                 Tables\Columns\BadgeColumn::make('estado')
                     ->label('Estado')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->colors([
                         'danger'  => 'pendiente',
                         'success' => 'recibido',
@@ -417,31 +402,6 @@ class DocumentosRelationManager extends RelationManager
                     ->action(fn ($record) => $record->update(['capturado_at' => null]))
                     ->requiresConfirmation(false),
 
-                // Acciones rápidas de estado (un clic, sin modal)
-                \Filament\Actions\Action::make('marcar_recibido')
-                    ->label('Recibido')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->visible(fn ($record) => $record->estado !== 'recibido')
-                    ->action(fn ($record) => $record->update(['estado' => 'recibido']))
-                    ->requiresConfirmation(false),
-
-                \Filament\Actions\Action::make('marcar_no_aplica')
-                    ->label('No aplica')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('gray')
-                    ->visible(fn ($record) => $record->estado !== 'no_aplica')
-                    ->action(fn ($record) => $record->update(['estado' => 'no_aplica']))
-                    ->requiresConfirmation(false),
-
-                \Filament\Actions\Action::make('marcar_pendiente')
-                    ->label('Pendiente')
-                    ->icon('heroicon-o-arrow-uturn-left')
-                    ->color('danger')
-                    ->visible(fn ($record) => $record->estado !== 'pendiente')
-                    ->action(fn ($record) => $record->update(['estado' => 'pendiente']))
-                    ->requiresConfirmation(false),
-
                 \Filament\Actions\Action::make('ver_archivo')
                     ->label('Ver')
                     ->icon('heroicon-o-eye')
@@ -490,6 +450,32 @@ class DocumentosRelationManager extends RelationManager
                         return new \Illuminate\Support\HtmlString($html);
                     }),
 
+                \Filament\Actions\ActionGroup::make([
+                // Acciones rápidas de estado (un clic, sin modal)
+                \Filament\Actions\Action::make('marcar_recibido')
+                    ->label('Recibido')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->estado !== 'recibido')
+                    ->action(fn ($record) => $record->update(['estado' => 'recibido']))
+                    ->requiresConfirmation(false),
+
+                \Filament\Actions\Action::make('marcar_no_aplica')
+                    ->label('No aplica')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('gray')
+                    ->visible(fn ($record) => $record->estado !== 'no_aplica')
+                    ->action(fn ($record) => $record->update(['estado' => 'no_aplica']))
+                    ->requiresConfirmation(false),
+
+                \Filament\Actions\Action::make('marcar_pendiente')
+                    ->label('Pendiente')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('danger')
+                    ->visible(fn ($record) => $record->estado !== 'pendiente')
+                    ->action(fn ($record) => $record->update(['estado' => 'pendiente']))
+                    ->requiresConfirmation(false),
+
                 // Editar notas y subir/reemplazar archivo
                 \Filament\Actions\EditAction::make()
                     ->label('Editar / Subir')
@@ -510,6 +496,7 @@ class DocumentosRelationManager extends RelationManager
                         $record->update($data);
                         return $record;
                     }),
+                ])->icon('heroicon-m-ellipsis-vertical')->tooltip('Más acciones'),
             ])
             ->bulkActions([
                 BulkAction::make('marcar_capturados')

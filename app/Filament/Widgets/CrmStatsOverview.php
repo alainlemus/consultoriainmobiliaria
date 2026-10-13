@@ -17,6 +17,11 @@ class CrmStatsOverview extends BaseWidget
         return auth()->check() && auth()->user()->hasRole('super_admin');
     }
 
+    protected function getColumns(): int
+    {
+        return 5;
+    }
+
     protected function getStats(): array
     {
         $data = Cache::remember('dashboard:crm_stats', 90, function () {

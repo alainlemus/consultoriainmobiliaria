@@ -39,7 +39,8 @@ class PanelAsesores extends Page implements HasTable
                 'documentos as total_documentos' => fn ($q) => $q->whereNotNull('documentos_expediente.ruta_archivo'),
                 'documentos as documentos_por_capturar' => fn ($q) => $q->whereNotNull('documentos_expediente.ruta_archivo')
                     ->whereNull('documentos_expediente.capturado_at'),
-            ]);
+            ])
+            ->orderByDesc('total_prospectos');
     }
 
     protected function getTableColumns(): array

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -16,6 +17,11 @@ return new class extends Migration
         Schema::table('documentos_expediente', function (Blueprint $table) {
             $table->timestamp('capturado_at')->nullable()->after('ruta_archivo');
         });
+
+        // Lo subido antes de este cambio ya se trabajó: no cuenta como "por capturar".
+        DB::table('documentos_expediente')
+            ->whereNotNull('ruta_archivo')
+            ->update(['capturado_at' => DB::raw('created_at')]);
     }
 
     public function down(): void

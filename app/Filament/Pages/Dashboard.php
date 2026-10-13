@@ -39,8 +39,8 @@ class Dashboard extends BaseDashboard
     {
         return [
             AccountWidget::class,
-            ProspectosPendientesCierreWidget::class,
             CrmStatsOverview::class,
+            ProspectosPendientesCierreWidget::class,
             ActividadAnualChart::class,
             RankingAsesoresWidget::class,
         ];

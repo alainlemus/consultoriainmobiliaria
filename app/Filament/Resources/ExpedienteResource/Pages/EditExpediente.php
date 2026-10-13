@@ -7,6 +7,8 @@ use App\Mail\SolicitudTestimonio;
 use App\Models\TestimonioToken;
 use Filament\Actions;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Resources\Pages\Enums\ContentTabPosition;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\ActionSize;
@@ -76,6 +78,30 @@ class EditExpediente extends EditRecord
         );
     }
 
+    // Abre en la pestaña de documentos (el primer relation manager).
+    public ?string $activeRelationManager = '0';
+
+    // Documentos primero: es lo que el equipo revisa y captura; los datos van en la otra pestaña.
+    public function hasCombinedRelationManagerTabsWithContent(): bool
+    {
+        return true;
+    }
+
+    public function getContentTabLabel(): ?string
+    {
+        return 'Datos del expediente';
+    }
+
+    public function getContentTabIcon(): string
+    {
+        return 'heroicon-o-clipboard-document-list';
+    }
+
+    public function getContentTabPosition(): ?ContentTabPosition
+    {
+        return ContentTabPosition::After;
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -142,7 +168,8 @@ class EditExpediente extends EditRecord
                         ->send();
                 }),
 
-            // ── Contratos PDF ────────────────────────────────────────────────
+            // ── Contratos PDF (agrupados para no saturar el encabezado) ──────
+            ActionGroup::make([
             Action::make('contrato_servicios')
                 ->label('Contrato de Servicios')
                 ->icon('heroicon-o-document-text')
@@ -196,6 +223,10 @@ class EditExpediente extends EditRecord
                     route('contratos.carta_mandato', $this->record->id)
                 )),
 
+            ])->label('Contratos')->icon('heroicon-o-document-duplicate')->button()->color('gray'),
+
+            // ── Acciones poco frecuentes ─────────────────────────────────────
+            ActionGroup::make([
             Actions\DeleteAction::make()
                 ->visible(fn () => auth()->user()?->hasRole('super_admin'))
                 ->requiresConfirmation()
@@ -275,6 +306,7 @@ class EditExpediente extends EditRecord
 
                     $this->redirect(ExpedienteResource::getUrl('index'));
                 }),
+            ])->label('Más')->icon('heroicon-m-ellipsis-vertical')->button()->color('gray'),
         ];
     }
 }
