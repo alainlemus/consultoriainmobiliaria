@@ -29,9 +29,10 @@ class ContactoController extends Controller
         }
         // Super admin sin filtro → ve todos
 
-        // Excluir prospectos que ya pasaron a expediente (igual que el CRM)
-        $query->whereNotIn('estado_prospecto', ['convertido', 'descartado'])
-              ->whereDoesntHave('expedientes');
+        // El prospecto es la unidad de trabajo del asesor: se sigue viendo aunque ya
+        // tenga expediente (se crea solo al subir el primer documento).
+        $query->where('estado_prospecto', '!=', 'descartado')
+              ->withCount(['documentos as documentos_count' => fn ($q) => $q->whereNotNull('ruta_archivo')]);
 
         if ($q = $request->input('q')) {
             $query->where(function ($b) use ($q) {
