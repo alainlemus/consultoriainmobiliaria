@@ -53,6 +53,13 @@ RUN if [ "$APP_ENV" = "development" ] || [ "$APP_ENV" = "local" ]; then \
 COPY . .
 COPY --from=frontend-builder /app/public/build ./public/build
 
+# Versión del despliegue: commit, rama y fecha del build (se ven junto al número de
+# VERSION en el panel). Opcionalmente, los build args GIT_COMMIT / GIT_BRANCH mandan
+# sobre lo que se lea de .git, que después se elimina de la imagen.
+ARG GIT_COMMIT=""
+ARG GIT_BRANCH=""
+RUN GIT_COMMIT="$GIT_COMMIT" GIT_BRANCH="$GIT_BRANCH" php docker/app/write-build-info.php && rm -rf .git
+
 RUN mkdir -p bootstrap/cache \
     storage/logs \
     storage/app/public \

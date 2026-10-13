@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Support\AppVersion;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\ContactoController;
@@ -30,6 +31,9 @@ Route::get('/admin/password-reset/reset/{token}', function (string $token) {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Sitemap XML
+// Versión del despliegue, para monitoreo (sin datos sensibles).
+Route::get('/version.json', fn () => response()->json(AppVersion::toArray()))->name('version');
+
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // Blog / ConsulTips

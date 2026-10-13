@@ -1,4 +1,9 @@
-.git
+.git/*
+# Solo lo necesario para saber el commit del build (docker/app/write-build-info.php);
+# se borra de la imagen al terminar.
+!.git/HEAD
+!.git/refs
+!.git/packed-refs
 .github
 .DS_Store
 
@@ -24,4 +29,3 @@ public/build
 .env.*
 
 tests
-docker

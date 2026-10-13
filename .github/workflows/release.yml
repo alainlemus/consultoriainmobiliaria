@@ -1,0 +1,57 @@
+# Crea la etiqueta vX.Y.Z y el Release de GitHub cuando llega a main una versión nueva
+# (el número vive en el archivo VERSION; las notas salen de CHANGELOG.md). Si la
+# etiqueta ya existe no hace nada, así que los despliegues sin cambio de versión no
+# crean releases repetidos. No hace commits, así que no dispara otro despliegue.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Leer versión
+        id: version
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "VERSION inválida: '$VERSION'" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Notas del CHANGELOG
+        if: steps.version.outputs.exists == 'false'
+        run: |
+          awk -v v="${{ steps.version.outputs.version }}" '
+            $0 ~ "^## \\[" v "\\]" { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Sin notas en CHANGELOG.md para esta versión." > release-notes.md
+          fi
+
+      - name: Crear etiqueta y release
+        if: steps.version.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            --target "$GITHUB_SHA" \
+            --title "Consultoría Inmobiliaria v${{ steps.version.outputs.version }}" \
+            --notes-file release-notes.md

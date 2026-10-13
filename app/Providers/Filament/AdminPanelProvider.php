@@ -210,6 +210,11 @@ class AdminPanelProvider extends PanelProvider
         );
 
         $panel->renderHook(
+            PanelsRenderHook::SIDEBAR_FOOTER,
+            fn () => view('components.app-version'),
+        );
+
+        $panel->renderHook(
             PanelsRenderHook::TOPBAR_END,
             fn (): string => Blade::render('
                 @php
