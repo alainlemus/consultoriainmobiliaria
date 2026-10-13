@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Widgets\AsesorComisionesWidget;
 use App\Filament\Widgets\AsesorExpedientesWidget;
 use App\Filament\Widgets\AsesorProspectosWidget;
 use App\Filament\Widgets\AsesorStatsOverview;
@@ -32,7 +31,6 @@ class DashboardAsesor extends BaseDashboard
             AsesorStatsOverview::class,
             AsesorProspectosWidget::class,
             AsesorExpedientesWidget::class,
-            AsesorComisionesWidget::class,
         ];
     }
 

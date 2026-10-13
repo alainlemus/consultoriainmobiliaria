@@ -18,9 +18,11 @@ use Illuminate\Support\Facades\Auth;
 
 class ComisionResource extends Resource
 {
+    // Las comisiones están desactivadas por ahora (los datos se conservan): sin
+    // menú ni acceso. Para reactivarlas, devolver el rol que corresponda aquí.
     public static function canViewAny(): bool
     {
-        return auth()->check() && auth()->user()->hasAnyRole(['super_admin', 'asesor']);
+        return false;
     }
 
     public static function canEdit(Model $record): bool

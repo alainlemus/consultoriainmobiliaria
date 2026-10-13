@@ -139,53 +139,6 @@ class ExpedienteTest extends TestCase
 
     // ── Observer: comisión al cerrar ──────────────────────────────────────────
 
-    /** @test */
-    public function al_cerrar_expediente_se_genera_comision(): void
-    {
-        $exp = $this->makeExpediente([
-            'honorarios_monto'      => 50000,
-            'honorarios_porcentaje' => 10,
-            'honorarios_pagados'    => true,
-        ]);
-
-        $exp->update(['estado' => 'cerrado']);
-
-        $this->assertDatabaseHas('comisiones', [
-            'expediente_id' => $exp->id,
-            'asesor_id'     => $this->asesor->id,
-            'estado'        => 'pendiente',
-        ]);
-    }
-
-    /** @test */
-    public function al_cerrar_expediente_sin_honorarios_no_genera_comision(): void
-    {
-        $exp = $this->makeExpediente(['honorarios_monto' => 0]);
-
-        $exp->update(['estado' => 'cerrado']);
-
-        $this->assertDatabaseMissing('comisiones', [
-            'expediente_id' => $exp->id,
-        ]);
-    }
-
-    /** @test */
-    public function cerrar_expediente_dos_veces_no_duplica_comision(): void
-    {
-        $exp = $this->makeExpediente([
-            'honorarios_monto'      => 50000,
-            'honorarios_porcentaje' => 10,
-            'honorarios_pagados'    => true,
-        ]);
-
-        $exp->update(['estado' => 'cerrado']);
-        // Simular re-guardado en estado cerrado
-        $exp->update(['notas_internas' => 'cambio menor']);
-
-        $count = Comision::where('expediente_id', $exp->id)->count();
-        $this->assertEquals(1, $count);
-    }
-
     // ── Ownership scope ───────────────────────────────────────────────────────
 
     /** @test */

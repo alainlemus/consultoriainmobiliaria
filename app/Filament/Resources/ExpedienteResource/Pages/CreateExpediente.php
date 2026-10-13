@@ -28,6 +28,8 @@ class CreateExpediente extends CreateRecord
             }
         }
 
+        $data['estado'] ??= 'en_proceso';
+
         return $data;
     }
 }

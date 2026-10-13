@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1\Acreditado;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\URL;
 
 class ExpedienteController extends Controller
 {
@@ -49,6 +48,7 @@ class ExpedienteController extends Controller
 
         $pendientes = $expediente->documentos()
             ->where('estado', 'pendiente')
+            ->whereNull('ruta_archivo')
             ->whereIn('seccion', ['acreditado']) // solo los que son del acreditado
             ->get()
             ->map(fn ($d) => [
@@ -62,63 +62,33 @@ class ExpedienteController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────────
     // GET /v1/acreditado/expediente/seguimiento
-    // Historial de cambios del expediente
+    // Ya no hay historial de etapas: se deja la ruta (apps instaladas) con lista vacía.
     // ─────────────────────────────────────────────────────────────────────────
-    public function seguimiento(Request $request): JsonResponse
+    public function seguimiento(): JsonResponse
     {
-        $acreditado = $request->user();
-        $expediente = $acreditado->expedientes()->latest()->first();
-
-        if (! $expediente) {
-            return response()->json(['data' => []]);
-        }
-
-        $seguimientos = $expediente->seguimientos()
-            ->latest()
-            ->take(20)
-            ->get()
-            ->map(fn ($s) => [
-                'tipo'        => $s->tipo,
-                'descripcion' => $s->descripcion,
-                'fecha'       => $s->created_at->format('d/m/Y H:i'),
-            ]);
-
-        return response()->json(['data' => $seguimientos]);
+        return response()->json(['data' => []]);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     private function expedientePayload($expediente): array
     {
-        $etapaOrden = $expediente->etapa?->orden ?? 0;
-
-        // Guía del paso actual para el acreditado
-        $guia = match (true) {
-            $etapaOrden === 1 => 'Tu expediente fue creado. Tu asesor revisará tus documentos.',
-            $etapaOrden === 2 => 'Tus documentos están siendo revisados. Sube cualquier documento pendiente.',
-            $etapaOrden === 3 => 'Tu trámite está en proceso ante el municipio (catastro y avalúo).',
-            $etapaOrden === 4 => 'El avalúo de tu vivienda fue realizado. Espera confirmación de SOFOM.',
-            $etapaOrden === 5 => 'Tu expediente está en notaría. Se está gestionando el certificado de libertad de gravamen.',
-            $etapaOrden === 6 => 'Tu firma ante notario está próxima. Tu asesor te contactará para coordinarla.',
-            $etapaOrden >= 7 => '¡Felicidades! Tu crédito fue aprobado. El pago llegará en los próximos días hábiles.',
-            default           => 'Tu asesor está revisando tu caso.',
-        };
-
+        // El trámite ya no se avanza por etapas: para el acreditado el expediente
+        // siempre está "en revisión". Se conservan las llaves de etapa/fechas para
+        // las versiones de la app que aún las leen.
         return [
             'id'          => $expediente->id,
             'folio'       => $expediente->folio,
-            'estado'      => $expediente->estado,
+            'estado'      => 'en_revision',
             'etapa' => [
-                'orden'  => $etapaOrden,
-                'nombre' => $expediente->etapa?->nombre ?? 'Sin etapa',
-                'total'  => $expediente->tipoTramite
-                    ? \App\Models\EtapaTramite::where('tipo_tramite_id', $expediente->tipo_tramite_id)->count()
-                    : 7,
+                'orden'  => 1,
+                'nombre' => 'En revisión',
+                'total'  => 1,
             ],
             'tipo_tramite'   => $expediente->tipoTramite?->nombre,
             'fecha_apertura' => $expediente->fecha_apertura?->format('d/m/Y'),
-            'fecha_firma'    => $expediente->fecha_firma?->format('d/m/Y'),
-            'fecha_esperada_pago' => $expediente->fecha_esperada_pago?->format('d/m/Y'),
-            'guia_paso_actual'   => $guia,
+            'fecha_firma'    => null,
+            'fecha_esperada_pago' => null,
+            'guia_paso_actual'   => 'Tu expediente está en revisión. Tu asesor se pondrá en contacto contigo si necesita algo más.',
             'asesor' => $expediente->asesor ? [
                 'name'     => $expediente->asesor->name,
                 'telefono' => $expediente->asesor->telefono,
@@ -126,6 +96,7 @@ class ExpedienteController extends Controller
             ] : null,
             'documentos_pendientes' => $expediente->documentos()
                 ->where('estado', 'pendiente')
+                ->whereNull('ruta_archivo')
                 ->whereIn('seccion', ['acreditado'])
                 ->count(),
         ];

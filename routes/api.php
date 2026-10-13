@@ -10,7 +10,6 @@ use App\Http\Controllers\Api\V1\AnuncioController;
 use App\Http\Controllers\Api\V1\RouteController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
-use App\Http\Controllers\Api\V1\ComisionController;
 use App\Http\Controllers\Api\V1\ContratosController;
 use App\Http\Controllers\Api\V1\ContratoGeneradoController;
 use App\Http\Controllers\Api\WhatsAppWebhookController;
@@ -139,9 +138,6 @@ Route::prefix('v1')->group(function () {
         // Dispositivos FCM
         Route::post('/dispositivos',      [DeviceTokenController::class, 'store']);
 
-        // Comisiones del asesor
-        Route::get('/comisiones',         [ComisionController::class, 'index']);
-        Route::get('/comisiones/resumen', [ComisionController::class, 'resumen']);
     });
 
     // ── Rutas para CRM (autenticación por sesión web, no token) ──────────────

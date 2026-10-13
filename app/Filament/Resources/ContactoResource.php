@@ -70,9 +70,9 @@ class ContactoResource extends Resource
             $query->where('asesor_id', Auth::id());
         }
 
-        // Excluir prospectos que ya no son prospectos activos
-        $query->whereNotIn('estado_prospecto', ['convertido', 'descartado'])
-              ->whereDoesntHave('expedientes');
+        // Excluir prospectos que ya no son prospectos activos. Los que tienen expediente
+        // se siguen viendo: la app lo crea solo al subir el primer documento.
+        $query->whereNotIn('estado_prospecto', ['convertido', 'descartado']);
 
         return $query;
     }
@@ -389,6 +389,13 @@ class ContactoResource extends Resource
                     ->label('Nombre')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('telefono')
                     ->label('Teléfono'),
+                Tables\Columns\TextColumn::make('documentos_count')
+                    ->label('Documentos')
+                    ->counts(['documentos' => fn ($q) => $q->whereNotNull('ruta_archivo')])
+                    ->badge()
+                    ->color('gray')
+                    ->alignCenter()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('email')
                     ->label('Correo')->searchable()->toggleable(),
                 Tables\Columns\TextColumn::make('curp')

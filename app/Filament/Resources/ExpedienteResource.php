@@ -57,7 +57,6 @@ class ExpedienteResource extends Resource
     {
         return [
             'Trámite'  => $record->tipoTramite?->nombre ?? '—',
-            'Estado'   => ucfirst(str_replace('_', ' ', $record->estado)),
             'Asesor'   => $record->asesor?->name ?? '—',
         ];
     }
@@ -86,11 +85,9 @@ class ExpedienteResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $query = static::getModel()::whereIn('estado', [
-            'en_proceso', 'documentacion', 'en_catastro',
-            'pre_avaluo', 'cuv_generada', 'avaluo_cerrado',
-            'en_notaria', 'firmado',
-        ]);
+        // Expedientes con documentos subidos desde la app que todavía no se capturan.
+        $query = static::getModel()::whereHas('documentos', fn ($q) => $q
+            ->whereNotNull('ruta_archivo')->whereNull('capturado_at'));
 
         if (Auth::check() && Auth::user()->hasRole('asesor')) {
             $query->where('asesor_id', Auth::id());
@@ -123,130 +120,6 @@ class ExpedienteResource extends Resource
                     . '</div></div>'
                 )),
 
-            // ── Panel de siguiente paso (contextual por etapa) ────────────
-            Forms\Components\Placeholder::make('_panel_siguiente_paso')
-                ->label('')
-                ->columnSpanFull()
-                ->visible(fn ($record) => $record !== null && ! $record->ocr_procesando)
-                ->content(function ($record) {
-                    if (! $record || ! $record->etapa) return new \Illuminate\Support\HtmlString('');
-                    $etapa  = $record->etapa;
-                    $orden  = $etapa->orden;
-                    $nombre = $etapa->nombre;
-
-                    // Configuración por orden de etapa
-                    $config = match (true) {
-                        $orden === 1 => [
-                            'color'  => '#1d4ed8',
-                            'bg'     => '#eff6ff',
-                            'border' => '#93c5fd',
-                            'titulo' => '📋 Etapa 1 — Expediente iniciado',
-                            'pasos'  => [
-                                'Sube la carpeta con los documentos del acreditado (CURP, INE, SAT, talones)',
-                                'Captura los datos básicos del acreditado en el Tab "Acreditado"',
-                                'Si es compraventa, registra los datos del vendedor',
-                                'Registra la dirección de la vivienda en el Tab "Vivienda"',
-                            ],
-                            'avance' => 'Para avanzar a "Documentos completos": necesitas tener carpetas ACREDITADA + VENDEDOR + VIVIENDA cargadas.',
-                        ],
-                        $orden === 2 => [
-                            'color'  => '#15803d',
-                            'bg'     => '#f0fdf4',
-                            'border' => '#86efac',
-                            'titulo' => '✅ Etapa 2 — Documentos completos',
-                            'pasos'  => [
-                                'Verifica que todos los documentos del acreditado estén recibidos (INE, CURP, SAT, 3 talones, AFORE, SOFOM)',
-                                'Verifica documentos del vendedor (INE, CURP, SAT, CFE, acta nacimiento)',
-                                'Confirma la escritura, predial, agua y luz de la vivienda',
-                                'Envía documentación a SOFOM para validar el monto del crédito',
-                            ],
-                            'avance' => 'Para avanzar a "Trámites previos": inicia el trámite ante catastro del municipio.',
-                        ],
-                        $orden === 3 => [
-                            'color'  => '#b45309',
-                            'bg'     => '#fffbeb',
-                            'border' => '#fcd34d',
-                            'titulo' => '🏛️ Etapa 3 — Trámites previos',
-                            'pasos'  => [
-                                'Tramita avalúo catastral o cédula catastral ante el municipio (15 días hábiles)',
-                                'Si el predio requiere subdivisión: gestiona apeo y deslinde (activa el toggle en el Tab "Vivienda")',
-                                'Solicita el avalúo comercial a la unidad de valuación',
-                                'Al recibir el preavalúo, súbelo en los documentos — el sistema avanzará la etapa automáticamente',
-                            ],
-                            'avance' => 'Para avanzar a "Avalúo realizado": sube la carpeta SOFOM con los documentos del avalúo.',
-                        ],
-                        $orden === 4 => [
-                            'color'  => '#7e22ce',
-                            'bg'     => '#faf5ff',
-                            'border' => '#c4b5fd',
-                            'titulo' => '📊 Etapa 4 — Avalúo realizado',
-                            'pasos'  => [
-                                'Envía a SOFOM: talón actual, documentación de vivienda, documentos del vendedor',
-                                'SOFOM generará la CUV — regístrala abajo en esta misma pantalla',
-                                'Paga la CUV (transferencia) y envía comprobante a SOFOM',
-                                'Cuando SOFOM confirme la CUV activa, activa el toggle "CUV activa" abajo',
-                                'La unidad de valuación cierra el avalúo con vigencia de 6 meses',
-                            ],
-                            'avance' => 'Para avanzar a "En notaría": registra la CUV activa y envía el expediente completo a notaría.',
-                        ],
-                        $orden === 5 => [
-                            'color'  => '#0e7490',
-                            'bg'     => '#ecfeff',
-                            'border' => '#67e8f9',
-                            'titulo' => '⚖️ Etapa 5 — En notaría',
-                            'pasos'  => [
-                                'Envía a notaría: avalúo cerrado, carta de instrucción notarial, expediente completo (acreditado + vendedor + vivienda)',
-                                'Notaría tramita el CLG (Certificado de Libertad de Gravamen) — 30 días hábiles',
-                                'Registra abajo la fecha de solicitud del CLG',
-                                'Al recibir el CLG, activa el toggle "CLG recibido" y registra la fecha límite de firma',
-                            ],
-                            'avance' => 'Para avanzar a "Firma ante notario": CLG recibido y fecha de firma coordinada.',
-                        ],
-                        $orden === 6 => [
-                            'color'  => '#166534',
-                            'bg'     => '#f0fdf4',
-                            'border' => '#86efac',
-                            'titulo' => '✍️ Etapa 6 — Firma ante notario',
-                            'pasos'  => [
-                                'Notaría tiene el proyecto y el CLG — se formaliza la firma',
-                                'Registra abajo la fecha real de firma',
-                                'Envía el proyecto firmado a SOFOM y a Guarda Valores FOVISSSTE',
-                                'Registra abajo la fecha de envío a Guarda Valores',
-                            ],
-                            'avance' => 'Para avanzar a "Dispersión y cobro": confirma envío a Guarda Valores FOVISSSTE.',
-                        ],
-                        $orden >= 7 => [
-                            'color'  => '#374151',
-                            'bg'     => '#f9fafb',
-                            'border' => '#d1d5db',
-                            'titulo' => '💰 Etapa 7 — Dispersión y cobro',
-                            'pasos'  => [
-                                'FOVISSSTE realiza el pago en 20 días hábiles desde Guarda Valores',
-                                'Al recibir el pago, activa "Pago recibido" y registra la fecha',
-                                'El sistema generará la comisión automáticamente al cerrar el expediente',
-                                'Solicita el testimonio al cliente para completar el trámite',
-                            ],
-                            'avance' => 'Cambia el estado a "Cerrado" para generar la comisión del asesor.',
-                        ],
-                        default => null,
-                    };
-
-                    if (! $config) return new \Illuminate\Support\HtmlString('');
-
-                    $pasosList = implode('', array_map(
-                        fn ($p) => '<li style="margin-bottom:4px;">' . e($p) . '</li>',
-                        $config['pasos']
-                    ));
-
-                    return new \Illuminate\Support\HtmlString(
-                        '<div style="background:' . $config['bg'] . ';border:1px solid ' . $config['border'] . ';border-radius:10px;padding:14px 18px;margin-bottom:4px;">'
-                        . '<p style="font-size:14px;font-weight:700;color:' . $config['color'] . ';margin:0 0 8px 0;">' . $config['titulo'] . '</p>'
-                        . '<ul style="margin:0 0 8px 0;padding-left:20px;font-size:12px;color:#374151;line-height:1.7;">' . $pasosList . '</ul>'
-                        . '<p style="font-size:11px;font-weight:600;color:' . $config['color'] . ';margin:0;padding-top:6px;border-top:1px solid ' . $config['border'] . ';">→ ' . e($config['avance']) . '</p>'
-                        . '</div>'
-                    );
-                }),
-
             // ── Aviso de campos obligatorios (solo al crear) ──────────────
             Forms\Components\Placeholder::make('_aviso_campos_requeridos')
                 ->label('')
@@ -259,8 +132,8 @@ class ExpedienteResource extends Resource
                     . '<p style="font-size:13px;font-weight:600;color:#92400e;margin:0 0 4px 0;">Campos obligatorios <span style="color:#dc2626;">*</span></p>'
                     . '<p style="font-size:12px;color:#78350f;margin:0;">Los campos marcados con <strong style="color:#dc2626;">*</strong> son obligatorios para guardar el expediente:</p>'
                     . '<ul style="margin:6px 0 0 0;padding-left:16px;font-size:12px;color:#78350f;">'
-                    . '<li><strong>Tab Trámite:</strong> Tipo de Trámite, Asesor asignado, Uso del crédito</li>'
-                    . '<li><strong>Tab Acreditado:</strong> Nombre completo, Estado civil</li>'
+                    . '<li><strong>Tab Trámite:</strong> Tipo de Trámite, Asesor asignado</li>'
+                    . '<li><strong>Tab Acreditado:</strong> Nombre completo</li>'
                     . '</ul>'
                     . '</div>'
                     . '</div>'
@@ -273,19 +146,10 @@ class ExpedienteResource extends Resource
                     Tabs\Tab::make('Trámite')
                         ->icon('heroicon-o-document-text')
                         ->badge(fn ($livewire) => collect($livewire->getErrorBag()->keys())
-                            ->filter(fn ($k) => in_array($k, ['tipo_tramite_id', 'asesor_id', 'uso_credito']))
+                            ->filter(fn ($k) => in_array($k, ['tipo_tramite_id', 'asesor_id']))
                             ->count() ?: null)
                         ->badgeColor('danger')
                         ->schema([
-                            // ── Stepper de progreso ───────────────────────
-                            SchemaView::make('filament.components.expediente-stepper')
-                                ->viewData(fn ($livewire) => [
-                                    'record'       => $livewire->getRecord(),
-                                    'etapaActivaId' => $livewire->data['etapa_tramite_id'] ?? $livewire->getRecord()?->etapa_tramite_id,
-                                ])
-                                ->columnSpanFull()
-                                ->visible(fn ($livewire) => $livewire->getRecord() !== null),
-
                             Forms\Components\TextInput::make('folio')
                                 ->label('Folio')
                                 ->disabled()
@@ -306,69 +170,6 @@ class ExpedienteResource extends Resource
                                 ->validationMessages([
                                     'required' => 'Debes seleccionar el tipo de trámite.',
                                 ]),
-                            Forms\Components\Select::make('etapa_tramite_id')
-                                ->label('Etapa actual')
-                                ->options(function (\Filament\Schemas\Components\Utilities\Get $get, $livewire) {
-                                    $tipoId = $get('tipo_tramite_id')
-                                        ?? $livewire->getRecord()?->tipo_tramite_id;
-
-                                    if (! $tipoId) return [];
-
-                                    return EtapaTramite::where('tipo_tramite_id', $tipoId)
-                                        ->orderBy('orden')
-                                        ->pluck('nombre', 'id');
-                                })
-                                ->required()
-                                ->searchable()
-                                ->live()
-                                ->hidden(fn ($livewire) =>
-                                    ! auth()->user()?->hasRole('super_admin') ||
-                                    $livewire instanceof \App\Filament\Resources\ExpedienteResource\Pages\EditExpediente
-                                )
-                                ->dehydrated(fn ($livewire) =>
-                                    auth()->user()?->hasRole('super_admin') &&
-                                    ! ($livewire instanceof \App\Filament\Resources\ExpedienteResource\Pages\EditExpediente)
-                                )
-                                ->validationMessages([
-                                    'required' => 'La etapa del trámite es obligatoria.',
-                                ]),
-                            Forms\Components\Placeholder::make('etapa_tramite_display')
-                                ->label('Etapa actual')
-                                ->content(fn ($record) => $record?->etapa?->nombre ?? '—')
-                                ->visible(fn ($livewire) =>
-                                    ! auth()->user()?->hasRole('super_admin') ||
-                                    $livewire instanceof \App\Filament\Resources\ExpedienteResource\Pages\EditExpediente
-                                ),
-                            Forms\Components\Select::make('estado')
-                                ->label('Estado general')
-                                ->options([
-                                    'en_proceso' => 'En proceso',
-                                    'pausado'    => 'Pausado',
-                                    'aprobado'   => 'Aprobado',
-                                    'firmado'    => 'Firmado',
-                                    'cerrado'    => 'Cerrado',
-                                    'cancelado'  => 'Cancelado',
-                                ])
-                                ->default('en_proceso')
-                                ->required()
-                                ->hidden(fn () => ! auth()->user()?->hasRole('super_admin'))
-                                ->dehydrated(fn () => auth()->user()?->hasRole('super_admin'))
-                                ->hint('Al cambiar a "Cerrado" se genera la comisión automáticamente')
-                                ->validationMessages([
-                                    'required' => 'El estado del expediente es obligatorio.',
-                                ]),
-                            Forms\Components\Placeholder::make('estado_display')
-                                ->label('Estado')
-                                ->content(fn ($record) => match($record?->estado) {
-                                    'en_proceso' => 'En proceso',
-                                    'pausado'    => 'Pausado',
-                                    'aprobado'   => 'Aprobado',
-                                    'firmado'    => 'Firmado',
-                                    'cerrado'    => 'Cerrado',
-                                    'cancelado'  => 'Cancelado',
-                                    default      => '—',
-                                })
-                                ->visible(fn () => ! auth()->user()?->hasRole('super_admin')),
                             Forms\Components\Select::make('asesor_id')
                                 ->label('Asesor asignado')
                                 ->options(User::where('activo', true)->pluck('name', 'id'))
@@ -395,11 +196,7 @@ class ExpedienteResource extends Resource
                                     'otro'           => 'Otro',
                                 ])
                                 ->default('retiro_directo')
-                                ->required()
-                                ->live()
-                                ->validationMessages([
-                                    'required' => 'Debes indicar el uso del crédito.',
-                                ]),
+                                ->live(),
                             Forms\Components\Select::make('modalidad_credito')
                                 ->label('Modalidad')
                                 ->options([
@@ -428,99 +225,9 @@ class ExpedienteResource extends Resource
                                 ->rows(3)
                                 ->columnSpanFull(),
 
-                            // ── Sección inline: CUV (visible desde etapa 4 en adelante) ──
-                            \Filament\Schemas\Components\Section::make('CUV — Clave Única de Vivienda')
-                                ->description('Generada por SOFOM una vez enviada la documentación completa (Pasos 14-15)')
-                                ->columnSpanFull()
-                                ->columns(3)
-                                ->collapsible()
-                                ->collapsed(fn ($record) => ! $record?->cuv && ! $record?->cuv_activa)
-                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 4)
-                                ->schema([
-                                    Forms\Components\TextInput::make('cuv')
-                                        ->label('CUV')
-                                        ->placeholder('Clave Única de Vivienda asignada por RUV')
-                                        ->columnSpan(2),
-                                    Forms\Components\DatePicker::make('cuv_fecha_pago')
-                                        ->label('Fecha de pago CUV')
-                                        ->columnSpan(1),
-                                    Forms\Components\Toggle::make('cuv_activa')
-                                        ->label('CUV activa (confirmada por SOFOM)')
-                                        ->columnSpanFull(),
-                                ]),
-
-                            // ── Sección inline: Instrucción notarial (visible desde etapa 4) ──
-                            \Filament\Schemas\Components\Section::make('Instrucción notarial — SOFOM (Paso 18)')
-                                ->description('Instrucción con condiciones crediticias y datos de pago al vendedor')
-                                ->columnSpanFull()
-                                ->columns(2)
-                                ->collapsible()
-                                ->collapsed(fn ($record) => ! $record?->instruccion_notarial_recibida)
-                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 4)
-                                ->schema([
-                                    Forms\Components\Toggle::make('instruccion_notarial_recibida')
-                                        ->label('Instrucción notarial recibida de SOFOM')
-                                        ->columnSpanFull(),
-                                    Forms\Components\DatePicker::make('instruccion_notarial_fecha')
-                                        ->label('Fecha de recepción')
-                                        ->columnSpan(1),
-                                ]),
-
-                            // ── Sección inline: CLG y firma (visible desde etapa 5) ──
-                            \Filament\Schemas\Components\Section::make('Notaría — CLG y firma (Paso 19)')
-                                ->description('Certificado de Libertad de Gravamen — 30 días hábiles para firma')
-                                ->columnSpanFull()
-                                ->columns(2)
-                                ->collapsible()
-                                ->collapsed(fn ($record) => ! $record?->clg_solicitado)
-                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 5)
-                                ->schema([
-                                    Forms\Components\Toggle::make('clg_solicitado')
-                                        ->label('CLG solicitado a notaría')
-                                        ->columnSpanFull(),
-                                    Forms\Components\DatePicker::make('clg_fecha_solicitud')
-                                        ->label('Fecha solicitud CLG')
-                                        ->columnSpan(1),
-                                    Forms\Components\Toggle::make('clg_recibido')
-                                        ->label('CLG recibido')
-                                        ->columnSpanFull(),
-                                    Forms\Components\DatePicker::make('fecha_limite_firma')
-                                        ->label('Fecha límite para firma')
-                                        ->helperText('30 días hábiles desde solicitud del CLG')
-                                        ->columnSpan(1),
-                                    Forms\Components\DatePicker::make('fecha_firma')
-                                        ->label('Fecha real de firma')
-                                        ->columnSpan(1),
-                                ]),
-
-                            // ── Sección inline: Guarda Valores y pago (visible desde etapa 6) ──
-                            \Filament\Schemas\Components\Section::make('Guarda Valores y pago (Paso 20)')
-                                ->description('Envío a FOVISSSTE — el pago llega en 20 días hábiles')
-                                ->columnSpanFull()
-                                ->columns(2)
-                                ->collapsible()
-                                ->collapsed(fn ($record) => ! $record?->fecha_envio_guarda_valores && ! $record?->pago_recibido)
-                                ->visible(fn ($record) => $record && ($record->etapa?->orden ?? 0) >= 6)
-                                ->schema([
-                                    Forms\Components\DatePicker::make('fecha_envio_guarda_valores')
-                                        ->label('Envío a Guarda Valores FOVISSSTE')
-                                        ->columnSpan(1),
-                                    Forms\Components\DatePicker::make('fecha_esperada_pago')
-                                        ->label('Fecha esperada de pago')
-                                        ->helperText('20 días hábiles desde envío a Guarda Valores')
-                                        ->columnSpan(1),
-                                    Forms\Components\Toggle::make('pago_recibido')
-                                        ->label('Pago recibido')
-                                        ->columnSpanFull(),
-                                    Forms\Components\DatePicker::make('fecha_pago_recibido')
-                                        ->label('Fecha real del pago')
-                                        ->columnSpan(1),
-                                ]),
-
                             // ── Montos del crédito ────────────────────────────
                             \Filament\Schemas\Components\Section::make('Montos del crédito')
-                                ->description('Al marcar "Honorarios cobrados" y cambiar el estado a "Cerrado", el sistema generará automáticamente la comisión del asesor.')
-                                ->columnSpanFull()
+                                                                ->columnSpanFull()
                                 ->schema([
                                     Forms\Components\TextInput::make('monto_credito')
                                         ->label('Monto del crédito')
@@ -594,13 +301,11 @@ class ExpedienteResource extends Resource
                                         ),
                                     Forms\Components\Toggle::make('honorarios_pagados')
                                         ->label('Honorarios cobrados')
-                                        ->hint('Activa cuando el cliente haya pagado')
-                                        ->visible(fn ($record) => $record?->etapa?->es_final ?? false),
+                                        ->hint('Activa cuando el cliente haya pagado'),
                                     Forms\Components\DatePicker::make('fecha_pago_honorarios')
                                         ->label('Fecha de cobro')
                                         ->beforeOrEqual('today')
-                                        ->validationMessages(['before_or_equal' => 'La fecha de cobro no puede ser futura.'])
-                                        ->visible(fn ($record) => $record?->etapa?->es_final ?? false),
+                                        ->validationMessages(['before_or_equal' => 'La fecha de cobro no puede ser futura.']),
                                     Forms\Components\DatePicker::make('fecha_cierre')
                                         ->label('Fecha de cierre')
                                         ->beforeOrEqual('today')
@@ -743,7 +448,6 @@ class ExpedienteResource extends Resource
                                 ->validationMessages(['email' => 'Ingresa un correo electrónico válido.']),
                             Forms\Components\Select::make('acreditado_estado_civil')
                                 ->label('Estado civil')
-                                ->required()
                                 ->live(onBlur: true)
                                 ->options([
                                     'soltero'     => 'Soltero(a)',
@@ -752,7 +456,6 @@ class ExpedienteResource extends Resource
                                     'divorciado'  => 'Divorciado(a)',
                                     'viudo'       => 'Viudo(a)',
                                 ])
-                                ->validationMessages(['required' => 'El estado civil es obligatorio para las escrituras.'])
                                 ->hint('Importante para el régimen patrimonial en escrituras'),
                             Forms\Components\TextInput::make('acreditado_antiguedad_laboral')
                                 ->label('Antigüedad laboral (años)')
@@ -1091,63 +794,22 @@ public static function canDelete(Model $record): bool
                     ->label('Tipo')
                     ->badge()
                     ->color('primary'),
-                Tables\Columns\TextColumn::make('etapa.nombre')
-                    ->label('Progreso')
-                    ->getStateUsing(function ($record) {
-                        if (! $record->etapa || ! $record->tipo_tramite_id) return '—';
-
-                        // Todas las etapas de todos los trámites se cargan una sola vez
-                        // por render de tabla (en vez de una query por fila visible).
-                        static $etapasPorTramite = null;
-                        $etapasPorTramite ??= \App\Models\EtapaTramite::orderBy('orden')
-                            ->get()
-                            ->groupBy('tipo_tramite_id');
-
-                        $etapas  = $etapasPorTramite->get($record->tipo_tramite_id) ?? collect();
-                        $total   = $etapas->count();
-                        $current = $record->etapa->orden;
-
-                        $dots = '';
-                        foreach ($etapas as $etapa) {
-                            if ($etapa->orden < $current) {
-                                // completada
-                                $dots .= '<span title="' . e($etapa->nombre) . '" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#16a34a;margin:0 2px;vertical-align:middle;"></span>';
-                            } elseif ($etapa->orden === $current) {
-                                // actual
-                                $dots .= '<span title="' . e($etapa->nombre) . '" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#2563eb;margin:0 2px;vertical-align:middle;outline:2px solid #93c5fd;outline-offset:1px;"></span>';
-                            } else {
-                                // pendiente
-                                $dots .= '<span title="' . e($etapa->nombre) . '" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#d1d5db;margin:0 2px;vertical-align:middle;"></span>';
-                            }
-                        }
-
-                        return '<div style="display:flex;align-items:center;gap:4px;">'
-                            . $dots
-                            . '<span style="font-size:0.7rem;color:#6b7280;margin-left:4px;">' . $current . '/' . $total . '</span>'
-                            . '</div>';
-                    })
-                    ->html()
-                    ->tooltip(fn ($record) => $record?->etapa?->nombre ?? ''),
-                Tables\Columns\BadgeColumn::make('estado')
-                    ->label('Estado')
-                    ->colors([
-                        'gray'    => 'en_proceso',
-                        'warning' => 'pausado',
-                        'primary' => 'aprobado',
-                        'info'    => 'firmado',
-                        'success' => 'cerrado',
-                        'danger'  => 'cancelado',
-                    ])
-                    ->formatStateUsing(fn ($state) => match($state) {
-                        'en_proceso' => 'En proceso',
-                        'pausado'    => 'Pausado',
-                        'aprobado'   => 'Aprobado',
-                        'firmado'    => 'Firmado',
-                        'cerrado'    => 'Cerrado',
-                        'cancelado'  => 'Cancelado',
-                        default      => $state,
-                    })
-                    ->tooltip('Al cerrar se genera la comisión automáticamente'),
+                Tables\Columns\TextColumn::make('documentos_count')
+                    ->label('Documentos')
+                    ->counts(['documentos' => fn (Builder $q) => $q->whereNotNull('ruta_archivo')])
+                    ->badge()
+                    ->color('gray')
+                    ->alignCenter()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('por_capturar_count')
+                    ->label('Por capturar')
+                    ->counts(['documentos as por_capturar_count' => fn (Builder $q) => $q->whereNotNull('ruta_archivo')->whereNull('capturado_at')])
+                    ->badge()
+                    ->color(fn ($state) => $state > 0 ? 'warning' : 'success')
+                    ->formatStateUsing(fn ($state) => $state > 0 ? $state : '✓')
+                    ->alignCenter()
+                    ->sortable()
+                    ->tooltip('Documentos subidos desde la app que aún no se capturan'),
                 Tables\Columns\TextColumn::make('asesor.name')
                     ->label('Asesor')
                     ->toggleable()
@@ -1177,15 +839,11 @@ public static function canDelete(Model $record): bool
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('estado')
-                    ->options([
-                        'en_proceso' => 'En proceso',
-                        'pausado'    => 'Pausado',
-                        'aprobado'   => 'Aprobado',
-                        'firmado'    => 'Firmado',
-                        'cerrado'    => 'Cerrado',
-                        'cancelado'  => 'Cancelado',
-                    ]),
+                Tables\Filters\Filter::make('por_capturar')
+                    ->label('Con documentos por capturar')
+                    ->toggle()
+                    ->query(fn (Builder $query) => $query->whereHas('documentos', fn (Builder $q) => $q
+                        ->whereNotNull('ruta_archivo')->whereNull('capturado_at'))),
                 Tables\Filters\SelectFilter::make('tipo_tramite_id')
                     ->label('Tipo de trámite')
                     ->options(TipoTramite::pluck('nombre', 'id')),
@@ -1320,9 +978,7 @@ public static function canDelete(Model $record): bool
                             ->success()->send();
                     }),
 
-                \Filament\Actions\EditAction::make()
-                    ->hidden(fn ($record) => Auth::user()?->hasRole('asesor')
-                        && $record->etapa && $record->etapa->orden >= 5),
+                \Filament\Actions\EditAction::make(),
                 \Filament\Actions\DeleteAction::make()
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
@@ -1339,9 +995,6 @@ public static function canDelete(Model $record): bool
     {
         return [
             RelationManagers\DocumentosRelationManager::class,
-            RelationManagers\GastosRelationManager::class,
-            RelationManagers\SeguimientosRelationManager::class,
-            RelationManagers\ComisionesRelationManager::class,
         ];
     }
 

@@ -125,6 +125,17 @@ class DocumentosRelationManager extends RelationManager
                         default     => 'Pendiente',
                     }),
 
+                Tables\Columns\IconColumn::make('capturado_at')
+                    ->label('Capturado')
+                    ->getStateUsing(fn ($record) => $record->ruta_archivo ? $record->capturado_at !== null : null)
+                    ->boolean()
+                    ->trueColor('success')
+                    ->falseColor('warning')
+                    ->alignCenter()
+                    ->tooltip(fn ($record) => $record->ruta_archivo
+                        ? ($record->capturado_at ? 'Capturado el ' . $record->capturado_at->format('d/m/Y H:i') : 'Por capturar')
+                        : null),
+
                 Tables\Columns\IconColumn::make('ruta_archivo')
                     ->label('Archivo')
                     ->boolean()
@@ -157,6 +168,11 @@ class DocumentosRelationManager extends RelationManager
                         ? $query->where('categoria', $data['value'])
                         : $query
                     ),
+
+                Tables\Filters\Filter::make('por_capturar')
+                    ->label('Por capturar')
+                    ->toggle()
+                    ->query(fn ($query) => $query->whereNotNull('ruta_archivo')->whereNull('capturado_at')),
 
                 Tables\Filters\SelectFilter::make('seccion')
                     ->label('Sección')
@@ -385,6 +401,22 @@ class DocumentosRelationManager extends RelationManager
                     }),
             ])
             ->actions([
+                \Filament\Actions\Action::make('marcar_capturado')
+                    ->label('Capturado')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->ruta_archivo && ! $record->capturado_at)
+                    ->action(fn ($record) => $record->update(['capturado_at' => now()]))
+                    ->requiresConfirmation(false),
+
+                \Filament\Actions\Action::make('desmarcar_capturado')
+                    ->label('Por capturar')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('gray')
+                    ->visible(fn ($record) => $record->ruta_archivo && $record->capturado_at)
+                    ->action(fn ($record) => $record->update(['capturado_at' => null]))
+                    ->requiresConfirmation(false),
+
                 // Acciones rápidas de estado (un clic, sin modal)
                 \Filament\Actions\Action::make('marcar_recibido')
                     ->label('Recibido')
@@ -480,6 +512,11 @@ class DocumentosRelationManager extends RelationManager
                     }),
             ])
             ->bulkActions([
+                BulkAction::make('marcar_capturados')
+                    ->label('Marcar como capturados')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->color('success')
+                    ->action(fn ($records) => $records->each->update(['capturado_at' => now()])),
                 BulkAction::make('marcar_recibidos')
                     ->label('Marcar seleccionados como recibidos')
                     ->icon('heroicon-o-check-circle')

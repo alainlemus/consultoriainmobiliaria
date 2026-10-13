@@ -68,7 +68,6 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\AsesorStatsOverview::class,
                 \App\Filament\Widgets\AsesorProspectosWidget::class,
                 \App\Filament\Widgets\AsesorExpedientesWidget::class,
-                \App\Filament\Widgets\AsesorComisionesWidget::class,
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),

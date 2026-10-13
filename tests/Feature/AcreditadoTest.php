@@ -268,44 +268,6 @@ class AcreditadoTest extends TestCase
 
     // ─── Cambio de etapa notifica también al acreditado vinculado ─────────
 
-    public function test_acreditado_vinculado_recibe_notificacion_de_cambio_de_etapa(): void
-    {
-        Notification::fake();
-
-        $acreditado = $this->crearAcreditado();
-        $exp = $this->crearExpediente(['acreditado_id' => $acreditado->id]);
-
-        $exp->update(['etapa_tramite_id' => $this->etapa2->id]);
-
-        Notification::assertSentTo($this->asesor, EtapaExpedienteCambiada::class);
-        Notification::assertSentTo($acreditado, EtapaExpedienteCambiada::class);
-    }
-
-    public function test_expediente_sin_acreditado_vinculado_no_falla_al_cambiar_etapa(): void
-    {
-        Notification::fake();
-
-        $exp = $this->crearExpediente(); // sin acreditado_id
-        $exp->update(['etapa_tramite_id' => $this->etapa2->id]);
-
-        Notification::assertSentTo($this->asesor, EtapaExpedienteCambiada::class);
-        // No debe reventar ni mandarle nada a ningún Acreditado
-        Notification::assertNotSentTo($this->asesor, DocumentoRechazado::class);
-    }
-
-    public function test_notificacion_etapa_al_acreditado_no_usa_canal_database(): void
-    {
-        // El acreditado no tiene bandeja de notificaciones en la app —
-        // via() no debe incluir 'database' para ese notifiable (sí para User).
-        $acreditado = $this->crearAcreditado();
-        $exp = $this->crearExpediente(['acreditado_id' => $acreditado->id]);
-
-        $notif = new EtapaExpedienteCambiada($exp, 'Precalificación', 'Documentación');
-
-        $this->assertNotContains('database', $notif->via($acreditado));
-        $this->assertContains('database', $notif->via($this->asesor));
-    }
-
     // ─── PushService no cruza tokens entre User y Acreditado ───────────────
 
     public function test_pushservice_envia_solo_al_token_del_acreditado_no_al_de_un_user_con_mismo_id(): void
