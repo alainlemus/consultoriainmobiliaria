@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Facades\Storage;
 
 class Contacto extends Model
@@ -71,11 +70,6 @@ class Contacto extends Model
         return $this->hasMany(Expediente::class);
     }
 
-    /** Documentos de todos sus expedientes (la app los muestra como "documentos del prospecto"). */
-    public function documentos(): HasManyThrough
-    {
-        return $this->hasManyThrough(DocumentoExpediente::class, Expediente::class);
-    }
 
     /**
      * Busca un prospecto existente por teléfono o CURP (los dos campos que

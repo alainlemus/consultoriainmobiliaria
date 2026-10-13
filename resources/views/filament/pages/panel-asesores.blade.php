@@ -6,7 +6,7 @@
 
         @foreach([
             ['label'=>'Prospectos',        'value'=>$r['prospectos'],     'color'=>'#1a1a1a', 'icon'=>'👥'],
-            ['label'=>'Sin documentos',    'value'=>$r['sin_documentos'], 'color'=>'#d97706', 'icon'=>'📭'],
+            ['label'=>'Expedientes',       'value'=>$r['expedientes'],    'color'=>'#d97706', 'icon'=>'📁'],
             ['label'=>'Documentos subidos','value'=>$r['documentos'],     'color'=>'#16a34a', 'icon'=>'📄'],
             ['label'=>'Por capturar',      'value'=>$r['por_capturar'],   'color'=>'#dc2626', 'icon'=>'📝'],
         ] as $kpi)

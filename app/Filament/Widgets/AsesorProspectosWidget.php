@@ -64,13 +64,6 @@ class AsesorProspectosWidget extends BaseWidget
                         default            => $state,
                     }),
 
-                Tables\Columns\TextColumn::make('documentos_count')
-                    ->label('Documentos')
-                    ->counts(['documentos' => fn ($q) => $q->whereNotNull('ruta_archivo')])
-                    ->badge()
-                    ->color('gray')
-                    ->alignCenter(),
-
                 Tables\Columns\TextColumn::make('origen')
                     ->label('Origen')
                     ->badge()

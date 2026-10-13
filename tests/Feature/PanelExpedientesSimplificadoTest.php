@@ -35,7 +35,12 @@ class PanelExpedientesSimplificadoTest extends TestCase
         $this->actingAs($admin);
 
         $contacto = Contacto::create(['nombre' => 'Ana Prueba', 'asesor_id' => $admin->id]);
-        $this->expediente = Expediente::paraContacto($contacto, $admin);
+        $tipo  = \App\Models\TipoTramite::create(['nombre' => 'FOVISSSTE', 'slug' => 'fovissste']);
+        $etapa = \App\Models\EtapaTramite::create(['tipo_tramite_id' => $tipo->id, 'nombre' => 'Inicio', 'orden' => 1]);
+        $this->expediente = Expediente::create([
+            'contacto_id' => $contacto->id, 'asesor_id' => $admin->id, 'tipo_tramite_id' => $tipo->id,
+            'etapa_tramite_id' => $etapa->id, 'acreditado_nombre' => 'Ana Prueba',
+        ]);
 
         DocumentoExpediente::create([
             'expediente_id' => $this->expediente->id, 'tipo' => 'INE', 'nombre' => 'INE',

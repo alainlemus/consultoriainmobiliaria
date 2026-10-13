@@ -85,8 +85,6 @@ Route::prefix('v1')->group(function () {
         Route::post('/contactos',                             [ContactoController::class, 'store']);
         Route::get('/contactos/{id}',                        [ContactoController::class, 'show']);
         Route::put('/contactos/{id}',                        [ContactoController::class, 'update']);
-        Route::get('/contactos/{contactoId}/documentos',    [DocumentoController::class, 'indexContacto']);
-        Route::post('/contactos/{contactoId}/documentos',   [DocumentoController::class, 'storeContacto']);
         Route::post('/contactos/{id}/foto',                  [ContactoController::class, 'uploadFoto']);
         Route::post('/contactos/{id}/simulador-screenshot',  [ContactoController::class, 'uploadSimuladorScreenshot']);
 

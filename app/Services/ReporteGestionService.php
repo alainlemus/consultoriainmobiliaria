@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Contacto;
 use App\Models\DocumentoExpediente;
+use App\Models\Expediente;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 
@@ -26,6 +27,7 @@ class ReporteGestionService
             'hasta'       => $hasta,
             'generado_en' => now(),
             'prospectos'  => $this->prospectos($desde, $hasta),
+            'expedientes' => $this->expedientes($desde, $hasta),
             'documentos'  => $this->documentos($desde, $hasta),
             'por_asesor'  => $this->actividadPorAsesor($desde, $hasta),
         ];
@@ -33,23 +35,26 @@ class ReporteGestionService
 
     private function prospectos(Carbon $desde, Carbon $hasta): array
     {
-        $activos = Contacto::where('estado_prospecto', '!=', 'descartado');
-
         $nuevos = Contacto::with('asesor:id,name')
-            ->withCount(['documentos as documentos_count' => fn ($q) => $q->whereNotNull('ruta_archivo')])
             ->whereBetween('created_at', [$desde, $hasta])
             ->latest()
             ->get();
 
         return [
             'nuevos_periodo' => $nuevos->count(),
-            'activos_total'  => (clone $activos)->count(),
-            'sin_documentos' => (clone $activos)->whereDoesntHave('documentos', fn ($q) => $q->whereNotNull('ruta_archivo'))->count(),
+            'activos_total'  => Contacto::whereNotIn('estado_prospecto', ['descartado', 'convertido'])->whereDoesntHave('expedientes')->count(),
             'lista_nuevos'   => $nuevos->map(fn ($c) => [
-                'nombre'     => $c->nombre,
-                'asesor'     => $c->asesor?->name ?? '—',
-                'documentos' => $c->documentos_count,
+                'nombre' => $c->nombre,
+                'asesor' => $c->asesor?->name ?? '—',
             ])->values()->toArray(),
+        ];
+    }
+
+    private function expedientes(Carbon $desde, Carbon $hasta): array
+    {
+        return [
+            'abiertos_periodo' => Expediente::whereBetween('created_at', [$desde, $hasta])->count(),
+            'total'            => Expediente::count(),
         ];
     }
 
@@ -67,15 +72,12 @@ class ReporteGestionService
     {
         return User::role('asesor')->where('activo', true)->get()->map(function (User $asesor) use ($desde, $hasta) {
             return [
-                'asesor'         => $asesor->name,
-                'prospectos'     => $asesor->contactos()->whereBetween('created_at', [$desde, $hasta])->count(),
-                'documentos'     => $asesor->documentos()
+                'asesor'      => $asesor->name,
+                'prospectos'  => $asesor->contactos()->whereBetween('created_at', [$desde, $hasta])->count(),
+                'expedientes' => $asesor->expedientes()->whereBetween('created_at', [$desde, $hasta])->count(),
+                'documentos'  => $asesor->documentos()
                     ->whereNotNull('documentos_expediente.ruta_archivo')
                     ->whereBetween('documentos_expediente.created_at', [$desde, $hasta])
-                    ->count(),
-                'sin_documentos' => $asesor->contactos()
-                    ->where('estado_prospecto', '!=', 'descartado')
-                    ->whereDoesntHave('documentos', fn ($q) => $q->whereNotNull('ruta_archivo'))
                     ->count(),
             ];
         })->values()->toArray();

@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Models\Contacto;
 use App\Models\DocumentoExpediente;
+use App\Models\Expediente;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Cache;
@@ -25,15 +26,13 @@ class CrmStatsOverview extends BaseWidget
     protected function getStats(): array
     {
         $data = Cache::remember('dashboard:crm_stats', 90, function () {
-            $activos = Contacto::whereNotIn('estado_prospecto', ['descartado']);
-
             return [
-                'prospectosMes'  => Contacto::whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count(),
+                'prospectosMes'    => Contacto::whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count(),
                 'prospectosNuevos' => Contacto::where('estado_prospecto', 'nuevo')->count(),
-                'sinDocumentos'  => (clone $activos)->whereDoesntHave('documentos', fn ($q) => $q->whereNotNull('ruta_archivo'))->count(),
-                'documentosMes'  => DocumentoExpediente::whereNotNull('ruta_archivo')
+                'expedientes'      => Expediente::count(),
+                'documentosMes'    => DocumentoExpediente::whereNotNull('ruta_archivo')
                     ->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count(),
-                'porCapturar'    => DocumentoExpediente::whereNotNull('ruta_archivo')->whereNull('capturado_at')->count(),
+                'porCapturar'      => DocumentoExpediente::whereNotNull('ruta_archivo')->whereNull('capturado_at')->count(),
             ];
         });
 
@@ -48,10 +47,10 @@ class CrmStatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('warning'),
 
-            Stat::make('Sin documentos', $data['sinDocumentos'])
-                ->description('Prospectos que aún no suben nada')
-                ->descriptionIcon('heroicon-m-document-minus')
-                ->color('danger'),
+            Stat::make('Expedientes', $data['expedientes'])
+                ->description('Clientes con expediente abierto')
+                ->descriptionIcon('heroicon-m-folder-open')
+                ->color('info'),
 
             Stat::make('Documentos del mes', $data['documentosMes'])
                 ->description('Subidos desde la app')

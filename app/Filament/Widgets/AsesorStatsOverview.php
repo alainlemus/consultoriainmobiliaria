@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Models\Contacto;
 use App\Models\DocumentoExpediente;
+use App\Models\Expediente;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Auth;
@@ -23,12 +24,12 @@ class AsesorStatsOverview extends BaseWidget
         $id = Auth::id();
 
         $data = Cache::remember("dashboard:asesor_stats:{$id}", 90, function () use ($id) {
-            $mios = Contacto::where('asesor_id', $id)->whereNotIn('estado_prospecto', ['descartado']);
+            $mios = Contacto::where('asesor_id', $id)->whereNotIn('estado_prospecto', ['descartado', 'convertido'])->whereDoesntHave('expedientes');
 
             return [
                 'prospectos'    => (clone $mios)->count(),
-                'prospectosMes' => (clone $mios)->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count(),
-                'sinDocumentos' => (clone $mios)->whereDoesntHave('documentos', fn ($q) => $q->whereNotNull('ruta_archivo'))->count(),
+                'prospectosMes' => Contacto::where('asesor_id', $id)->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count(),
+                'expedientes'   => Expediente::where('asesor_id', $id)->count(),
                 'documentosMes' => DocumentoExpediente::whereNotNull('ruta_archivo')
                     ->whereHas('expediente', fn ($q) => $q->where('asesor_id', $id))
                     ->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)
@@ -38,7 +39,7 @@ class AsesorStatsOverview extends BaseWidget
 
         return [
             Stat::make('Mis prospectos', $data['prospectos'])
-                ->description('Sin contar descartados')
+                ->description('En evaluación')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('primary'),
 
@@ -47,15 +48,15 @@ class AsesorStatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-user-plus')
                 ->color('success'),
 
-            Stat::make('Sin documentos', $data['sinDocumentos'])
-                ->description('Prospectos que aún no suben nada')
-                ->descriptionIcon('heroicon-m-document-minus')
-                ->color('warning'),
+            Stat::make('Mis expedientes', $data['expedientes'])
+                ->description('Clientes con expediente')
+                ->descriptionIcon('heroicon-m-folder-open')
+                ->color('info'),
 
             Stat::make('Documentos del mes', $data['documentosMes'])
                 ->description('Subidos desde la app')
                 ->descriptionIcon('heroicon-m-document-arrow-up')
-                ->color('info'),
+                ->color('warning'),
         ];
     }
 }

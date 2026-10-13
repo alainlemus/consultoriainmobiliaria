@@ -85,9 +85,8 @@ class ExpedienteResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        // Expedientes con documentos subidos desde la app que todavía no se capturan.
-        $query = static::getModel()::whereHas('documentos', fn ($q) => $q
-            ->whereNotNull('ruta_archivo')->whereNull('capturado_at'));
+        // Total de expedientes (clientes). Un asesor ve solo los suyos.
+        $query = static::getModel()::query();
 
         if (Auth::check() && Auth::user()->hasRole('asesor')) {
             $query->where('asesor_id', Auth::id());

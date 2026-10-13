@@ -31,10 +31,10 @@ class RankingAsesoresWidget extends BaseWidget
                 User::query()
                     ->role('asesor')
                     ->where('activo', true)
-                    ->has('contactos') // solo asesores con prospectos
+                    ->where(fn ($q) => $q->has('contactos')->orHas('expedientes')) // solo asesores con actividad
                     ->withCount([
                         'contactos as prospectos_mes' => $contactosDelMes,
-                        'contactos as prospectos_total',
+                        'expedientes as expedientes_total',
                         'documentos as documentos_mes' => $documentosDelMes,
                     ])
                     ->orderByDesc('prospectos_mes')
@@ -56,8 +56,8 @@ class RankingAsesoresWidget extends BaseWidget
                     ->badge()
                     ->color('success'),
 
-                Tables\Columns\TextColumn::make('prospectos_total')
-                    ->label('Prospectos en total')
+                Tables\Columns\TextColumn::make('expedientes_total')
+                    ->label('Expedientes en total')
                     ->alignCenter()
                     ->badge()
                     ->color('gray'),

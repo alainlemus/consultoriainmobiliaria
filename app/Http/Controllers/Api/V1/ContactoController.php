@@ -29,15 +29,9 @@ class ContactoController extends Controller
         }
         // Super admin sin filtro → ve todos
 
-        // El prospecto es la unidad de trabajo del asesor: se sigue viendo aunque ya
-        // tenga expediente (se crea solo al subir el primer documento).
-        $query->where('estado_prospecto', '!=', 'descartado')
-              ->withCount(['documentos as documentos_count' => fn ($q) => $q->whereNotNull('ruta_archivo')]);
-
-        // Para el inicio de la app: cuántos prospectos ya tienen al menos un documento.
-        $conDocumentos = (clone $query)
-            ->whereHas('documentos', fn ($q) => $q->whereNotNull('ruta_archivo'))
-            ->count();
+        // Excluir prospectos que ya pasaron a expediente (igual que el CRM)
+        $query->whereNotIn('estado_prospecto', ['convertido', 'descartado'])
+              ->whereDoesntHave('expedientes');
 
         if ($q = $request->input('q')) {
             $query->where(function ($b) use ($q) {
@@ -61,7 +55,6 @@ class ContactoController extends Controller
                 'current_page' => $result->currentPage(),
                 'last_page'    => $result->lastPage(),
                 'per_page'     => $result->perPage(),
-                'con_documentos' => $conDocumentos,
             ],
         ]);
     }

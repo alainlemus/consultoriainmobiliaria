@@ -154,9 +154,9 @@
         <div class="kpi-value">{{ $datos['documentos']['por_capturar'] }}</div>
         <div class="kpi-label">Por capturar</div>
     </div>
-    <div class="kpi warning">
-        <div class="kpi-value">{{ $datos['prospectos']['sin_documentos'] }}</div>
-        <div class="kpi-label">Prospectos sin documentos</div>
+    <div class="kpi info">
+        <div class="kpi-value">{{ $datos['expedientes']['abiertos_periodo'] }}</div>
+        <div class="kpi-label">Expedientes abiertos</div>
     </div>
 </div>
 
@@ -165,14 +165,11 @@
     <div class="section-title">1. Prospectos registrados en el período</div>
     @if(count($datos['prospectos']['lista_nuevos']) > 0)
     <table>
-        <tr><th>Prospecto</th><th>Asesor</th><th class="text-right">Documentos</th></tr>
+        <tr><th>Prospecto</th><th>Asesor</th></tr>
         @foreach($datos['prospectos']['lista_nuevos'] as $p)
         <tr>
             <td>{{ $p['nombre'] }}</td>
             <td>{{ $p['asesor'] }}</td>
-            <td class="text-right">
-                <span class="badge {{ $p['documentos'] > 0 ? 'badge-green' : 'badge-gray' }}">{{ $p['documentos'] }}</span>
-            </td>
         </tr>
         @endforeach
     </table>
@@ -192,15 +189,15 @@
         <tr>
             <th>Asesor</th>
             <th class="text-right">Prospectos nuevos</th>
+            <th class="text-right">Expedientes abiertos</th>
             <th class="text-right">Documentos subidos</th>
-            <th class="text-right">Prospectos sin documentos</th>
         </tr>
         @foreach($datos['por_asesor'] as $a)
         <tr>
             <td class="bold">{{ $a['asesor'] }}</td>
             <td class="text-right">{{ $a['prospectos'] }}</td>
+            <td class="text-right">{{ $a['expedientes'] }}</td>
             <td class="text-right" style="{{ $a['documentos'] > 0 ? 'color:#276749;font-weight:bold' : '' }}">{{ $a['documentos'] }}</td>
-            <td class="text-right">{{ $a['sin_documentos'] }}</td>
         </tr>
         @endforeach
     </table>

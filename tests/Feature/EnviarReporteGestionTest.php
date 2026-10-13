@@ -216,33 +216,34 @@ class EnviarReporteGestionTest extends TestCase
         $service = app(ReporteGestionService::class);
         $datos   = $service->generar(Carbon::now()->startOfDay(), Carbon::now()->endOfDay(), 'diario');
 
-        foreach (['tipo', 'desde', 'hasta', 'prospectos', 'documentos', 'por_asesor'] as $llave) {
+        foreach (['tipo', 'desde', 'hasta', 'prospectos', 'expedientes', 'documentos', 'por_asesor'] as $llave) {
             $this->assertArrayHasKey($llave, $datos);
         }
     }
 
-    public function test_service_cuenta_prospectos_y_documentos_del_periodo(): void
+    public function test_service_cuenta_prospectos_expedientes_y_documentos_del_periodo(): void
     {
-        $service  = app(ReporteGestionService::class);
-        $conDocs  = Contacto::create(['nombre' => 'Con documentos', 'asesor_id' => $this->asesor->id]);
-        Contacto::create(['nombre' => 'Sin documentos', 'asesor_id' => $this->asesor->id]);
+        $service = app(ReporteGestionService::class);
+        $cliente = Contacto::create(['nombre' => 'Ya es cliente', 'asesor_id' => $this->asesor->id]);
+        Contacto::create(['nombre' => 'Prospecto', 'asesor_id' => $this->asesor->id]);
 
-        $exp = Expediente::paraContacto($conDocs, $this->asesor);
+        $exp = $this->crearExpediente(['contacto_id' => $cliente->id]);
         $exp->documentos()->create(['tipo' => 'INE', 'nombre' => 'INE', 'seccion' => 'acreditado', 'estado' => 'recibido', 'ruta_archivo' => 'x/ine.pdf']);
 
         $datos = $service->generar(Carbon::now()->startOfDay(), Carbon::now()->endOfDay(), 'diario');
 
         $this->assertEquals(2, $datos['prospectos']['nuevos_periodo']);
-        $this->assertEquals(1, $datos['prospectos']['sin_documentos']);
+        $this->assertEquals(1, $datos['prospectos']['activos_total']); // el cliente ya no cuenta como prospecto
+        $this->assertEquals(1, $datos['expedientes']['abiertos_periodo']);
         $this->assertEquals(1, $datos['documentos']['subidos_periodo']);
         $this->assertEquals(1, $datos['documentos']['por_capturar']);
     }
 
     public function test_service_incluye_actividad_por_asesor(): void
     {
-        $service  = app(ReporteGestionService::class);
-        $contacto = Contacto::create(['nombre' => 'Ana', 'asesor_id' => $this->asesor->id]);
-        $exp = Expediente::paraContacto($contacto, $this->asesor);
+        $service = app(ReporteGestionService::class);
+        Contacto::create(['nombre' => 'Ana', 'asesor_id' => $this->asesor->id]);
+        $exp = $this->crearExpediente();
         $exp->documentos()->create(['tipo' => 'CURP', 'nombre' => 'CURP', 'seccion' => 'acreditado', 'estado' => 'recibido', 'ruta_archivo' => 'x/curp.pdf']);
 
         $datos = $service->generar(Carbon::now()->startOfDay(), Carbon::now()->endOfDay(), 'diario');
@@ -250,6 +251,7 @@ class EnviarReporteGestionTest extends TestCase
         $this->assertNotEmpty($datos['por_asesor']);
         $this->assertEquals($this->asesor->name, $datos['por_asesor'][0]['asesor']);
         $this->assertEquals(1, $datos['por_asesor'][0]['prospectos']);
+        $this->assertEquals(1, $datos['por_asesor'][0]['expedientes']);
         $this->assertEquals(1, $datos['por_asesor'][0]['documentos']);
     }
 }

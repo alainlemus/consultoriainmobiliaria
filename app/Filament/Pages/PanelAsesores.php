@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\DocumentoExpediente;
 use App\Models\Contacto;
+use App\Models\Expediente;
 use App\Models\User;
 use Filament\Pages\Page;
 use Filament\Tables;
@@ -33,9 +34,8 @@ class PanelAsesores extends Page implements HasTable
         return User::query()
             ->whereHas('roles', fn ($q) => $q->where('name', 'asesor'))
             ->withCount([
-                'contactos as total_prospectos' => fn ($q) => $q->where('estado_prospecto', '!=', 'descartado'),
-                'contactos as prospectos_sin_documentos' => fn ($q) => $q->where('estado_prospecto', '!=', 'descartado')
-                    ->whereDoesntHave('documentos', fn ($d) => $d->whereNotNull('ruta_archivo')),
+                'contactos as total_prospectos' => fn ($q) => $q->whereNotIn('estado_prospecto', ['descartado', 'convertido'])->whereDoesntHave('expedientes'),
+                'expedientes as total_expedientes',
                 'documentos as total_documentos' => fn ($q) => $q->whereNotNull('documentos_expediente.ruta_archivo'),
                 'documentos as documentos_por_capturar' => fn ($q) => $q->whereNotNull('documentos_expediente.ruta_archivo')
                     ->whereNull('documentos_expediente.capturado_at'),
@@ -60,11 +60,11 @@ class PanelAsesores extends Page implements HasTable
                 ->badge()
                 ->color('gray'),
 
-            Tables\Columns\TextColumn::make('prospectos_sin_documentos')
-                ->label('Sin documentos')
+            Tables\Columns\TextColumn::make('total_expedientes')
+                ->label('Expedientes')
                 ->alignCenter()
                 ->badge()
-                ->color('warning'),
+                ->color('info'),
 
             Tables\Columns\TextColumn::make('total_documentos')
                 ->label('Documentos subidos')
@@ -100,12 +100,11 @@ class PanelAsesores extends Page implements HasTable
 
     public function getResumenGlobal(): array
     {
-        $activos = Contacto::where('estado_prospecto', '!=', 'descartado');
         $conArchivo = DocumentoExpediente::whereNotNull('ruta_archivo');
 
         return [
-            'prospectos'      => (clone $activos)->count(),
-            'sin_documentos'  => (clone $activos)->whereDoesntHave('documentos', fn ($q) => $q->whereNotNull('ruta_archivo'))->count(),
+            'prospectos'      => Contacto::whereNotIn('estado_prospecto', ['descartado', 'convertido'])->whereDoesntHave('expedientes')->count(),
+            'expedientes'     => Expediente::count(),
             'documentos'      => (clone $conArchivo)->count(),
             'por_capturar'    => (clone $conArchivo)->whereNull('capturado_at')->count(),
         ];

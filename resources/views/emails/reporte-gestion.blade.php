@@ -29,9 +29,22 @@
             <td>Activos en total</td>
             <td>{{ $datos['prospectos']['activos_total'] }}</td>
         </tr>
+    </table>
+
+    {{-- Expedientes --}}
+    <h3>📁 Expedientes</h3>
+    <table class="metrics-table">
         <tr>
-            <td>Sin documentos</td>
-            <td>{{ $datos['prospectos']['sin_documentos'] }}</td>
+            <th>Métrica</th>
+            <th>Valor</th>
+        </tr>
+        <tr>
+            <td>Abiertos en el período</td>
+            <td>{{ $datos['expedientes']['abiertos_periodo'] }}</td>
+        </tr>
+        <tr>
+            <td>Expedientes en total</td>
+            <td>{{ $datos['expedientes']['total'] }}</td>
         </tr>
     </table>
 

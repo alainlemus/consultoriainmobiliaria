@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ExtractPdfDataJob;
-use App\Models\Contacto;
 use App\Models\DocumentoExpediente;
 use App\Models\Expediente;
 use App\Models\User;
@@ -123,95 +122,50 @@ class DocumentoController extends Controller
 
         $seccion = $request->input('seccion');
 
-        // Si ya existe un doc de este tipo+sección, borrar el archivo anterior
-        $existente = DocumentoExpediente::where('expediente_id', $expedienteId)
-            ->where('tipo', $request->tipo_documento)
-            ->where('seccion', $seccion)
-            ->first();
-        if ($existente?->ruta_archivo) {
-            Storage::disk(self::DISK)->delete($existente->ruta_archivo);
-        }
+        // Sin sección (app actual): cada subida es un documento nuevo; si ya hay uno del
+        // mismo tipo se guarda como "INE (2)", "INE (3)"… Con sección (checklist del panel
+        // y apps anteriores): reemplaza el documento de ese tipo y sección.
+        if (! $seccion) {
+            $seccion = 'acreditado';
+            $tipo    = $request->tipo_documento;
+            for ($n = 2; DocumentoExpediente::where('expediente_id', $expedienteId)->where('tipo', $tipo)->where('seccion', $seccion)->exists(); $n++) {
+                $tipo = "{$request->tipo_documento} ({$n})";
+            }
 
-        $doc = DocumentoExpediente::updateOrCreate(
-            [
+            $doc = DocumentoExpediente::create([
                 'expediente_id' => $expedienteId,
-                'tipo'          => $request->tipo_documento,
+                'tipo'          => $tipo,
+                'nombre'        => $tipo,
                 'seccion'       => $seccion,
-            ],
-            [
-                // Usamos el nombre descriptivo del documento, no el nombre técnico del archivo
-                'nombre'       => $request->tipo_documento,
-                'estado'       => 'pendiente',
-                'notas'        => $request->input('notas'),
-                'ruta_archivo' => $ruta,
-            ]
-        );
+                'estado'        => 'recibido',
+                'notas'         => $request->input('notas'),
+                'ruta_archivo'  => $ruta,
+            ]);
+        } else {
+            // Si ya existe un doc de este tipo+sección, borrar el archivo anterior
+            $existente = DocumentoExpediente::where('expediente_id', $expedienteId)
+                ->where('tipo', $request->tipo_documento)
+                ->where('seccion', $seccion)
+                ->first();
+            if ($existente?->ruta_archivo) {
+                Storage::disk(self::DISK)->delete($existente->ruta_archivo);
+            }
 
-        $this->notificarDocumentoSubido($doc, $exp);
-
-        return response()->json(['data' => $this->serialize($doc)], 201);
-    }
-
-    /**
-     * GET /api/v1/contactos/{contactoId}/documentos
-     *
-     * Documentos del prospecto (los de su expediente más reciente). Si todavía no
-     * tiene expediente devuelve una lista vacía y expediente_id null.
-     */
-    public function indexContacto(Request $request, int $contactoId): JsonResponse
-    {
-        $contacto = $this->contactoParaUsuario($request, $contactoId);
-        $exp      = $contacto->expedientes()->latest()->first();
-
-        $docs = $exp
-            ? DocumentoExpediente::where('expediente_id', $exp->id)
-                ->whereNotNull('ruta_archivo')
-                ->latest()
-                ->get()
-                ->map(fn ($d) => $this->serialize($d))
-            : collect();
-
-        return response()->json(['data' => $docs, 'expediente_id' => $exp?->id]);
-    }
-
-    /**
-     * POST /api/v1/contactos/{contactoId}/documentos
-     *
-     * Sube un documento al prospecto. El expediente se crea solo la primera vez.
-     * A diferencia de /expedientes/{id}/documentos, aquí cada subida es un
-     * documento nuevo (no reemplaza a otro del mismo tipo).
-     */
-    public function storeContacto(Request $request, int $contactoId): JsonResponse
-    {
-        $contacto = $this->contactoParaUsuario($request, $contactoId);
-
-        $request->validate([
-            'archivo'        => ['required', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,heic,webp'],
-            'tipo_documento' => ['required', 'string', 'max:150'],
-            'seccion'        => ['nullable', 'string', 'in:acreditado,vendedor,vivienda,otros'],
-            'notas'          => ['nullable', 'string'],
-        ]);
-
-        $exp  = Expediente::paraContacto($contacto, $request->user());
-        $ruta = $this->guardarArchivo($request, $exp->id);
-
-        // Si ya hay uno del mismo tipo se guarda como "INE (2)", "INE (3)"…: el
-        // expediente no admite dos documentos con el mismo tipo.
-        $seccion = $request->input('seccion') ?: 'acreditado';
-        $tipo    = $request->tipo_documento;
-        for ($n = 2; DocumentoExpediente::where('expediente_id', $exp->id)->where('tipo', $tipo)->where('seccion', $seccion)->exists(); $n++) {
-            $tipo = "{$request->tipo_documento} ({$n})";
+            $doc = DocumentoExpediente::updateOrCreate(
+                [
+                    'expediente_id' => $expedienteId,
+                    'tipo'          => $request->tipo_documento,
+                    'seccion'       => $seccion,
+                ],
+                [
+                    // Usamos el nombre descriptivo del documento, no el nombre técnico del archivo
+                    'nombre'       => $request->tipo_documento,
+                    'estado'       => 'pendiente',
+                    'notas'        => $request->input('notas'),
+                    'ruta_archivo' => $ruta,
+                ]
+            );
         }
-
-        $doc = DocumentoExpediente::create([
-            'expediente_id' => $exp->id,
-            'tipo'          => $tipo,
-            'nombre'        => $tipo,
-            'seccion'       => $seccion,
-            'estado'        => 'recibido',
-            'notas'         => $request->input('notas'),
-            'ruta_archivo'  => $ruta,
-        ]);
 
         $this->notificarDocumentoSubido($doc, $exp);
 
@@ -221,19 +175,7 @@ class DocumentoController extends Controller
             ExtractPdfDataJob::dispatch($exp->id)->delay(now()->addMinutes(2));
         }
 
-        return response()->json(['data' => $this->serialize($doc), 'expediente_id' => $exp->id], 201);
-    }
-
-    private function contactoParaUsuario(Request $request, int $contactoId): Contacto
-    {
-        $user     = $request->user();
-        $contacto = Contacto::findOrFail($contactoId);
-
-        if (! $user->hasRole('super_admin') && $contacto->asesor_id !== $user->id) {
-            abort(403, 'No tienes permiso para acceder a este prospecto.');
-        }
-
-        return $contacto;
+        return response()->json(['data' => $this->serialize($doc)], 201);
     }
 
     /**

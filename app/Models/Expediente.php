@@ -134,37 +134,6 @@ class Expediente extends Model
         });
     }
 
-    /**
-     * Expediente vigente del prospecto; si no tiene lo crea (FOVISSSTE crédito
-     * tradicional, con los datos del prospecto). La app no lo muestra: el asesor
-     * solo registra prospectos y sube documentos.
-     */
-    public static function paraContacto(Contacto $contacto, User $usuario): self
-    {
-        $existente = static::where('contacto_id', $contacto->id)
-            ->where('estado', '!=', 'cancelado')
-            ->latest()
-            ->first();
-
-        if ($existente) {
-            return $existente;
-        }
-
-        $tipoTramiteId = 1; // FOVISSSTE Crédito Tradicional
-
-        return static::create([
-            'contacto_id'       => $contacto->id,
-            'asesor_id'         => $contacto->asesor_id ?? $usuario->id,
-            'tipo_tramite_id'   => $tipoTramiteId,
-            'etapa_tramite_id'  => EtapaTramite::where('tipo_tramite_id', $tipoTramiteId)->orderBy('orden')->value('id'),
-            'estado'            => 'en_proceso',
-            'acreditado_nombre' => $contacto->nombre,
-            'acreditado_curp'   => $contacto->curp,
-            'acreditado_telefono' => $contacto->telefono,
-            'acreditado_email'  => $contacto->email,
-        ]);
-    }
-
     // --- Relaciones ---
 
     public function tipoTramite(): BelongsTo

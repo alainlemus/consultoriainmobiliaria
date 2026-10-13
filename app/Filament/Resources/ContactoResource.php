@@ -70,9 +70,10 @@ class ContactoResource extends Resource
             $query->where('asesor_id', Auth::id());
         }
 
-        // Excluir prospectos que ya no son prospectos activos. Los que tienen expediente
-        // se siguen viendo: la app lo crea solo al subir el primer documento.
-        $query->whereNotIn('estado_prospecto', ['convertido', 'descartado']);
+        // Excluir prospectos que ya no son prospectos activos (los que ya son
+        // cliente viven en Expedientes).
+        $query->whereNotIn('estado_prospecto', ['convertido', 'descartado'])
+              ->whereDoesntHave('expedientes');
 
         return $query;
     }
@@ -389,13 +390,6 @@ class ContactoResource extends Resource
                     ->label('Nombre')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('telefono')
                     ->label('Teléfono'),
-                Tables\Columns\TextColumn::make('documentos_count')
-                    ->label('Documentos')
-                    ->counts(['documentos' => fn ($q) => $q->whereNotNull('ruta_archivo')])
-                    ->badge()
-                    ->color('gray')
-                    ->alignCenter()
-                    ->toggleable(),
                 Tables\Columns\TextColumn::make('email')
                     ->label('Correo')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('curp')
@@ -603,16 +597,7 @@ class ContactoResource extends Resource
                             ->send();
                     })
                     ->visible(fn (Contacto $record) => Auth::user()?->hasRole('super_admin')
-                        && ! in_array($record->estado_prospecto, ['convertido', 'descartado'])
-                        && ! $record->expedientes()->exists()),
-
-                // El expediente se crea solo al subir el primer documento desde la app.
-                \Filament\Actions\Action::make('ver_expediente')
-                    ->label('Ver documentos')
-                    ->icon('heroicon-o-folder-open')
-                    ->color('success')
-                    ->url(fn (Contacto $record) => ExpedienteResource::getUrl('edit', ['record' => $record->expedientes()->latest()->first()]))
-                    ->visible(fn (Contacto $record) => Auth::user()?->can('ViewAny:Expediente') && $record->expedientes()->exists()),
+                        && ! in_array($record->estado_prospecto, ['convertido', 'descartado'])),
 
                 \Filament\Actions\ActionGroup::make([
 
