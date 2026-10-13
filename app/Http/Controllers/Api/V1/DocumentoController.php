@@ -334,8 +334,36 @@ class DocumentoController extends Controller
             // No se sobreescribe 'nombre': conserva el nombre descriptivo asignado al subir
             'ruta_archivo' => $ruta,
             'estado'       => 'recibido',
-            // El archivo nuevo hay que volver a revisarlo y capturarlo en el panel
-            'capturado_at' => null,
+            // El archivo nuevo hay que volver a revisarlo, validarlo y capturarlo
+            'capturado_at'   => null,
+            'validado_at'    => null,
+            'validado_por'   => null,
+            'motivo_rechazo' => null,
+        ]);
+
+        return response()->json(['data' => $this->serialize($doc->fresh())]);
+    }
+
+    /**
+     * POST /api/v1/expedientes/{expedienteId}/documentos/{documentoId}/validar
+     *
+     * Solo un administrador da por válido un documento (los asesores solo lo ven).
+     */
+    public function validar(Request $request, int $expedienteId, int $documentoId): JsonResponse
+    {
+        $this->soloAdmin($request);
+
+        $doc = DocumentoExpediente::where('expediente_id', $expedienteId)->findOrFail($documentoId);
+
+        if (! $doc->ruta_archivo) {
+            abort(422, 'Este documento no tiene archivo — no hay nada que validar.');
+        }
+
+        $doc->update([
+            'estado'         => 'recibido',
+            'validado_at'    => now(),
+            'validado_por'   => $request->user()->id,
+            'motivo_rechazo' => null,
         ]);
 
         return response()->json(['data' => $this->serialize($doc->fresh())]);
@@ -344,18 +372,16 @@ class DocumentoController extends Controller
     /**
      * POST /api/v1/expedientes/{expedienteId}/documentos/{documentoId}/rechazar
      *
-     * El asesor marca un documento ya subido como no válido (ilegible,
-     * incompleto, etc.) con un motivo. El archivo se conserva (para que el
-     * asesor pueda revisar qué se subió), pero el estado pasa a 'rechazado'
-     * y el acreditado recibe un push explicando qué debe corregir.
+     * Solo un administrador rechaza un documento (ilegible, vencido, incorrecto…) con un
+     * motivo. El archivo se conserva; el estado pasa a 'rechazado' y, si el acreditado
+     * usa la app, recibe un push con el motivo.
      */
     public function rechazar(Request $request, int $expedienteId, int $documentoId): JsonResponse
     {
-        $exp = Expediente::findOrFail($expedienteId);
-        $this->authorizeAccess($request, $exp);
+        $this->soloAdmin($request);
 
-        $doc = DocumentoExpediente::where('expediente_id', $expedienteId)
-            ->findOrFail($documentoId);
+        $exp = Expediente::findOrFail($expedienteId);
+        $doc = DocumentoExpediente::where('expediente_id', $expedienteId)->findOrFail($documentoId);
 
         $data = $request->validate([
             'motivo' => ['required', 'string', 'max:500'],
@@ -366,8 +392,10 @@ class DocumentoController extends Controller
         }
 
         $doc->update([
-            'estado' => 'rechazado',
-            'notas'  => $data['motivo'],
+            'estado'         => 'rechazado',
+            'motivo_rechazo' => $data['motivo'],   // `notas` queda intacta: identifica el documento
+            'validado_at'    => null,
+            'validado_por'   => null,
         ]);
 
         if ($exp->acreditadoRegistrado) {
@@ -377,5 +405,10 @@ class DocumentoController extends Controller
         }
 
         return response()->json(['data' => $this->serialize($doc->fresh())]);
+    }
+
+    private function soloAdmin(Request $request): void
+    {
+        abort_unless($request->user()->hasRole('super_admin'), 403, 'Solo un administrador puede validar documentos.');
     }
 }

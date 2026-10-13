@@ -107,6 +107,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/expedientes/{expedienteId}/documentos/{documentoId}/ver',                 [DocumentoController::class, 'ver']);
         Route::delete('/expedientes/{expedienteId}/documentos/{documentoId}',                  [DocumentoController::class, 'destroy']);
         Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/reemplazar',         [DocumentoController::class, 'reemplazar']);
+        Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/validar',            [DocumentoController::class, 'validar']);
         Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/rechazar',           [DocumentoController::class, 'rechazar']);
 
         // Ubicaciones GPS

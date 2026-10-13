@@ -152,7 +152,7 @@ class AcreditadoTest extends TestCase
 
     // ─── Documento rechazado ────────────────────────────────────────────────
 
-    public function test_asesor_puede_rechazar_documento_con_motivo(): void
+    public function test_admin_puede_rechazar_documento_con_motivo(): void
     {
         Notification::fake();
 
@@ -167,7 +167,7 @@ class AcreditadoTest extends TestCase
             'ruta_archivo'  => 'expedientes/1/docs/ine.jpg',
         ]);
 
-        $this->actingAs($this->asesor, 'sanctum')
+        $this->actingAs($this->admin(), 'sanctum')
             ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", [
                 'motivo' => 'La foto sale borrosa, no se alcanza a leer la CURP',
             ])
@@ -177,7 +177,7 @@ class AcreditadoTest extends TestCase
         $this->assertDatabaseHas('documentos_expediente', [
             'id'     => $doc->id,
             'estado' => 'rechazado',
-            'notas'  => 'La foto sale borrosa, no se alcanza a leer la CURP',
+            'motivo_rechazo' => 'La foto sale borrosa, no se alcanza a leer la CURP',
         ]);
 
         Notification::assertSentTo(
@@ -199,7 +199,7 @@ class AcreditadoTest extends TestCase
             'ruta_archivo'  => 'expedientes/1/docs/ine.jpg',
         ]);
 
-        $this->actingAs($this->asesor, 'sanctum')
+        $this->actingAs($this->admin(), 'sanctum')
             ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", [])
             ->assertStatus(422);
     }
@@ -216,14 +216,14 @@ class AcreditadoTest extends TestCase
             'ruta_archivo'  => null,
         ]);
 
-        $this->actingAs($this->asesor, 'sanctum')
+        $this->actingAs($this->admin(), 'sanctum')
             ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", [
                 'motivo' => 'No hay nada que rechazar',
             ])
             ->assertStatus(422);
     }
 
-    public function test_otro_asesor_no_puede_rechazar_documento_ajeno(): void
+    public function test_un_asesor_no_puede_rechazar_ni_validar_documentos(): void
     {
         $exp = $this->crearExpediente(); // dueño: $this->asesor
         $doc = DocumentoExpediente::create([
@@ -235,10 +235,13 @@ class AcreditadoTest extends TestCase
             'ruta_archivo'  => 'expedientes/1/docs/ine.jpg',
         ]);
 
-        $this->actingAs($this->otroAsesor, 'sanctum')
+        $this->actingAs($this->asesor, 'sanctum')   // incluso siendo el dueño del expediente
             ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", [
                 'motivo' => 'Intento no autorizado',
             ])
+            ->assertStatus(403);
+        $this->actingAs($this->asesor, 'sanctum')
+            ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/validar")
             ->assertStatus(403);
 
         $this->assertDatabaseHas('documentos_expediente', ['id' => $doc->id, 'estado' => 'recibido']);
@@ -259,11 +262,46 @@ class AcreditadoTest extends TestCase
             'ruta_archivo'  => 'expedientes/1/docs/ine.jpg',
         ]);
 
-        $this->actingAs($this->asesor, 'sanctum')
+        $this->actingAs($this->admin(), 'sanctum')
             ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", ['motivo' => 'Sin acreditado vinculado'])
             ->assertStatus(200);
 
         Notification::assertNothingSent();
+    }
+
+    public function test_admin_valida_un_documento_y_reemplazarlo_lo_regresa_a_revision(): void
+    {
+        $exp = $this->crearExpediente();
+        $doc = DocumentoExpediente::create([
+            'expediente_id' => $exp->id, 'tipo' => 'ine', 'nombre' => 'INE', 'seccion' => 'acreditado',
+            'estado' => 'recibido', 'ruta_archivo' => 'expedientes/1/docs/ine.jpg', 'notas' => 'INE del dueño',
+        ]);
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/validar")
+            ->assertOk()
+            ->assertJsonPath('data.validacion', 'validado');
+
+        $this->assertNotNull($doc->fresh()->validado_at);
+
+        // Rechazar conserva la nota que identifica el documento
+        $this->actingAs($this->admin(), 'sanctum')
+            ->postJson("/api/v1/expedientes/{$exp->id}/documentos/{$doc->id}/rechazar", ['motivo' => 'Vencida'])
+            ->assertOk()
+            ->assertJsonPath('data.validacion', 'rechazado');
+
+        $doc->refresh();
+        $this->assertSame('INE del dueño', $doc->notas);
+        $this->assertSame('Vencida', $doc->motivo_rechazo);
+        $this->assertNull($doc->validado_at);
+    }
+
+    private function admin(): User
+    {
+        $admin = User::factory()->create(['activo' => true]);
+        $admin->assignRole('super_admin');
+
+        return $admin;
     }
 
     // ─── Cambio de etapa notifica también al acreditado vinculado ─────────

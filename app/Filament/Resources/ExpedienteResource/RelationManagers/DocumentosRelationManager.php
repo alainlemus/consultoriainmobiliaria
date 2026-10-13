@@ -106,6 +106,24 @@ class DocumentosRelationManager extends RelationManager
                     ->color('warning')
                     ->weight('medium'),
 
+                Tables\Columns\TextColumn::make('validacion')
+                    ->label('Validación')
+                    ->badge()
+                    ->getStateUsing(fn ($record) => $record->ruta_archivo ? $record->validacion : null)
+                    ->formatStateUsing(fn (?string $state) => match ($state) {
+                        'validado'    => 'Validado',
+                        'rechazado'   => 'Rechazado',
+                        'en_revision' => 'Por validar',
+                        default       => '—',
+                    })
+                    ->color(fn (?string $state) => match ($state) {
+                        'validado'    => 'success',
+                        'rechazado'   => 'danger',
+                        'en_revision' => 'warning',
+                        default       => 'gray',
+                    })
+                    ->tooltip(fn ($record) => $record->validacion === 'rechazado' ? $record->motivo_rechazo : ($record->validado_at ? 'Validado el ' . $record->validado_at->format('d/m/Y H:i') . ($record->validadoPor ? ' por ' . $record->validadoPor->name : '') : null)),
+
                 Tables\Columns\BadgeColumn::make('estado')
                     ->label('Estado')
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -158,6 +176,16 @@ class DocumentosRelationManager extends RelationManager
                         ? $query->where('categoria', $data['value'])
                         : $query
                     ),
+
+                Tables\Filters\SelectFilter::make('validacion')
+                    ->label('Validación')
+                    ->options(['en_revision' => 'Por validar', 'validado' => 'Validados', 'rechazado' => 'Rechazados'])
+                    ->query(fn ($query, $data) => match ($data['value'] ?? null) {
+                        'en_revision' => $query->whereNotNull('ruta_archivo')->whereNull('validado_at')->where('estado', '!=', 'rechazado'),
+                        'validado'    => $query->whereNotNull('validado_at'),
+                        'rechazado'   => $query->where('estado', 'rechazado'),
+                        default       => $query,
+                    }),
 
                 Tables\Filters\Filter::make('por_capturar')
                     ->label('Por capturar')
@@ -391,6 +419,34 @@ class DocumentosRelationManager extends RelationManager
                     }),
             ])
             ->actions([
+                // Solo un administrador valida o rechaza documentos
+                \Filament\Actions\Action::make('validar')
+                    ->label('Validar')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->visible(fn ($record) => auth()->user()?->hasRole('super_admin') && $record->ruta_archivo && $record->validacion !== 'validado')
+                    ->action(fn ($record) => $record->update([
+                        'estado' => 'recibido', 'validado_at' => now(), 'validado_por' => auth()->id(), 'motivo_rechazo' => null,
+                    ]))
+                    ->requiresConfirmation(false),
+
+                \Filament\Actions\Action::make('rechazar')
+                    ->label('Rechazar')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn ($record) => auth()->user()?->hasRole('super_admin') && $record->ruta_archivo && $record->validacion !== 'rechazado')
+                    ->modalHeading('Rechazar documento')
+                    ->modalDescription('Escribe qué debe corregirse. Si el acreditado usa la app, recibirá el motivo.')
+                    ->form([
+                        Forms\Components\Textarea::make('motivo')->label('Motivo')->required()->maxLength(500)->rows(3)
+                            ->placeholder('Ej: El estado de cuenta tiene más de 3 meses'),
+                    ])
+                    ->action(function ($record, array $data) {
+                        $record->update(['estado' => 'rechazado', 'motivo_rechazo' => $data['motivo'], 'validado_at' => null, 'validado_por' => null]);
+                        $exp = $record->expediente;
+                        $exp?->acreditadoRegistrado?->notify(new \App\Notifications\DocumentoRechazado($record, $exp, $data['motivo']));
+                    }),
+
                 \Filament\Actions\Action::make('marcar_capturado')
                     ->label('Capturado')
                     ->icon('heroicon-o-clipboard-document-check')
@@ -504,6 +560,14 @@ class DocumentosRelationManager extends RelationManager
                 ])->icon('heroicon-m-ellipsis-vertical')->tooltip('Más acciones'),
             ])
             ->bulkActions([
+                BulkAction::make('validar_documentos')
+                    ->label('Validar seleccionados')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->visible(fn () => auth()->user()?->hasRole('super_admin'))
+                    ->action(fn ($records) => $records->filter(fn ($r) => $r->ruta_archivo)->each->update([
+                        'estado' => 'recibido', 'validado_at' => now(), 'validado_por' => auth()->id(), 'motivo_rechazo' => null,
+                    ])),
                 BulkAction::make('marcar_capturados')
                     ->label('Marcar como capturados')
                     ->icon('heroicon-o-clipboard-document-check')

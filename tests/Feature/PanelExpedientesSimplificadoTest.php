@@ -106,4 +106,31 @@ class PanelExpedientesSimplificadoTest extends TestCase
         Livewire::test(\App\Filament\Widgets\AsesorStatsOverview::class)->assertSuccessful();
         Livewire::test(\App\Filament\Widgets\AsesorProspectosWidget::class)->assertSuccessful();
     }
+
+    public function test_el_admin_valida_y_rechaza_desde_el_panel(): void
+    {
+        $doc = $this->expediente->documentos()->first();
+
+        Livewire::test(DocumentosRelationManager::class, ['ownerRecord' => $this->expediente, 'pageClass' => EditExpediente::class])
+            ->callTableAction('validar', $doc);
+        $this->assertSame('validado', $doc->fresh()->validacion);
+
+        Livewire::test(DocumentosRelationManager::class, ['ownerRecord' => $this->expediente, 'pageClass' => EditExpediente::class])
+            ->callTableAction('rechazar', $doc, ['motivo' => 'Vencida']);
+        $this->assertSame('rechazado', $doc->fresh()->validacion);
+        $this->assertSame('Vencida', $doc->fresh()->motivo_rechazo);
+    }
+
+    public function test_un_asesor_no_ve_las_acciones_de_validar(): void
+    {
+        $asesor = User::factory()->create(['activo' => true]);
+        $asesor->assignRole('asesor');
+        $asesor->givePermissionTo(\Spatie\Permission\Models\Permission::findOrCreate('ViewAny:Expediente', 'web'));
+        $this->actingAs($asesor);
+        $doc = $this->expediente->documentos()->first();
+
+        Livewire::test(DocumentosRelationManager::class, ['ownerRecord' => $this->expediente, 'pageClass' => EditExpediente::class])
+            ->assertTableActionHidden('validar', $doc)
+            ->assertTableActionHidden('rechazar', $doc);
+    }
 }

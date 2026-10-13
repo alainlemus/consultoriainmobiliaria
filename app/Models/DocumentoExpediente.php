@@ -9,6 +9,8 @@ class DocumentoExpediente extends Model
 {
     protected $table = 'documentos_expediente';
 
+    protected $appends = ['validacion'];
+
     protected $fillable = [
         'expediente_id',
         'tipo',
@@ -19,10 +21,14 @@ class DocumentoExpediente extends Model
         'notas',
         'ruta_archivo',
         'capturado_at',
+        'validado_at',
+        'validado_por',
+        'motivo_rechazo',
     ];
 
     protected $casts = [
         'capturado_at' => 'datetime',
+        'validado_at'  => 'datetime',
     ];
 
     // ─── IDs de TipoTramite ───────────────────────────────────────────────────
@@ -157,6 +163,21 @@ class DocumentoExpediente extends Model
             'no_aplica' => 'No aplica',
             default     => 'Pendiente',
         };
+    }
+
+    /** 'validado' | 'rechazado' | 'en_revision' (lo que ve el asesor y lo que decide el admin). */
+    public function getValidacionAttribute(): string
+    {
+        return match (true) {
+            $this->estado === 'rechazado' => 'rechazado',
+            $this->validado_at !== null   => 'validado',
+            default                       => 'en_revision',
+        };
+    }
+
+    public function validadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'validado_por');
     }
 
     public function expediente(): BelongsTo
