@@ -179,6 +179,42 @@ class FlujoDocumentosTest extends TestCase
         $this->assertSame(2, $exp->documentos()->where('tipo', 'like', 'CURP%')->count());
     }
 
+    public function test_el_expediente_iniciado_sin_senal_se_crea_al_sincronizar_sin_duplicarse(): void
+    {
+        $contacto = Contacto::create(['nombre' => 'Carla', 'telefono' => '5533333333', 'email' => 'carla@example.com', 'asesor_id' => $this->asesor->id]);
+        $op = fn (string $id) => ['id_local' => $id, 'tipo' => 'crear_expediente', 'datos' => ['contacto_id' => $contacto->id, 'tipo_tramite_id' => $this->tipo->id]];
+
+        // El mismo expediente encolado dos veces (doble toque sin señal) se crea una sola vez
+        $r = $this->actingAs($this->asesor, 'sanctum')
+            ->postJson('/api/v1/sync/batch', ['operaciones' => [$op('a'), $op('b')]])
+            ->assertOk();
+
+        $this->assertSame(['ok', 'ok'], collect($r->json('resultados'))->pluck('estado')->all());
+        $this->assertSame(1, Expediente::where('contacto_id', $contacto->id)->count());
+        $this->assertSame('carla@example.com', Expediente::where('contacto_id', $contacto->id)->first()->acreditado_email);
+    }
+
+    public function test_el_acreditado_solo_ve_los_documentos_de_su_seccion_y_no_se_duplican_los_del_asesor(): void
+    {
+        $acreditado = Acreditado::create(['name' => 'D', 'email' => 'd@example.com', 'password' => Hash::make('x12345678'), 'activo' => true]);
+        $exp = Expediente::create(['asesor_id' => $this->asesor->id, 'tipo_tramite_id' => $this->tipo->id, 'acreditado_id' => $acreditado->id, 'estado' => 'en_proceso', 'acreditado_nombre' => 'D']);
+        // El asesor ya subió la INE (sin categoría) y un documento del vendedor
+        $exp->documentos()->create(['tipo' => 'INE', 'nombre' => 'INE', 'seccion' => 'acreditado', 'estado' => 'recibido', 'ruta_archivo' => 'x/ine.pdf']);
+        $exp->documentos()->create(['tipo' => 'Escritura', 'nombre' => 'Escritura', 'seccion' => 'vendedor', 'estado' => 'recibido', 'ruta_archivo' => 'x/esc.pdf']);
+
+        $this->actingAs($acreditado, 'sanctum')
+            ->getJson('/api/v1/acreditado/expediente/documentos')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.nombre', 'INE');
+
+        // Si el acreditado sube su INE no queda otra "INE" igual: se numera
+        $this->actingAs($acreditado, 'sanctum')
+            ->post('/api/v1/acreditado/expediente/documentos', ['archivo' => $this->pdf(), 'tipo_documento' => 'INE'], ['Accept' => 'application/json'])
+            ->assertCreated();
+        $this->assertEqualsCanonicalizing(['INE', 'INE (2)'], $exp->documentos()->where('seccion', 'acreditado')->pluck('tipo')->all());
+    }
+
     public function test_acreditado_sin_expediente_no_puede_subir(): void
     {
         $acreditado = Acreditado::create(['name' => 'Sin Exp', 'email' => 'sin@example.com', 'password' => Hash::make('x12345678'), 'activo' => true]);

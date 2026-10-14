@@ -108,13 +108,13 @@ class SyncController extends Controller
 
     private function crearExpediente($user, array $datos): int
     {
-        $exp = Expediente::create([
+        // Mismo comportamiento que la API: un prospecto tiene un solo expediente abierto
+        [$exp] = app(\App\Services\ExpedienteInicioService::class)->iniciar($user, [
             'contacto_id'     => $datos['contacto_id'],
             'tipo_tramite_id' => $datos['tipo_tramite_id'],
             'estado'          => $datos['estado'] ?? 'en_proceso',
-            'monto_credito'   => $datos['monto_credito']   ?? null,
-            'notas_internas'  => $datos['notas']           ?? null,
-            'asesor_id'       => $user->id,
+            'monto_credito'   => $datos['monto_credito'] ?? null,
+            'notas_internas'  => $datos['notas'] ?? null,
         ]);
         return $exp->id;
     }

@@ -30,6 +30,7 @@ class DocumentoController extends Controller
 
         $documentos = $expediente->documentos()
             ->paraAcreditado()
+            ->where('seccion', 'acreditado')   // los documentos del vendedor, la vivienda u otros no son suyos
             ->orderBy('seccion')
             ->orderBy('nombre')
             ->get()
@@ -93,7 +94,7 @@ class DocumentoController extends Controller
         $tipoBase    = $request->tipo_documento;
         $candidatos  = DocumentoExpediente::where('expediente_id', $expediente->id)
             ->where('seccion', 'acreditado')
-            ->where('categoria', 'acreditada')
+            // Incluye lo que subió el asesor (sin categoría): si ya hay una "INE" no se duplica el nombre
             ->where(fn ($q) => $q->where('tipo', $tipoBase)->orWhere('tipo', 'like', $tipoBase . ' (%)'))
             ->orderBy('id')
             ->get();
