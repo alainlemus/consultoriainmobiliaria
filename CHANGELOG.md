@@ -13,7 +13,7 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
-## [Sin publicar]
+## [1.3.0] - 2026-10-14
 
 ### Agregado
 - **Documento faltante:** un administrador puede pedir al acreditado un documento que faltaba, aunque los demás ya estén validados, escribiendo una nota que explica cuál es (desde el expediente en la app o desde la tabla de documentos del panel). El acreditado recibe una notificación y ve el aviso en Mi Trámite; mientras no lo suba, el trámite sigue "En revisión", y al subirlo el administrador debe validarlo. El administrador ve en la app también los expedientes ya completos para poder hacerlo. Se puede pedir al acreditado o al asesor (si el acreditado no usa la app, siempre al asesor, que recibe la notificación y el aviso en el expediente).
