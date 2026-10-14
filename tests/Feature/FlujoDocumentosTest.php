@@ -186,7 +186,7 @@ class FlujoDocumentosTest extends TestCase
 
         // El mismo expediente encolado dos veces (doble toque sin señal) se crea una sola vez
         $r = $this->actingAs($this->asesor, 'sanctum')
-            ->postJson('/api/v1/sync/batch', ['operaciones' => [$op('a'), $op('b')]])
+            ->postJson('/api/v1/sync', ['operaciones' => [$op('a'), $op('b')]])
             ->assertOk();
 
         $this->assertSame(['ok', 'ok'], collect($r->json('resultados'))->pluck('estado')->all());
