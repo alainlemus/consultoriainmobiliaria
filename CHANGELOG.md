@@ -17,16 +17,12 @@ La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmo
 
 ### Cambiado
 - Sitio público: la opción "Propiedades" del menú (escritorio y móvil) y su entrada en el sitemap solo aparecen si hay al menos una propiedad en venta; al vender, ocultar o eliminar la última desaparece sola.
-
-## [Sin publicar]
-
-### Corregido
-- **Logo en los correos:** antes se cargaba desde la dirección pública del sitio, así que no se veía en pruebas locales, en staging ni cuando el cliente de correo bloquea imágenes remotas. Ahora viaja incrustado dentro del mensaje (en una copia liviana de 256 px) y siempre se ve; si no hay logo configurado se usa el escudo de respaldo.
-
-### Cambiado
 - **Correos renovados con el diseño del sitio:** confirmación de contacto, aviso de nuevo contacto, carpeta del expediente, reporte de gestión, solicitud de testimonio, mensajes masivos y restablecimiento de contraseña (asesores, acreditados y panel) ahora comparten la cabecera oscura con dorado, títulos grandes, tarjetas redondeadas, botones tipo píldora y un pie con el lema y la cobertura. Se ven bien en celular.
 - **PDF del reporte de gestión rediseñado** con la misma imagen: cabecera oscura con el escudo y el dorado, título grande, tarjetas con las cifras del período, secciones con barra dorada, tablas con encabezado oscuro y pie con el lema.
 - En los correos de contacto el servicio se muestra con su nombre completo ("Crédito FOVISSSTE" en lugar de "Fovissste").
+
+### Corregido
+- **Logo en los correos:** antes se cargaba desde la dirección pública del sitio, así que no se veía en pruebas locales, en staging ni cuando el cliente de correo bloquea imágenes remotas. Ahora viaja incrustado dentro del mensaje (en una copia liviana de 256 px) y siempre se ve; si no hay logo configurado se usa el escudo de respaldo.
 
 ## [1.4.1] - 2026-10-14
 
