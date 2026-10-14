@@ -36,37 +36,80 @@
     --font-sans:   "Helvetica Neue", "Arial", sans-serif;   /* primary — Helvetica Neue */
     --font-serif:  "Acumin Variable Concept", "Helvetica Neue", sans-serif; /* secondary */
     --font-script: "Acumin Variable Concept", sans-serif;
+
+    /* Curvas de movimiento tipo Apple */
+    --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body { font-family: var(--font-sans); background-color: var(--color-cream-50); color: var(--color-dark-800); }
-    h1, h2, h3, h4 { font-family: var(--font-serif); }
+    html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+    body { font-family: var(--font-sans); background-color: var(--color-cream-50); color: var(--color-dark-800); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    h1, h2, h3, h4 { font-family: var(--font-serif); letter-spacing: -0.02em; }
+    ::selection { background: var(--color-gold-300); color: var(--color-dark-900); }
 }
 
 @layer components {
+    /* Botones: píldoras con brillo y rebote al presionar (estilo Apple) */
+    .btn-gold, .btn-dark, .btn-crimson {
+        @apply relative inline-flex items-center justify-center gap-2 font-semibold px-7 py-3.5 rounded-full text-sm cursor-pointer select-none;
+        transition: transform 500ms var(--ease-apple), box-shadow 500ms var(--ease-apple), background-color 300ms, color 300ms, border-color 300ms;
+        will-change: transform;
+    }
+    .btn-gold:hover, .btn-dark:hover, .btn-crimson:hover { transform: translateY(-2px) scale(1.03); }
+    .btn-gold:active, .btn-dark:active, .btn-crimson:active { transform: scale(0.97); transition-duration: 120ms; }
     .btn-gold {
-        @apply inline-flex items-center gap-2 bg-gold-500 hover:bg-gold-600 text-dark-900 font-semibold px-6 py-3 rounded-sm transition-all duration-300 uppercase tracking-widest text-sm cursor-pointer;
+        @apply bg-gold-400 text-dark-900;
+        box-shadow: 0 8px 24px -8px rgb(205 157 54 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.35);
     }
+    .btn-gold:hover { @apply bg-gold-300; box-shadow: 0 14px 34px -10px rgb(205 157 54 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.45); }
     .btn-dark {
-        @apply inline-flex items-center gap-2 bg-dark-800 hover:bg-dark-700 text-gold-400 border border-gold-500 font-semibold px-6 py-3 rounded-sm transition-all duration-300 uppercase tracking-widest text-sm cursor-pointer;
+        @apply text-white border border-white/25 backdrop-blur-md;
+        background: rgb(255 255 255 / 0.08);
     }
+    .btn-dark:hover { background: rgb(255 255 255 / 0.18); @apply border-white/50; }
     .btn-crimson {
-        @apply inline-flex items-center gap-2 bg-crimson-600 hover:bg-crimson-500 text-white font-semibold px-6 py-3 rounded-sm transition-all duration-300 uppercase tracking-widest text-sm cursor-pointer;
+        @apply bg-crimson-600 text-white;
+        box-shadow: 0 8px 24px -8px rgb(129 15 0 / 0.6);
     }
+    .btn-crimson:hover { @apply bg-crimson-500; }
     .section-title {
-        @apply font-serif text-3xl md:text-4xl font-bold text-dark-800;
+        @apply font-serif text-4xl md:text-6xl font-bold text-dark-800 leading-[1.05];
+        letter-spacing: -0.035em;
     }
     .section-subtitle {
-        @apply text-gold-500 uppercase tracking-widest text-sm font-semibold;
+        @apply text-gold-500 uppercase tracking-[0.18em] text-xs md:text-sm font-semibold;
     }
     .gold-divider {
-        @apply w-16 h-0.5 bg-gold-400 mx-auto my-4;
+        @apply w-12 h-[3px] rounded-full bg-gold-400 mx-auto my-5;
+    }
+    /* Texto con degradado dorado que "respira" */
+    .text-gold-shine {
+        background: linear-gradient(100deg, var(--color-gold-300) 0%, var(--color-gold-500) 40%, var(--color-gold-200) 60%, var(--color-gold-400) 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        animation: gold-shine 6s linear infinite;
+    }
+    @keyframes gold-shine { to { background-position: 200% center; } }
+    /* Vidrio esmerilado */
+    .glass {
+        background: rgb(255 255 255 / 0.08);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgb(255 255 255 / 0.14);
+    }
+    .glass-light {
+        background: rgb(255 255 255 / 0.72);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgb(255 255 255 / 0.6);
     }
     .card-service {
-        @apply bg-white border border-cream-300 rounded-sm p-6 hover:-translate-y-1 hover:shadow-xl hover:shadow-gold-400/20 hover:border-gold-400 transition-all duration-300 text-center;
+        @apply relative bg-white border border-cream-300 rounded-3xl p-7 text-center overflow-hidden;
+        transition: box-shadow 600ms var(--ease-apple), border-color 400ms;
     }
+    .card-service:hover { @apply border-gold-300; box-shadow: 0 30px 60px -24px rgb(205 157 54 / 0.45); }
     .icon-gold {
         @apply w-14 h-14 bg-gold-400 rounded-full flex items-center justify-center mx-auto mb-4 text-dark-900 transition-transform duration-300 group-hover:scale-110;
     }
@@ -89,19 +132,76 @@
         100% { transform: scale(1.6); opacity: 0;   }
     }
     .input-field {
-        @apply w-full bg-dark-700 border border-dark-600 focus:border-gold-400 text-white placeholder-dark-400 rounded-sm px-4 py-3 text-sm outline-none transition-colors;
+        @apply w-full bg-white/[0.06] border border-white/15 focus:border-gold-400 text-white placeholder-white/35 rounded-2xl px-4 py-3.5 text-sm outline-none;
+        transition: border-color 300ms, box-shadow 400ms var(--ease-apple), background-color 300ms;
     }
+    .input-field:focus { background-color: rgb(255 255 255 / 0.1); box-shadow: 0 0 0 4px rgb(205 157 54 / 0.18); }
 
-    /* Scroll-reveal — usado por la directiva x-reveal (resources/js/app.js) */
+    /* Scroll-reveal — directiva x-reveal (resources/js/motion.js) */
     .reveal-init {
         opacity: 0;
-        transform: translateY(24px);
-        transition: opacity 600ms ease, transform 600ms ease;
+        transform: translate3d(0, 40px, 0);
+        transition: opacity 1000ms var(--ease-apple), transform 1000ms var(--ease-apple), filter 1000ms var(--ease-apple);
+        will-change: opacity, transform;
     }
-    .reveal-visible {
-        opacity: 1;
-        transform: translateY(0);
+    .reveal-init[data-reveal="scale"] { transform: scale(0.92); }
+    .reveal-init[data-reveal="blur"]  { transform: translate3d(0, 24px, 0); filter: blur(14px); }
+    .reveal-init[data-reveal="left"]  { transform: translate3d(-48px, 0, 0); }
+    .reveal-init[data-reveal="right"] { transform: translate3d(48px, 0, 0); }
+    .reveal-init.reveal-visible { opacity: 1; transform: none; filter: none; }
+
+    /* Texto palabra por palabra — directiva x-split */
+    .split-init .split-mask { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+    .split-init .split-word { display: inline-block; transform: translate3d(0, 110%, 0); transition: transform 1100ms var(--ease-apple); }
+    .split-visible .split-word { transform: none; }
+
+    /* Tilt 3D con brillo que sigue al cursor — directiva x-tilt (convive con x-reveal en el mismo elemento) */
+    .tilt {
+        transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale3d(1, 1, 1);
+        transition: transform 500ms var(--ease-apple), opacity 1000ms var(--ease-apple), filter 1000ms var(--ease-apple), box-shadow 600ms var(--ease-apple), border-color 400ms;
+        transform-style: preserve-3d;
     }
+    .tilt:hover { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale3d(1.02, 1.02, 1.02); transition: transform 150ms var(--ease-apple), opacity 1000ms var(--ease-apple), box-shadow 600ms var(--ease-apple), border-color 400ms; }
+    /* Antes de aparecer conserva el desplazamiento de entrada del reveal */
+    .tilt.reveal-init:not(.reveal-visible) { transform: translate3d(0, 40px, 0); }
+    .tilt.reveal-init[data-reveal="scale"]:not(.reveal-visible) { transform: scale(0.92); }
+    .tilt::after {
+        content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+        background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgb(255 255 255 / 0.55), transparent 55%);
+        opacity: 0; transition: opacity 400ms; mix-blend-mode: soft-light;
+    }
+    .tilt:hover::after { opacity: 1; }
+    .magnetic { transition: transform 400ms var(--ease-apple); }
+
+    /* Luz que sigue al cursor — atributo [data-spotlight] */
+    [data-spotlight] { position: relative; isolation: isolate; }
+    [data-spotlight]::before {
+        content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+        background: radial-gradient(520px circle at var(--sx, 50%) var(--sy, 50%), rgb(205 157 54 / 0.16), transparent 60%);
+        opacity: 0; transition: opacity 500ms;
+    }
+    [data-spotlight]:hover::before { opacity: 1; }
+
+    /* Barra de progreso de lectura */
+    .scroll-progress {
+        position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 60;
+        transform-origin: 0 50%; transform: scaleX(0);
+        background: linear-gradient(90deg, var(--color-crimson-500), var(--color-gold-400));
+        pointer-events: none;
+    }
+
+    /* Elementos que flotan suavemente */
+    .float-y { animation: float-y 7s ease-in-out infinite; }
+    @keyframes float-y { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -14px, 0); } }
+
+    /* Zoom lento en imágenes de fondo (Ken Burns) */
+    .kenburns { animation: kenburns 24s ease-out both; }
+    @keyframes kenburns { from { transform: scale(1.12); } to { transform: scale(1); } }
+
+    /* Cinta que se desplaza sin fin */
+    .marquee { display: flex; width: max-content; animation: marquee 38s linear infinite; }
+    .marquee:hover { animation-play-state: paused; }
+    @keyframes marquee { to { transform: translateX(-50%); } }
 
     /* Contenido generado por RichEditor de Filament */
     /* Base: colores oscuros (para fondos blancos/claros, ej. aviso de privacidad) */
@@ -145,16 +245,19 @@
    View Transition API — animaciones de navegación
    ===================================================== */
 
-/* Página saliente: se desliza hacia arriba y desvanece */
+/* Navegación entre páginas del mismo sitio con transición nativa (Chrome/Safari recientes) */
+@view-transition { navigation: auto; }
+
+/* Página saliente: se desvanece y se aleja un poco */
 @keyframes vt-slide-out {
-    from { opacity: 1;   transform: translateY(0);     }
-    to   { opacity: 0;   transform: translateY(-18px);  }
+    from { opacity: 1; transform: scale(1);    filter: blur(0); }
+    to   { opacity: 0; transform: scale(0.985); filter: blur(6px); }
 }
 
-/* Página entrante: sube desde abajo y aparece */
+/* Página entrante: aparece creciendo desde ligeramente más pequeña */
 @keyframes vt-slide-in {
-    from { opacity: 0;   transform: translateY(20px);  }
-    to   { opacity: 1;   transform: translateY(0);     }
+    from { opacity: 0; transform: translateY(24px) scale(0.99); filter: blur(6px); }
+    to   { opacity: 1; transform: none;                          filter: blur(0); }
 }
 
 /* Navbar: fade simple, sin desplazamiento */
@@ -169,10 +272,10 @@
 
 /* Aplica las animaciones a cada zona nombrada */
 ::view-transition-old(main-content) {
-    animation: vt-slide-out 280ms cubic-bezier(0.4, 0, 1, 1) both;
+    animation: vt-slide-out 260ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 ::view-transition-new(main-content) {
-    animation: vt-slide-in  320ms cubic-bezier(0, 0, 0.2, 1) both;
+    animation: vt-slide-in  600ms var(--ease-apple) both;
 }
 
 ::view-transition-old(navbar),
@@ -190,10 +293,13 @@
     ::view-transition-new(*) {
         animation: none !important;
     }
-    .reveal-init,
-    .reveal-visible {
+    .reveal-init, .reveal-init.reveal-visible, .split-word, .tilt, .magnetic {
         opacity: 1 !important;
         transform: none !important;
+        filter: none !important;
         transition: none !important;
     }
+    .kenburns, .float-y, .marquee, .text-gold-shine { animation: none !important; }
+    #inicio { height: 100vh !important; }
+    .scroll-progress { display: none; }
 }

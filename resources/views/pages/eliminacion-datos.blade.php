@@ -8,11 +8,11 @@
 
             <div class="text-center mb-12">
                 <p class="section-subtitle text-gold-400 mb-3">Legal</p>
-                <h1 class="section-title mb-4">Eliminación de <span class="text-gold-400">Datos</span></h1>
+                <h1 class="section-title mb-4" x-split>Eliminación de <span class="text-gold-400">Datos</span></h1>
                 <div class="gold-divider"></div>
             </div>
 
-            <div class="bg-white rounded-sm shadow-sm border border-cream-200 p-8 sm:p-12 space-y-8">
+            <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-8 sm:p-12 space-y-8">
 
                 <div>
                     <h2 class="text-xl font-semibold text-gray-800 mb-3">Solicitud de eliminación de datos</h2>

@@ -25,14 +25,14 @@
 
     {{-- ── Hero ─────────────────────────────────────────────────────────── --}}
     <section class="relative overflow-hidden bg-dark-900" style="padding-top: 140px;">
-        <div class="absolute top-0 left-0 w-64 h-64 -translate-x-1/2 -translate-y-1/2 border rounded-full border-gold-500/10"></div>
-        <div class="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 border rounded-full w-96 h-96 border-gold-500/10"></div>
+        <div class="absolute top-0 left-0 w-64 h-64 -translate-x-1/2 -translate-y-1/2 border rounded-full border-gold-500/10" x-parallax.0.12></div>
+        <div class="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 border rounded-full w-96 h-96 border-gold-500/10" x-parallax.-0.1></div>
 
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 lg:pb-32">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
                 <div x-reveal>
                     <p class="section-subtitle text-gold-400 mb-3">Nuestra app móvil</p>
-                    <h1 class="font-serif text-4xl sm:text-5xl font-bold text-white leading-tight mb-6">
+                    <h1 class="font-serif text-4xl sm:text-5xl font-bold text-white leading-tight mb-6" x-split>
                         Tu trámite,<br><span class="text-gold-400">en tu bolsillo</span>
                     </h1>
                     <div class="w-20 h-0.5 bg-gold-400 mb-6"></div>
@@ -46,7 +46,7 @@
                         {{-- App Store --}}
                         @if($appStoreListo)
                             <a href="{{ $urlAppStore }}" target="_blank" rel="noopener noreferrer"
-                               class="inline-flex items-center gap-3 bg-white hover:bg-cream-100 text-dark-900 px-5 py-3 rounded-sm shadow-md hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300">
+                               class="inline-flex items-center gap-3 bg-white hover:bg-cream-100 text-dark-900 px-5 py-3 rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300">
                                 <svg class="w-7 h-7 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08l-.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
                                 </svg>
@@ -56,7 +56,7 @@
                                 </span>
                             </a>
                         @else
-                            <span class="inline-flex items-center gap-3 bg-dark-800 text-cream-300/50 px-5 py-3 rounded-sm border border-dark-600 cursor-not-allowed">
+                            <span class="inline-flex items-center gap-3 bg-dark-800 text-cream-300/50 px-5 py-3 rounded-2xl border border-dark-600 cursor-not-allowed">
                                 <svg class="w-7 h-7 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08l-.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
                                 </svg>
@@ -70,7 +70,7 @@
                         {{-- Google Play --}}
                         @if($playStoreListo)
                             <a href="{{ $urlPlayStore }}" target="_blank" rel="noopener noreferrer"
-                               class="inline-flex items-center gap-3 bg-white hover:bg-cream-100 text-dark-900 px-5 py-3 rounded-sm shadow-md hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300">
+                               class="inline-flex items-center gap-3 bg-white hover:bg-cream-100 text-dark-900 px-5 py-3 rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300">
                                 <svg class="w-7 h-7 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M3.6 2.3c-.4.2-.6.6-.6 1.1v17.2c0 .5.2.9.6 1.1l9.4-9.7-9.4-9.7zm11.1 9.7l2.5-2.6-9.9-5.7 7.4 8.3zm0 0l-7.4 8.3 9.9-5.7-2.5-2.6zm1-.3l3-1.7c.5-.3.8-.7.8-1.3s-.3-1-.8-1.3l-3-1.7-2.7 3 2.7 3z"/>
                                 </svg>
@@ -80,7 +80,7 @@
                                 </span>
                             </a>
                         @else
-                            <span class="inline-flex items-center gap-3 bg-dark-800 text-cream-300/50 px-5 py-3 rounded-sm border border-dark-600 cursor-not-allowed">
+                            <span class="inline-flex items-center gap-3 bg-dark-800 text-cream-300/50 px-5 py-3 rounded-2xl border border-dark-600 cursor-not-allowed">
                                 <svg class="w-7 h-7 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M3.6 2.3c-.4.2-.6.6-.6 1.1v17.2c0 .5.2.9.6 1.1l9.4-9.7-9.4-9.7zm11.1 9.7l2.5-2.6-9.9-5.7 7.4 8.3zm0 0l-7.4 8.3 9.9-5.7-2.5-2.6zm1-.3l3-1.7c.5-.3.8-.7.8-1.3s-.3-1-.8-1.3l-3-1.7-2.7 3 2.7 3z"/>
                                 </svg>
@@ -100,10 +100,10 @@
                 </div>
 
                 {{-- Mockup compacto solo para mobile/tablet: en desktop se muestra el par de abajo --}}
-                <div class="flex lg:hidden justify-center relative h-[360px]" x-reveal.delay.150>
+                <div class="flex lg:hidden justify-center relative h-[360px]" x-reveal.scale.delay.300>
                     <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-gold-500/20 rounded-full blur-3xl phone-glow"></div>
                     <div class="relative z-10 phone-float-1">
-                        <div class="group relative w-44 h-[350px] bg-dark-800 rounded-[2.25rem] border-4 border-dark-700 shadow-2xl p-2.5 transition-transform duration-500">
+                        <div class="group relative w-44 h-[350px] bg-dark-800 rounded-[2.25rem] border-4 border-dark-700 shadow-2xl p-2.5" x-tilt.10 data-spotlight>
                             <div class="w-full h-full rounded-[1.75rem] overflow-hidden border border-gold-500/20 relative">
                                 <div class="absolute top-1.5 left-1/2 -translate-x-1/2 w-16 h-5 bg-dark-900 rounded-full z-10"></div>
                                 <img src="{{ $shotIos }}"
@@ -115,14 +115,14 @@
                 </div>
 
                 {{-- Mockups: iPhone (login) + Android (portal del cliente) — capturas reales de la app. --}}
-                <div class="hidden lg:flex items-center justify-center relative h-[480px]" x-reveal.delay.150>
+                <div class="hidden lg:flex items-center justify-center relative h-[480px]" x-reveal.right.delay.300>
                     {{-- Brillo dorado detrás de los teléfonos --}}
                     <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gold-500/20 rounded-full blur-3xl phone-glow"></div>
 
-                    <div class="relative z-10 flex items-center">
+                    <div class="relative z-10 flex items-center" x-parallax.-0.05>
                         {{-- Android — atrás, a la izquierda: portal del cliente --}}
                         <div class="relative z-0 mr-[-3.5rem] mt-16 phone-float-2">
-                            <div class="group relative w-48 h-[380px] bg-dark-800 rounded-[1.75rem] border-4 border-dark-700 shadow-2xl p-2.5 transition-transform duration-500 hover:scale-105 hover:-rotate-2 cursor-default">
+                            <div class="group relative w-48 h-[380px] bg-dark-800 rounded-[1.75rem] border-4 border-dark-700 shadow-2xl p-2.5 cursor-default" x-tilt.10 data-spotlight>
                                 <div class="w-full h-full rounded-[1.35rem] overflow-hidden border border-gold-500/20 relative">
                                     <div class="absolute top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-dark-900 border border-gold-500/30 z-10"></div>
                                     <img src="{{ $shotAndroid }}"
@@ -170,13 +170,13 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16" x-reveal>
                 <p class="section-subtitle mb-3">Una app, dos perfiles</p>
-                <h2 class="section-title mb-4">Qué puedes <span class="text-crimson-600">hacer</span></h2>
+                <h2 class="section-title mb-4" x-split>Qué puedes <span class="text-crimson-600">hacer</span></h2>
                 <div class="gold-divider"></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {{-- Asesores --}}
-                <div class="card-service group text-left" x-reveal>
+                <div x-tilt.6 data-spotlight class="card-service group text-left" x-reveal>
                     <div class="icon-gold group-hover:bg-gold-500">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -193,7 +193,7 @@
                 </div>
 
                 {{-- Clientes --}}
-                <div class="card-service group text-left" x-reveal.delay.100>
+                <div x-tilt.6 data-spotlight class="card-service group text-left" x-reveal.delay.100>
                     <div class="icon-gold group-hover:bg-gold-500">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
@@ -217,7 +217,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16" x-reveal>
                 <p class="section-subtitle mb-3">En 3 pasos</p>
-                <h2 class="section-title mb-4">Cómo <span class="text-crimson-600">instalarla</span></h2>
+                <h2 class="section-title mb-4" x-split>Cómo <span class="text-crimson-600">instalarla</span></h2>
                 <div class="gold-divider"></div>
             </div>
 
@@ -230,11 +230,11 @@
             @endphp
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
                 @foreach($pasos as $paso)
-                <div class="flex flex-col items-center text-center group" x-reveal.delay.{{ $loop->index * 100 }}>
+                <div class="flex flex-col items-center text-center group" x-reveal.scale.delay.{{ $loop->index * 140 }}>
                     <div class="w-16 h-16 bg-white border-2 border-gold-400 rounded-full flex items-center justify-center mb-4 shadow-md group-hover:bg-crimson-600 group-hover:border-crimson-600 transition-all duration-300 z-10">
                         <span class="font-serif font-bold text-gold-500 text-lg group-hover:text-white transition-colors">{{ $paso['n'] }}</span>
                     </div>
-                    <div class="bg-white rounded-sm p-4 shadow-sm border border-cream-300 group-hover:border-gold-300 transition-colors w-full flex-1">
+                    <div class="relative bg-white rounded-3xl p-5 shadow-sm border border-cream-300 group-hover:border-gold-300 group-hover:shadow-xl group-hover:shadow-gold-400/20 transition-[box-shadow,border-color] duration-500 w-full flex-1" x-tilt.5 data-spotlight>
                         <h4 class="font-serif font-semibold text-dark-800 text-sm mb-1">{{ $paso['t'] }}</h4>
                         <p class="text-dark-500 text-xs leading-relaxed">{{ $paso['d'] }}</p>
                     </div>
@@ -249,7 +249,7 @@
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12" x-reveal>
                 <p class="section-subtitle mb-3">Para clientes</p>
-                <h2 class="section-title mb-4">Preguntas <span class="text-crimson-600">frecuentes</span></h2>
+                <h2 class="section-title mb-4" x-split>Preguntas <span class="text-crimson-600">frecuentes</span></h2>
                 <div class="gold-divider"></div>
             </div>
 
@@ -293,7 +293,7 @@
             <div class="space-y-3">
                 @foreach($faqs as $i => $faq)
                 <div x-data="{ abierto: false }" x-reveal.delay.{{ min($i, 4) * 75 }}
-                     class="bg-white rounded-sm border border-cream-300 overflow-hidden">
+                     class="bg-white rounded-2xl border border-cream-300 overflow-hidden">
                     <button type="button" @click="abierto = !abierto"
                             class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-cream-50 transition-colors">
                         <span class="font-serif font-semibold text-dark-800 text-sm sm:text-base">{{ $faq['p'] }}</span>
@@ -314,7 +314,7 @@
     <section class="py-20 bg-dark-900">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center" x-reveal>
             <p class="font-script text-gold-400 text-xl mb-3">¿Tienes dudas para instalarla?</p>
-            <h2 class="font-serif text-2xl sm:text-3xl font-bold text-white mb-6">Un asesor te ayuda sin costo</h2>
+            <h2 class="font-serif text-2xl sm:text-3xl font-bold text-white mb-6" x-split>Un asesor te ayuda sin costo</h2>
             <a href="https://wa.me/{{ setting('whatsapp_1', '527711910395') }}?text=Hola,%20tengo%20dudas%20para%20instalar%20la%20app"
                target="_blank" rel="noopener noreferrer" class="btn-gold">
                 <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">

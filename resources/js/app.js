@@ -1,37 +1,10 @@
 import Alpine from 'alpinejs';
+import { registerMotion } from './motion';
 
 const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// x-reveal / x-reveal.delay.150 — fade+slide-up al entrar en viewport (una sola vez)
-Alpine.directive('reveal', (el, { modifiers }, { cleanup }) => {
-    if (prefersReducedMotion()) return;
-
-    el.classList.add('reveal-init');
-
-    const delayIndex = modifiers.indexOf('delay');
-    if (delayIndex !== -1 && modifiers[delayIndex + 1]) {
-        el.style.transitionDelay = `${modifiers[delayIndex + 1]}ms`;
-    }
-
-    // Si ya está en viewport al cargar (ej. above the fold), no animar
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom > 0) {
-        el.classList.add('reveal-visible');
-        return;
-    }
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-                el.classList.add('reveal-visible');
-                observer.unobserve(el);
-            }
-        });
-    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
-
-    observer.observe(el);
-    cleanup(() => observer.disconnect());
-});
+// Movimiento (reveal, split, parallax, tilt, magnetic, scrollprogress): ver resources/js/motion.js
+registerMotion(Alpine);
 
 // countUp(target, { prefix, suffix, duration }) — cuenta de 0 al valor final al cargar
 Alpine.data('countUp', (target, opts = {}) => ({
@@ -44,14 +17,25 @@ Alpine.data('countUp', (target, opts = {}) => ({
             return;
         }
 
-        const start = performance.now();
-        const step = (now) => {
-            const progress = Math.min((now - start) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            this.display = `${prefix}${Math.round(target * eased)}${suffix}`;
-            if (progress < 1) requestAnimationFrame(step);
+        const run = () => {
+            const start = performance.now();
+            const step = (now) => {
+                const progress = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 4);   // easeOutQuart
+                this.display = `${prefix}${Math.round(target * eased)}${suffix}`;
+                if (progress < 1) requestAnimationFrame(step);
+            };
+            requestAnimationFrame(step);
         };
-        requestAnimationFrame(step);
+
+        // Cuenta cuando el número entra en pantalla (no al cargar la página)
+        const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+                io.disconnect();
+                run();
+            }
+        }, { threshold: 0.4 });
+        io.observe(this.$el);
     },
 }));
 

@@ -11,13 +11,13 @@
         {{-- Encabezado --}}
         <div class="text-center mb-12">
             <p class="section-subtitle text-gold-400 mb-3">En venta</p>
-            <h1 class="section-title text-white mb-4">Propiedades <span class="text-gold-400">Disponibles</span></h1>
+            <h1 class="section-title text-white mb-4" x-split>Propiedades <span class="text-gold-400">Disponibles</span></h1>
             <div class="gold-divider"></div>
         </div>
 
         {{-- Filtros --}}
         <form method="GET" action="{{ route('propiedades.index') }}"
-              class="bg-dark-800 border border-dark-700 rounded-sm p-6 mb-10"
+              class="bg-dark-800 border border-dark-700 rounded-2xl p-6 mb-10"
               x-data="{ expanded: false }">
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -132,7 +132,7 @@
                     @endforeach
                     <label class="text-cream-300 text-xs">Mostrar</label>
                     <select name="per_page" onchange="this.form.submit()"
-                            class="bg-dark-800 border border-dark-700 text-cream-300 text-xs rounded-sm px-2 py-1.5 cursor-pointer">
+                            class="bg-dark-800 border border-dark-700 text-cream-300 text-xs rounded-2xl px-2 py-1.5 cursor-pointer">
                         @foreach([10, 20, 50] as $n)
                             <option value="{{ $n }}" {{ request('per_page', 12) == $n ? 'selected' : '' }}>{{ $n }}</option>
                         @endforeach
@@ -143,14 +143,15 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 @foreach($propiedades as $propiedad)
                 <a href="{{ route('propiedades.show', $propiedad->slug) }}"
-                   class="group bg-dark-800 border border-dark-700 hover:border-gold-500/50 rounded-sm overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-gold-500/10 flex flex-col">
+                   x-reveal.scale.delay.{{ ($loop->index % 4) * 100 }} x-tilt.5
+                   class="group relative bg-dark-800 border border-dark-700 hover:border-gold-500/50 rounded-3xl overflow-hidden hover:shadow-2xl hover:shadow-gold-500/15 flex flex-col">
 
                     <div class="relative h-48 bg-dark-700 overflow-hidden">
                         @if($propiedad->imagen_principal)
                             <img src="{{ Storage::url($propiedad->imagen_principal) }}"
                                  alt="{{ $propiedad->titulo }}"
                                  loading="lazy"
-                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)]">
                         @else
                             <div class="w-full h-full flex items-center justify-center">
                                 <svg class="w-12 h-12 text-dark-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

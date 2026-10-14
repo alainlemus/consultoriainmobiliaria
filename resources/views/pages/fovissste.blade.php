@@ -20,18 +20,18 @@
          HERO
          ══════════════════════════════════════════════════════════════════ --}}
     <section class="relative overflow-hidden bg-dark-900" style="padding-top: 140px;">
-        <div class="absolute top-0 left-0 w-64 h-64 -translate-x-1/2 -translate-y-1/2 border rounded-full border-gold-500/10"></div>
-        <div class="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 border rounded-full w-96 h-96 border-gold-500/10"></div>
+        <div class="absolute top-0 left-0 w-64 h-64 -translate-x-1/2 -translate-y-1/2 border rounded-full border-gold-500/10" x-parallax.0.12></div>
+        <div class="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 border rounded-full w-96 h-96 border-gold-500/10" x-parallax.-0.1></div>
         <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-dark-800/60"></div>
 
         <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 lg:pb-32 text-center">
             <div x-reveal>
-                <div class="inline-flex items-center gap-2 px-3 py-1 mb-6 text-xs font-semibold tracking-widest text-white uppercase bg-crimson-600 rounded-sm">
+                <div class="inline-flex items-center gap-2 px-3 py-1 mb-6 text-xs font-semibold tracking-widest text-white uppercase bg-crimson-600 rounded-2xl">
                     <span class="w-1.5 h-1.5 rounded-full bg-gold-400 inline-block"></span>
                     Orientación para trabajadores del Estado
                 </div>
 
-                <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white mb-6">
+                <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white mb-6" x-split>
                     ¿Eres trabajador del Estado<br>y tienes <span class="text-gold-400">FOVISSSTE?</span>
                 </h1>
                 <div class="w-20 h-0.5 bg-gold-400 mx-auto mb-6"></div>
@@ -88,7 +88,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-14" x-reveal>
                 <p class="section-subtitle mb-3">Qué recibes</p>
-                <h2 class="section-title mb-4">Orientación para tu <span class="text-crimson-600">crédito FOVISSSTE</span></h2>
+                <h2 class="section-title mb-4" x-split>Orientación para tu <span class="text-crimson-600">crédito FOVISSSTE</span></h2>
                 <div class="gold-divider"></div>
                 <p class="text-dark-600 mt-4 max-w-2xl mx-auto">
                     Ya sea que quieras capitalizar tu crédito o aún no sepas qué opción te conviene, te acompañamos en cada paso.
@@ -121,7 +121,7 @@
                     ];
                 @endphp
                 @foreach($beneficios as $b)
-                <div class="card-service group" x-reveal.delay.{{ $loop->index * 100 }}>
+                <div x-tilt.6 data-spotlight class="card-service group" x-reveal.delay.{{ $loop->index * 100 }}>
                     <div class="icon-gold group-hover:bg-gold-500 transition-colors">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="{{ $b['icon'] }}"/>
@@ -148,7 +148,7 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12" x-reveal>
                 <p class="section-subtitle mb-3">Para ti si...</p>
-                <h2 class="section-title mb-4">¿Quién puede solicitar <span class="text-crimson-600">orientación?</span></h2>
+                <h2 class="section-title mb-4" x-split>¿Quién puede solicitar <span class="text-crimson-600">orientación?</span></h2>
                 <div class="gold-divider"></div>
                 <p class="text-dark-600 mt-4 max-w-2xl mx-auto">
                     Si eres trabajador del Estado y buscas vivienda con FOVISSSTE, esta orientación es para ti.
@@ -166,7 +166,7 @@
             @endphp
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 @foreach($elegibilidad as $i => $item)
-                <div class="flex items-start gap-3 bg-cream-50 border border-cream-200 rounded-sm p-4"
+                <div class="flex items-start gap-3 bg-cream-50 border border-cream-200 rounded-2xl p-4"
                      x-reveal.delay.{{ min($i, 4) * 75 }}>
                     <svg class="w-5 h-5 text-gold-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -185,7 +185,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16" x-reveal>
                 <p class="section-subtitle mb-3">Así trabajamos</p>
-                <h2 class="section-title mb-4">¿Cómo te <span class="text-crimson-600">ayudamos?</span></h2>
+                <h2 class="section-title mb-4" x-split>¿Cómo te <span class="text-crimson-600">ayudamos?</span></h2>
                 <div class="gold-divider"></div>
                 <p class="text-dark-600 mt-4 max-w-2xl mx-auto">
                     Un proceso simple para conocer tu situación y orientarte sin compromiso.
@@ -213,7 +213,7 @@
                         <div class="w-16 h-16 bg-white border-2 border-gold-400 rounded-full flex items-center justify-center mb-4 shadow-md group-hover:bg-crimson-600 group-hover:border-crimson-600 group-hover:scale-110 transition-all duration-300 z-10">
                             <span class="font-serif font-bold text-gold-500 text-lg group-hover:text-white transition-colors">{{ $paso['n'] }}</span>
                         </div>
-                        <div class="bg-white rounded-sm p-4 shadow-sm border border-cream-300 group-hover:border-gold-300 group-hover:-translate-y-1 transition-all duration-300 w-full flex-1">
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-cream-300 group-hover:border-gold-300 group-hover:-translate-y-1 transition-all duration-300 w-full flex-1">
                             <h4 class="font-serif font-semibold text-dark-800 text-sm mb-1">{{ $paso['t'] }}</h4>
                             <p class="text-dark-500 text-xs leading-relaxed">{{ $paso['d'] }}</p>
                         </div>
@@ -236,7 +236,7 @@
 
             <div class="text-center mb-10" x-reveal>
                 <p class="section-subtitle text-gold-400 mb-3">Formulario de orientación</p>
-                <h2 class="font-serif text-3xl md:text-4xl font-bold text-white mb-4">
+                <h2 class="font-serif text-3xl md:text-4xl font-bold text-white mb-4" x-split>
                     Solicita orientación sobre tu <span class="text-gold-400">crédito FOVISSSTE</span>
                 </h2>
                 <div class="gold-divider"></div>
@@ -247,7 +247,7 @@
 
             @if($enviado)
                 {{-- Mensaje posterior al envío --}}
-                <div class="bg-dark-800 border border-gold-500/30 rounded-sm p-8 text-center" x-reveal>
+                <div class="bg-dark-800 border border-gold-500/30 rounded-2xl p-8 text-center" x-reveal>
                     <svg class="w-14 h-14 text-gold-400 mx-auto mb-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -290,7 +290,7 @@
                 </script>
             @else
                 <form action="{{ route('fovissste.store') }}" method="POST"
-                      class="space-y-4 bg-dark-800 border border-dark-600 rounded-sm p-6 sm:p-8"
+                      class="space-y-4 bg-dark-800 border border-dark-600 rounded-2xl p-6 sm:p-8"
                       x-data="{ enviando: false }"
                       @submit="enviando = true">
                     @csrf
@@ -434,7 +434,7 @@
                         <input type="checkbox" id="fov_privacidad" name="privacidad" value="1"
                                required
                                {{ old('privacidad') ? 'checked' : '' }}
-                               class="mt-1 w-4 h-4 rounded-sm border-dark-600 bg-dark-700 text-gold-500 focus:ring-gold-400 shrink-0">
+                               class="mt-1 w-4 h-4 rounded-2xl border-dark-600 bg-dark-700 text-gold-500 focus:ring-gold-400 shrink-0">
                         <label for="fov_privacidad" class="text-xs text-cream-300 leading-relaxed">
                             Autorizo el tratamiento de mis datos personales de acuerdo con el
                             <a href="{{ route('aviso.privacidad') }}" target="_blank" rel="noopener" class="text-gold-400 hover:text-gold-300 underline">Aviso de Privacidad</a>. *
@@ -466,7 +466,7 @@
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12" x-reveal>
                 <p class="section-subtitle mb-3">Dudas comunes</p>
-                <h2 class="section-title mb-4">Preguntas <span class="text-crimson-600">frecuentes</span></h2>
+                <h2 class="section-title mb-4" x-split>Preguntas <span class="text-crimson-600">frecuentes</span></h2>
                 <div class="gold-divider"></div>
             </div>
 
@@ -518,7 +518,7 @@
             <div class="space-y-3">
                 @foreach($faqs as $i => $faq)
                 <div x-data="{ abierto: false }" x-reveal.delay.{{ min($i, 4) * 75 }}
-                     class="bg-white rounded-sm border border-cream-300 overflow-hidden">
+                     class="bg-white rounded-2xl border border-cream-300 overflow-hidden">
                     <button type="button" @click="abierto = !abierto"
                             class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-cream-50 transition-colors">
                         <span class="font-serif font-semibold text-dark-800 text-sm sm:text-base">{{ $faq['p'] }}</span>
@@ -541,7 +541,7 @@
     <section class="py-20 bg-dark-900">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center" x-reveal>
             <p class="font-script text-gold-400 text-xl mb-3">¿Prefieres hablar directo?</p>
-            <h2 class="font-serif text-2xl sm:text-3xl font-bold text-white mb-6">Escríbenos por WhatsApp</h2>
+            <h2 class="font-serif text-2xl sm:text-3xl font-bold text-white mb-6" x-split>Escríbenos por WhatsApp</h2>
             <a href="https://wa.me/{{ $waNumero }}?text={{ urlencode($waTexto) }}"
                target="_blank" rel="noopener noreferrer" class="btn-gold">
                 <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">

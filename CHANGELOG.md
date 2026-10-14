@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [Sin publicar]
+
+### Cambiado
+- **Sitio público renovado con animaciones e interacciones estilo Apple:** inicio a pantalla completa con titular que entra palabra por palabra, fondo con zoom lento y parallax, y contenido que se aleja y se desvanece al hacer scroll; barra de navegación de vidrio esmerilado que se compacta al bajar; secciones que aparecen con desenfoque y escala; tarjetas con inclinación 3D y luz que sigue al cursor; línea de tiempo del proceso que se llena con el scroll; botones tipo píldora con efecto magnético; barra de progreso de lectura; cifras que cuentan al entrar en pantalla; y transición suave entre páginas. Aplica al inicio, FOVISSSTE, propiedades, blog, descarga de la app y demás páginas. Se respeta la preferencia de "reducir movimiento" del sistema.
+
 ## [1.3.0] - 2026-10-14
 
 ### Agregado
