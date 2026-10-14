@@ -26,7 +26,7 @@
             @if($contacto->servicio)
             <tr>
                 <td>Servicio:</td>
-                <td>{{ ucfirst(strtolower($contacto->servicio)) }}</td>
+                <td>{{ $contacto->servicio_label }}</td>
             </tr>
             @endif
             @if($contacto->curp)

@@ -32,7 +32,7 @@
             @if($contacto->servicio)
             <tr>
                 <td>Servicio:</td>
-                <td>{{ ucfirst(strtolower($contacto->servicio)) }}</td>
+                <td>{{ $contacto->servicio_label }}</td>
             </tr>
             @endif
             @if($contacto->curp)
@@ -49,7 +49,7 @@
             <tr>
                 <td>Mensaje:</td>
                 <td>
-                    <div style="background:#fff8f0; border:1px solid #e8d8c0; padding:12px 16px; border-radius:2px; font-size:14px; line-height:1.7; white-space:pre-wrap;">{{ $contacto->mensaje }}</div>
+                    <div style="background:#fdf8ec; border:1px solid #f1e0b0; padding:12px 16px; border-radius:14px; font-size:14px; line-height:1.7; white-space:pre-wrap;">{{ $contacto->mensaje }}</div>
                 </td>
             </tr>
             @endif

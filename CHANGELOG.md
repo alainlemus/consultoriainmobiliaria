@@ -18,6 +18,12 @@ La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmo
 ### Cambiado
 - Sitio público: la opción "Propiedades" del menú (escritorio y móvil) y su entrada en el sitemap solo aparecen si hay al menos una propiedad en venta; al vender, ocultar o eliminar la última desaparece sola.
 
+## [Sin publicar]
+
+### Cambiado
+- **Correos renovados con el diseño del sitio:** confirmación de contacto, aviso de nuevo contacto, carpeta del expediente, reporte de gestión, solicitud de testimonio, mensajes masivos y restablecimiento de contraseña (asesores, acreditados y panel) ahora comparten la cabecera oscura con dorado, títulos grandes, tarjetas redondeadas, botones tipo píldora y un pie con el lema y la cobertura. Se ven bien en celular.
+- En los correos de contacto el servicio se muestra con su nombre completo ("Crédito FOVISSSTE" en lugar de "Fovissste").
+
 ## [1.4.1] - 2026-10-14
 
 ### Corregido

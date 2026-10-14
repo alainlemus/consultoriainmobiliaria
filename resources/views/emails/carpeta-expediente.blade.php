@@ -24,5 +24,5 @@
     <hr class="divider">
 
     <p class="small">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
-    <p style="font-size:13px; word-break:break-all; background:#f5f0e8; padding:10px 14px; border-radius:2px; font-family:monospace;">{{ $enlace }}</p>
+    <p style="font-size:13px; word-break:break-all; background:#faf8f3; border:1px solid #ede8db; padding:12px 16px; border-radius:14px; font-family:monospace;">{{ $enlace }}</p>
 @endsection
