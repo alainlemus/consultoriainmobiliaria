@@ -17,8 +17,7 @@
     .cta (botón principal), .divider, .badge
 --}}
 @php
-    $logoPath = setting('logo');
-    $logoUrl  = $logoPath ? asset('storage/' . $logoPath) : null;
+    $logoUrl  = email_logo_src($message ?? null);   // incrustado en el mensaje al enviar
     $correoContacto = setting_email_list('correo_contacto')[0] ?? null;
 @endphp
 <!DOCTYPE html>

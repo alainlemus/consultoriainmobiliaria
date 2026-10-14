@@ -1,7 +1,6 @@
-@props(['url'])
+@props(['url', 'logo' => null])
 @php
-  $logoPath = setting('logo');
-  $logoUrl  = $logoPath ? asset('storage/' . $logoPath) : null;
+  $logoUrl  = $logo ?: email_logo_src();   // al enviar llega incrustado (cid:); en vista previa, un enlace
 @endphp
 <tr>
 <td style="height:4px; line-height:4px; font-size:0; background:#cd9d36; background-image:linear-gradient(90deg,#9c1006 0%,#cd9d36 55%,#debb5a 100%);">&nbsp;</td>

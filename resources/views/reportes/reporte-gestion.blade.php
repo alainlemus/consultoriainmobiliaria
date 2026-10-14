@@ -4,212 +4,177 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Reporte de Gestión</title>
+    {{-- Mismo lenguaje visual que el sitio y los correos: oscuro + dorado, títulos serif, tarjetas suaves.
+         DomPDF no soporta flexbox: todo el maquetado es con tablas. --}}
     <style>
+        @page { margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 10px;
-            color: #1a1a2e;
-            background: #ffffff;
-        }
-        /* ── Encabezado ── */
-        .header {
-            background: #1a1a2e;
-            color: #ffffff;
-            padding: 20px 24px 16px;
-            margin-bottom: 20px;
-        }
-        .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
-        .brand { font-size: 16px; font-weight: bold; color: #f5c842; letter-spacing: 0.5px; }
-        .report-type {
-            background: #f5c842;
-            color: #1a1a2e;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 9px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .period-label { color: #aab4c8; font-size: 9px; margin-top: 4px; }
-        .period-dates { color: #ffffff; font-size: 11px; margin-top: 2px; }
+        body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 10px; color: #4b4441; background: #ffffff; }
+        .serif { font-family: 'DejaVu Serif', Georgia, serif; }
 
-        /* ── KPI Cards ── */
-        .kpis { display: flex; gap: 10px; margin: 0 0 18px; }
-        .kpi {
-            flex: 1;
-            background: #f8f9fc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 10px 12px;
-            text-align: center;
-        }
-        .kpi-value { font-size: 20px; font-weight: bold; color: #1a1a2e; line-height: 1; }
-        .kpi-label { font-size: 8px; color: #718096; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
-        .kpi.success .kpi-value { color: #276749; }
-        .kpi.warning .kpi-value { color: #b7791f; }
-        .kpi.danger  .kpi-value { color: #c53030; }
-        .kpi.info    .kpi-value { color: #2b6cb0; }
+        /* ── Cabecera ── */
+        .stripe { height: 5px; background: #cd9d36; border-bottom: 2px solid #9c1006; }
+        .header { background: #222121; padding: 26px 40px 24px; }
+        .header table { width: 100%; border-collapse: collapse; }
+        .brand-name { font-family: 'DejaVu Serif', Georgia, serif; font-size: 18px; font-weight: bold; color: #cd9d36; letter-spacing: 3px; text-transform: uppercase; }
+        .brand-sub  { font-size: 7.5px; color: #b8b2ac; letter-spacing: 4px; text-transform: uppercase; margin-top: 3px; }
+        .brand-tag  { font-size: 7.5px; color: #debb5a; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 8px; }
+        .pill { display: inline-block; background: #cd9d36; color: #222121; padding: 5px 14px; border-radius: 12px; font-size: 8.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .period-label { color: #a59e98; font-size: 7.5px; letter-spacing: 1px; text-transform: uppercase; margin-top: 10px; }
+        .period-dates { color: #ffffff; font-size: 11px; margin-top: 3px; }
+
+        .content { padding: 26px 40px 20px; }
+        .title { font-family: 'DejaVu Serif', Georgia, serif; font-size: 24px; font-weight: bold; color: #222121; letter-spacing: -0.5px; margin-bottom: 4px; }
+        .lead { font-size: 10px; color: #888080; margin-bottom: 18px; }
+
+        /* ── KPIs ── */
+        .kpis { width: 100%; border-collapse: separate; border-spacing: 8px 0; margin: 0 -8px 22px; }
+        .kpi { background: #faf8f3; border: 1px solid #ede8db; border-radius: 14px; padding: 14px 10px 12px; text-align: center; width: 25%; }
+        .kpi-value { font-family: 'DejaVu Serif', Georgia, serif; font-size: 26px; font-weight: bold; color: #222121; line-height: 1; }
+        .kpi-label { font-size: 7.5px; color: #9f7320; margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+        .kpi.alert .kpi-value { color: #810f00; }
+        .kpi.ok .kpi-value { color: #1f5a3a; }
 
         /* ── Secciones ── */
-        .section { margin-bottom: 20px; }
-        .section-title {
-            font-size: 11px;
-            font-weight: bold;
-            color: #1a1a2e;
-            border-bottom: 2px solid #f5c842;
-            padding-bottom: 4px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+        .section { margin-bottom: 22px; }
+        .section-title { font-family: 'DejaVu Serif', Georgia, serif; font-size: 13px; font-weight: bold; color: #222121; border-left: 4px solid #cd9d36; padding-left: 10px; margin-bottom: 10px; }
 
         /* ── Tablas ── */
-        table { width: 100%; border-collapse: collapse; }
-        th {
-            background: #1a1a2e;
-            color: #ffffff;
-            padding: 5px 8px;
-            text-align: left;
-            font-size: 8.5px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-        td { padding: 5px 8px; border-bottom: 1px solid #edf2f7; font-size: 9px; }
-        tr:last-child td { border-bottom: none; }
-        tr:nth-child(even) td { background: #f7fafc; }
+        table.data { width: 100%; border-collapse: collapse; border: 1px solid #ede8db; }
+        table.data th { background: #222121; color: #debb5a; padding: 8px 12px; text-align: left; font-size: 7.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        table.data td { padding: 8px 12px; border-bottom: 1px solid #ede8db; font-size: 9.5px; color: #4b4441; }
+        table.data tr:last-child td { border-bottom: none; }
+        table.data tr.alt td { background: #faf8f3; }
+        .text-right, table.data th.text-right { text-align: right; }
+        .bold { font-weight: bold; color: #222121; }
+        .empty { color: #a59e98; font-style: italic; font-size: 9px; padding: 8px 0; }
+        .note { margin-top: 8px; font-size: 8.5px; color: #888080; }
+        .note strong { color: #222121; }
 
-        /* ── Insignias de estado ── */
-        .badge {
-            display: inline-block;
-            padding: 2px 7px;
-            border-radius: 10px;
-            font-size: 8px;
-            font-weight: bold;
-        }
-        .badge-green  { background: #c6f6d5; color: #276749; }
-        .badge-yellow { background: #fefcbf; color: #b7791f; }
-        .badge-red    { background: #fed7d7; color: #c53030; }
-        .badge-blue   { background: #bee3f8; color: #2b6cb0; }
-        .badge-gray   { background: #e2e8f0; color: #4a5568; }
-
-        /* ── Alerta vacío ── */
-        .empty-row td { text-align: center; color: #a0aec0; font-style: italic; padding: 12px; }
-
-        /* ── Grid de dos columnas ── */
-        .two-col { display: flex; gap: 14px; }
-        .two-col .col { flex: 1; }
-
-        /* ── Footer ── */
-        .footer {
-            margin-top: 24px;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 10px;
-            color: #a0aec0;
-            font-size: 8px;
-            text-align: center;
-        }
-
-        .money { font-variant-numeric: tabular-nums; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .bold { font-weight: bold; }
+        /* ── Pie ── */
+        .footer { background: #222121; padding: 18px 40px; text-align: center; margin-top: 8px; }
+        .footer .tagline { font-family: 'DejaVu Serif', Georgia, serif; font-style: italic; font-size: 11px; color: #cd9d36; }
+        .footer .meta { font-size: 7.5px; color: #8f8983; margin-top: 8px; line-height: 1.6; }
     </style>
 </head>
 <body>
 
-{{-- ════ ENCABEZADO ════ --}}
+@php $logo = logo_data_uri(); @endphp
+
+{{-- ════ CABECERA ════ --}}
+<div class="stripe"></div>
 <div class="header">
-    <div class="header-top">
-        <div>
-            <div class="brand">{{ config('app.name') }}</div>
-            <div class="period-label">Período del reporte</div>
-            <div class="period-dates">
-                @if($datos['tipo'] === 'diario')
-                    {{ $datos['desde']->isoFormat('dddd D [de] MMMM, YYYY') }}
-                @else
-                    {{ $datos['desde']->isoFormat('D MMM YYYY') }} — {{ $datos['hasta']->isoFormat('D MMM YYYY') }}
-                @endif
-            </div>
-        </div>
-        <div class="text-right">
-            <span class="report-type">Reporte {{ $datos['tipo'] }}</span>
-            <div class="period-label" style="margin-top:6px;">Generado: {{ $datos['generado_en']->format('d/m/Y H:i') }}</div>
-        </div>
-    </div>
-</div>
-
-{{-- ════ KPIs RÁPIDOS ════ --}}
-<div class="kpis">
-    <div class="kpi info">
-        <div class="kpi-value">{{ $datos['prospectos']['nuevos_periodo'] }}</div>
-        <div class="kpi-label">Prospectos nuevos</div>
-    </div>
-    <div class="kpi success">
-        <div class="kpi-value">{{ $datos['documentos']['subidos_periodo'] }}</div>
-        <div class="kpi-label">Documentos subidos</div>
-    </div>
-    <div class="kpi warning">
-        <div class="kpi-value">{{ $datos['documentos']['por_capturar'] }}</div>
-        <div class="kpi-label">Por capturar</div>
-    </div>
-    <div class="kpi info">
-        <div class="kpi-value">{{ $datos['expedientes']['abiertos_periodo'] }}</div>
-        <div class="kpi-label">Expedientes abiertos</div>
-    </div>
-</div>
-
-{{-- ════ SECCIÓN 1: PROSPECTOS NUEVOS ════ --}}
-<div class="section">
-    <div class="section-title">1. Prospectos registrados en el período</div>
-    @if(count($datos['prospectos']['lista_nuevos']) > 0)
-    <table>
-        <tr><th>Prospecto</th><th>Asesor</th></tr>
-        @foreach($datos['prospectos']['lista_nuevos'] as $p)
-        <tr>
-            <td>{{ $p['nombre'] }}</td>
-            <td>{{ $p['asesor'] }}</td>
-        </tr>
-        @endforeach
-    </table>
-    @else
-    <p style="color:#a0aec0; font-style:italic; font-size:9px;">Sin prospectos nuevos en el período.</p>
-    @endif
-    <p style="margin-top:6px; font-size:8.5px; color:#718096;">
-        Prospectos activos en total: <strong>{{ $datos['prospectos']['activos_total'] }}</strong>.
-    </p>
-</div>
-
-{{-- ════ SECCIÓN 2: ACTIVIDAD POR ASESOR ════ --}}
-<div class="section">
-    <div class="section-title">2. Actividad por asesor — período</div>
-    @if(count($datos['por_asesor']) > 0)
     <table>
         <tr>
-            <th>Asesor</th>
-            <th class="text-right">Prospectos nuevos</th>
-            <th class="text-right">Expedientes abiertos</th>
-            <th class="text-right">Documentos subidos</th>
+            <td style="width: 62%; vertical-align: middle;">
+                <table>
+                    <tr>
+                        @if($logo)
+                        <td style="width: 58px; vertical-align: middle;"><img src="{{ $logo }}" alt="" style="height: 50px; width: auto;"></td>
+                        @endif
+                        <td style="vertical-align: middle;">
+                            <div class="brand-name">Consultoría</div>
+                            <div class="brand-sub">Inmobiliaria</div>
+                            <div class="brand-tag">FOVISSSTE · INFONAVIT · Avalúos</div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td style="width: 38%; text-align: right; vertical-align: middle;">
+                <span class="pill">Reporte {{ $datos['tipo'] }}</span>
+                <div class="period-label">Período del reporte</div>
+                <div class="period-dates">
+                    @if($datos['tipo'] === 'diario')
+                        {{ $datos['desde']->isoFormat('dddd D [de] MMMM, YYYY') }}
+                    @else
+                        {{ $datos['desde']->isoFormat('D MMM YYYY') }} — {{ $datos['hasta']->isoFormat('D MMM YYYY') }}
+                    @endif
+                </div>
+            </td>
         </tr>
-        @foreach($datos['por_asesor'] as $a)
-        <tr>
-            <td class="bold">{{ $a['asesor'] }}</td>
-            <td class="text-right">{{ $a['prospectos'] }}</td>
-            <td class="text-right">{{ $a['expedientes'] }}</td>
-            <td class="text-right" style="{{ $a['documentos'] > 0 ? 'color:#276749;font-weight:bold' : '' }}">{{ $a['documentos'] }}</td>
-        </tr>
-        @endforeach
     </table>
-    @else
-    <p style="color:#a0aec0; font-style:italic; font-size:9px;">Sin asesores activos registrados.</p>
-    @endif
 </div>
 
-{{-- ════ FOOTER ════ --}}
+<div class="content">
+
+    <div class="title">Resumen de gestión</div>
+    <div class="lead">Actividad del período · generado el {{ $datos['generado_en']->format('d/m/Y H:i') }}</div>
+
+    {{-- ════ KPIs ════ --}}
+    <table class="kpis">
+        <tr>
+            <td class="kpi">
+                <div class="kpi-value">{{ $datos['prospectos']['nuevos_periodo'] }}</div>
+                <div class="kpi-label">Prospectos nuevos</div>
+            </td>
+            <td class="kpi ok">
+                <div class="kpi-value">{{ $datos['documentos']['subidos_periodo'] }}</div>
+                <div class="kpi-label">Documentos subidos</div>
+            </td>
+            <td class="kpi {{ $datos['documentos']['por_capturar'] > 0 ? 'alert' : '' }}">
+                <div class="kpi-value">{{ $datos['documentos']['por_capturar'] }}</div>
+                <div class="kpi-label">Por capturar</div>
+            </td>
+            <td class="kpi">
+                <div class="kpi-value">{{ $datos['expedientes']['abiertos_periodo'] }}</div>
+                <div class="kpi-label">Expedientes abiertos</div>
+            </td>
+        </tr>
+    </table>
+
+    {{-- ════ 1. PROSPECTOS ════ --}}
+    <div class="section">
+        <div class="section-title">1. Prospectos registrados en el período</div>
+        @if(count($datos['prospectos']['lista_nuevos']) > 0)
+        <table class="data">
+            <tr><th>Prospecto</th><th>Asesor</th></tr>
+            @foreach($datos['prospectos']['lista_nuevos'] as $p)
+            <tr class="{{ $loop->even ? 'alt' : '' }}">
+                <td>{{ $p['nombre'] }}</td>
+                <td>{{ $p['asesor'] }}</td>
+            </tr>
+            @endforeach
+        </table>
+        @else
+        <p class="empty">Sin prospectos nuevos en el período.</p>
+        @endif
+        <p class="note">Prospectos activos en total: <strong>{{ $datos['prospectos']['activos_total'] }}</strong>.</p>
+    </div>
+
+    {{-- ════ 2. POR ASESOR ════ --}}
+    <div class="section">
+        <div class="section-title">2. Actividad por asesor — período</div>
+        @if(count($datos['por_asesor']) > 0)
+        <table class="data">
+            <tr>
+                <th>Asesor</th>
+                <th class="text-right">Prospectos nuevos</th>
+                <th class="text-right">Expedientes abiertos</th>
+                <th class="text-right">Documentos subidos</th>
+            </tr>
+            @foreach($datos['por_asesor'] as $a)
+            <tr class="{{ $loop->even ? 'alt' : '' }}">
+                <td class="bold">{{ $a['asesor'] }}</td>
+                <td class="text-right">{{ $a['prospectos'] }}</td>
+                <td class="text-right">{{ $a['expedientes'] }}</td>
+                <td class="text-right" style="{{ $a['documentos'] > 0 ? 'color:#1f5a3a; font-weight:bold;' : '' }}">{{ $a['documentos'] }}</td>
+            </tr>
+            @endforeach
+        </table>
+        @else
+        <p class="empty">Sin asesores activos registrados.</p>
+        @endif
+    </div>
+
+</div>
+
+{{-- ════ PIE ════ --}}
 <div class="footer">
-    {{ config('app.name') }} · Reporte generado automáticamente el {{ $datos['generado_en']->isoFormat('D [de] MMMM [de] YYYY [a las] H:mm') }} ·
-    Este documento es confidencial y de uso interno.
+    <div class="tagline">Tu patrimonio, nuestra prioridad.</div>
+    <div class="meta">
+        Reporte generado automáticamente el {{ $datos['generado_en']->isoFormat('D [de] MMMM [de] YYYY [a las] H:mm') }}.
+        Este documento es confidencial y de uso interno.
+    </div>
 </div>
 
 </body>
