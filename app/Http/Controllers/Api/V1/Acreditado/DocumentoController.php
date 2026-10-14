@@ -101,9 +101,14 @@ class DocumentoController extends Controller
             ]
         );
 
-        // Notificar al asesor
+        // Avisar (push + bandeja del panel) al asesor del expediente y a los administradores,
+        // que son quienes validan el documento. Sin duplicar si el asesor también es admin.
+        $destinatarios = \App\Models\User::role('super_admin')->get();
         if ($expediente->asesor) {
-            $expediente->asesor->notify(new \App\Notifications\DocumentoSubido($doc, $expediente));
+            $destinatarios->push($expediente->asesor);
+        }
+        foreach ($destinatarios->unique('id') as $usuario) {
+            $usuario->notify(new \App\Notifications\DocumentoSubido($doc, $expediente));
         }
 
         return response()->json([

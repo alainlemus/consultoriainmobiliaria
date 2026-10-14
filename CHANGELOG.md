@@ -19,6 +19,7 @@ La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmo
 - Documentos subidos desde la app del acreditado: la subida respondía con error 500 al avisar al asesor (el archivo sí se guardaba, pero la app mostraba que falló). Ahora termina bien y el aviso lo dice sin asumir quién subió el documento.
 
 ### Cambiado
+- Cuando un acreditado sube un documento desde la app, ahora se avisa con notificación push (y en la bandeja del panel) al asesor del expediente y a todos los administradores, que son quienes lo validan.
 - App del acreditado: un expediente que el asesor abre en el panel para su prospecto (o con su correo) se liga solo a su cuenta y aparece en la app.
 - App del acreditado: el perfil indica si ya envió su solicitud de asesoría (`solicitud_enviada`) para avisarle que ya está registrado.
 - Prospectos: el "Servicio de interés" ahora es siempre Crédito FOVISSSTE (campo fijo, también en los prospectos existentes).

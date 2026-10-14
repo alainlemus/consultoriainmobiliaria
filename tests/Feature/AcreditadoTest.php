@@ -121,6 +121,10 @@ class AcreditadoTest extends TestCase
     {
         \Illuminate\Support\Facades\Storage::fake('local');
         \Illuminate\Support\Facades\Storage::fake('private');
+        Notification::fake();
+        Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
+        $admin = User::factory()->create(['activo' => true]);
+        $admin->assignRole('super_admin');
         $acreditado = $this->crearAcreditado();
         $exp        = $this->crearExpediente(['acreditado_id' => $acreditado->id]);
 
@@ -135,10 +139,12 @@ class AcreditadoTest extends TestCase
         $doc = $exp->documentos()->where('tipo', 'Comprobante de domicilio')->first();
         $this->assertSame('Recibo de luz de mi casa', $doc->notas);
 
+        // Aviso al asesor del expediente y a cada administrador (una sola vez cada uno)
+        Notification::assertSentTo($this->asesor, \App\Notifications\DocumentoSubido::class);
+        Notification::assertSentTo($admin, \App\Notifications\DocumentoSubido::class);
+        Notification::assertSentToTimes($admin, \App\Notifications\DocumentoSubido::class, 1);
+
         // Panel: la columna "Nota" del expediente la muestra
-        Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
-        $admin = User::factory()->create(['activo' => true]);
-        $admin->assignRole('super_admin');
         $this->actingAs($admin);
 
         \Livewire\Livewire::test(\App\Filament\Resources\ExpedienteResource\RelationManagers\DocumentosRelationManager::class, [
