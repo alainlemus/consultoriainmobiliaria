@@ -1,16 +1,13 @@
-<section class="relative py-24 overflow-hidden bg-dark-900">
-    <div
-        class="absolute top-0 left-0 w-64 h-64 -translate-x-1/2 -translate-y-1/2 border rounded-full border-gold-500/10">
-    </div>
-    <div
-        class="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 border rounded-full w-96 h-96 border-gold-500/10">
-    </div>
+<section class="relative py-28 overflow-hidden md:py-36 bg-dark-900">
+    <div class="absolute top-0 left-0 w-64 h-64 -translate-x-1/2 -translate-y-1/2 border rounded-full border-gold-500/10" x-parallax.0.12></div>
+    <div class="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 border rounded-full w-96 h-96 border-gold-500/10" x-parallax.-0.1></div>
+    <div class="absolute inset-0 bg-[radial-gradient(50%_40%_at_50%_0%,rgba(205,157,54,0.14),transparent_70%)]"></div>
     <div class="relative z-10 px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <div class="mb-16 text-center" x-reveal>
-            <p class="mb-3 section-subtitle text-gold-400">Nuestra diferencia</p>
-            <h2 class="mb-4 font-serif text-3xl font-bold text-white md:text-4xl">¿Por qué <span
-                    class="text-gold-400">elegirnos?</span></h2>
-            <div class="gold-divider"></div>
+        <div class="mb-20 text-center">
+            <p class="mb-4 section-subtitle text-gold-400" x-reveal.blur>Nuestra diferencia</p>
+            <h2 class="mb-4 font-serif text-4xl font-bold leading-[1.05] text-white md:text-6xl" style="letter-spacing:-0.035em" x-split>¿Por qué <span
+                    class="text-gold-shine">elegirnos?</span></h2>
+            <div class="gold-divider" x-reveal.scale.delay.300></div>
         </div>
         <div class="grid grid-cols-1 gap-8 md:grid-cols-3 mb-14">
             @php
@@ -39,9 +36,9 @@
                 ];
             @endphp
             @foreach ($razones as $r)
-                <div class="text-center group" x-reveal.delay.{{ $loop->index * 100 }}>
+                <div class="relative p-8 text-center transition-colors duration-500 border group rounded-3xl border-white/10 bg-white/[0.03] hover:bg-white/[0.07]" x-reveal.delay.{{ $loop->index * 150 }} x-tilt.5 data-spotlight>
                     <div
-                        class="flex items-center justify-center w-20 h-20 mx-auto mb-5 transition-colors duration-300 border-2 rounded-full border-gold-500 group-hover:bg-gold-500">
+                        class="flex items-center justify-center w-20 h-20 mx-auto mb-6 transition-all duration-500 border-2 rounded-full border-gold-500 group-hover:bg-gold-500 group-hover:scale-110 group-hover:rotate-6">
                         <svg class="transition-colors w-9 h-9 text-gold-400 group-hover:text-dark-900" fill="none"
                             stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="{{ $r['icon'] }}" />
@@ -53,8 +50,8 @@
             @endforeach
         </div>
         <div
-            x-reveal
-            class="p-8 text-center border rounded-sm bg-gradient-to-r from-gold-500/10 via-gold-500/20 to-gold-500/10 border-gold-500/30">
+            x-reveal.scale
+            class="p-10 text-center border rounded-3xl bg-gradient-to-r from-gold-500/10 via-gold-500/20 to-gold-500/10 border-gold-500/30">
             <p class="mb-2 text-2xl font-script text-gold-400 sm:text-3xl">"Tu futuro, nuestra prioridad."</p>
             <p class="text-sm text-cream-300">Paga al terminar el trámite &bull; Sin desembolsos iniciales &bull;
                 Cobertura

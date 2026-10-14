@@ -10,7 +10,7 @@
 
         <div class="text-center mb-14">
             <p class="section-subtitle text-gold-400 mb-3">Blog</p>
-            <h1 class="section-title text-white mb-4">Blog <span class="text-gold-400">Inmobiliario</span></h1>
+            <h1 class="section-title text-white mb-4" x-split>Blog <span class="text-gold-400">Inmobiliario</span></h1>
             <div class="gold-divider"></div>
             <p class="text-cream-300 max-w-xl mx-auto mt-4 text-sm">
                 Consejos, noticias y guías para tomar las mejores decisiones sobre tu patrimonio.
@@ -21,13 +21,13 @@
         @if(isset($categorias) && $categorias->count())
         <div class="flex flex-wrap justify-center gap-2 mb-10">
             <a href="{{ route('blog.index') }}"
-               class="px-4 py-2 text-xs uppercase tracking-wider font-semibold transition-colors rounded-sm
+               class="px-4 py-2 text-xs uppercase tracking-wider font-semibold transition-colors rounded-2xl
                                              {{ !request('categoria') ? 'bg-gold-500 text-dark-900' : 'bg-dark-800 border border-dark-600 text-cream-300 hover:border-gold-400 hover:text-gold-400' }}">
                 Todos
             </a>
             @foreach($categorias as $cat)
             <a href="{{ route('blog.index', ['categoria' => $cat]) }}"
-               class="px-4 py-2 text-xs uppercase tracking-wider font-semibold transition-colors rounded-sm
+               class="px-4 py-2 text-xs uppercase tracking-wider font-semibold transition-colors rounded-2xl
                                              {{ request('categoria') === $cat ? 'bg-gold-500 text-dark-900' : 'bg-dark-800 border border-dark-600 text-cream-300 hover:border-gold-400 hover:text-gold-400' }}">
                 {{ $cat }}
             </a>
@@ -38,13 +38,13 @@
         @if($posts->count())
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @foreach($posts as $post)
-                <article class="bg-dark-800 border border-dark-700 rounded-sm overflow-hidden group hover:shadow-lg hover:border-gold-500/50 transition-all duration-300">
+                <article class="relative bg-dark-800 border border-dark-700 rounded-3xl overflow-hidden group hover:shadow-2xl hover:shadow-gold-500/15 hover:border-gold-500/50 transition-[box-shadow,border-color] duration-500" x-reveal.scale.delay.{{ ($loop->index % 3) * 120 }} x-tilt.4>
                     @if($post->imagen)
                         <div class="overflow-hidden h-48">
                             <img src="{{ Storage::url($post->imagen) }}"
                                  alt="{{ $post->titulo }}"
                                  loading="lazy"
-                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)]">
                         </div>
                     @else
                         <div class="h-48 bg-gradient-to-br from-dark-700 to-dark-800 flex items-center justify-center">
@@ -56,7 +56,7 @@
                     @endif
                     <div class="p-6">
                         @if($post->categoria)
-                            <span class="inline-block text-xs font-semibold text-crimson-500 bg-crimson-500/10 rounded-sm px-3 py-1 mb-3 uppercase tracking-wider">
+                            <span class="inline-block text-xs font-semibold text-crimson-500 bg-crimson-500/10 rounded-2xl px-3 py-1 mb-3 uppercase tracking-wider">
                                 {{ $post->categoria }}
                             </span>
                         @endif

@@ -14,7 +14,7 @@
         </div>
 
         <p class="section-subtitle text-gold-400 mb-2">¡Recibido!</p>
-        <h1 class="font-serif text-3xl font-bold text-white mb-4">
+        <h1 class="font-serif text-3xl font-bold text-white mb-4" x-split>
             Gracias por compartir<br><span class="text-gold-400">tu experiencia</span>
         </h1>
         <div class="gold-divider"></div>
@@ -25,7 +25,7 @@
         </p>
 
         <a href="{{ url('/') }}"
-           class="inline-block mt-8 bg-gold-500 hover:bg-gold-400 text-dark-900 font-semibold px-8 py-3 rounded-sm transition-colors duration-200 text-sm tracking-wide">
+           class="inline-block mt-8 bg-gold-500 hover:bg-gold-400 text-dark-900 font-semibold px-8 py-3 rounded-2xl transition-colors duration-200 text-sm tracking-wide">
             Volver al inicio
         </a>
     </div>

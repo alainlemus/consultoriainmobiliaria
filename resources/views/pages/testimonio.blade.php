@@ -11,7 +11,7 @@
         {{-- Cabecera --}}
         <div class="text-center mb-10">
             <p class="section-subtitle text-gold-400 mb-2">Tu opinión importa</p>
-            <h1 class="font-serif text-3xl font-bold text-white mb-3">
+            <h1 class="font-serif text-3xl font-bold text-white mb-3" x-split>
                 Hola, <span class="text-gold-400">{{ $nombre }}</span>
             </h1>
             <div class="gold-divider"></div>
@@ -23,7 +23,7 @@
 
         {{-- Errores --}}
         @if($errors->any())
-        <div class="bg-red-900/40 border border-red-500/50 rounded-sm px-5 py-4 mb-6">
+        <div class="bg-red-900/40 border border-red-500/50 rounded-2xl px-5 py-4 mb-6">
             <ul class="text-red-300 text-sm space-y-1 list-disc list-inside">
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -34,7 +34,7 @@
 
         {{-- Formulario --}}
         <form method="POST" action="{{ route('testimonio.store', $token) }}"
-              class="bg-dark-700 border border-dark-600 rounded-sm p-8 space-y-6"
+              class="bg-dark-700 border border-dark-600 rounded-2xl p-8 space-y-6"
               x-data="{ estrellas: {{ old('estrellas', 5) }}, hover: 0, chars: {{ strlen(old('testimonio', '')) }} }">
             @csrf
 
@@ -72,7 +72,7 @@
                     maxlength="1000"
                     placeholder="Cuéntanos cómo fue el proceso, qué servicio usaste y cómo te ayudamos…"
                     @input="chars = $event.target.value.length"
-                    class="w-full bg-dark-600 border border-dark-500 focus:border-gold-500/60 focus:ring-0 rounded-sm px-4 py-3 text-cream-200 placeholder-dark-400 text-sm resize-none outline-none transition">{{ old('testimonio') }}</textarea>
+                    class="w-full bg-dark-600 border border-dark-500 focus:border-gold-500/60 focus:ring-0 rounded-2xl px-4 py-3 text-cream-200 placeholder-dark-400 text-sm resize-none outline-none transition">{{ old('testimonio') }}</textarea>
                 <p class="text-xs text-cream-600 text-right mt-1">
                     <span x-text="chars"></span>/1000
                 </p>
@@ -89,7 +89,7 @@
                 <input type="text" id="nombre" name="nombre"
                     value="{{ old('nombre', $nombre) }}"
                     placeholder="Ej. María González"
-                    class="w-full bg-dark-600 border border-dark-500 focus:border-gold-500/60 rounded-sm px-4 py-3 text-cream-200 placeholder-dark-400 text-sm outline-none transition">
+                    class="w-full bg-dark-600 border border-dark-500 focus:border-gold-500/60 rounded-2xl px-4 py-3 text-cream-200 placeholder-dark-400 text-sm outline-none transition">
                 @error('nombre')
                     <p class="text-red-400 text-xs mt-1">{{ $message }}</p>
                 @enderror
@@ -102,7 +102,7 @@
                 </label>
                 <input type="text" id="ciudad" name="ciudad" value="{{ old('ciudad') }}"
                     placeholder="Ej. Pachuca, Hidalgo"
-                    class="w-full bg-dark-600 border border-dark-500 focus:border-gold-500/60 rounded-sm px-4 py-3 text-cream-200 placeholder-dark-400 text-sm outline-none transition">
+                    class="w-full bg-dark-600 border border-dark-500 focus:border-gold-500/60 rounded-2xl px-4 py-3 text-cream-200 placeholder-dark-400 text-sm outline-none transition">
             </div>
 
             {{-- Servicio --}}
@@ -111,7 +111,7 @@
                     Servicio que usaste
                 </label>
                 <select id="servicio" name="servicio"
-                    class="w-full bg-dark-600 border border-dark-500 focus:border-gold-500/60 rounded-sm px-4 py-3 text-cream-200 text-sm outline-none transition">
+                    class="w-full bg-dark-600 border border-dark-500 focus:border-gold-500/60 rounded-2xl px-4 py-3 text-cream-200 text-sm outline-none transition">
                     <option value="">— Seleccionar —</option>
                     @foreach(['INFONAVIT','FOVISSSTE','Combo FOVISSSTE+INFONAVIT','Avalúo','Escrituras','Asesoría general'] as $srv)
                     <option value="{{ $srv }}"
@@ -124,7 +124,7 @@
 
             {{-- Submit --}}
             <button type="submit"
-                class="w-full bg-gold-500 hover:bg-gold-400 text-dark-900 font-semibold py-3 rounded-sm transition-colors duration-200 text-sm tracking-wide">
+                class="w-full bg-gold-500 hover:bg-gold-400 text-dark-900 font-semibold py-3 rounded-2xl transition-colors duration-200 text-sm tracking-wide">
                 Enviar mi testimonio
             </button>
 

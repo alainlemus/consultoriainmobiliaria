@@ -1,12 +1,12 @@
 {{-- Blog / Blog preview --}}
-<section id="blog" class="py-20 bg-cream-50">
+<section id="blog" class="py-28 md:py-36 bg-cream-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div class="text-center mb-14" x-reveal>
-            <p class="section-subtitle text-gold-400 mb-3">Blog</p>
-            <h2 class="section-title mb-4">Consejos y Noticias <span class="text-gold-400">Inmobiliarias</span></h2>
-            <div class="gold-divider"></div>
-            <p class="text-dark-400 max-w-xl mx-auto mt-4 text-sm">
+        <div class="text-center mb-16">
+            <p class="section-subtitle text-gold-400 mb-4" x-reveal.blur>Blog</p>
+            <h2 class="section-title mb-4" x-split>Consejos y noticias <span class="text-gold-500">inmobiliarias.</span></h2>
+            <div class="gold-divider" x-reveal.scale.delay.300></div>
+            <p class="text-dark-400 max-w-xl mx-auto mt-4 text-lg" x-reveal.delay.400>
                 Información útil para tomar las mejores decisiones sobre tu patrimonio.
             </p>
         </div>
@@ -14,13 +14,13 @@
         @if(isset($posts) && $posts->count())
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @foreach($posts as $post)
-                    <article class="bg-white border border-cream-200 rounded-sm overflow-hidden group hover:shadow-lg hover:border-gold-400 transition-all duration-300" x-reveal.delay.{{ ($loop->index % 3) * 100 }}>
+                    <article class="relative bg-white border border-cream-200 rounded-3xl overflow-hidden group hover:shadow-2xl hover:shadow-gold-400/20 hover:border-gold-300 transition-[box-shadow,border-color] duration-500" x-reveal.delay.{{ ($loop->index % 3) * 120 }} x-tilt.4>
                         @if($post->imagen)
                             <div class="overflow-hidden h-48">
                              <img src="{{ Storage::url($post->imagen) }}"
                                       alt="{{ $post->titulo }}"
                                       loading="lazy"
-                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                      class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)]">
                             </div>
                         @else
                             <div class="h-48 bg-gradient-to-br from-gold-100 to-cream-200 flex items-center justify-center">
@@ -33,7 +33,7 @@
 
                         <div class="p-6">
                             @if($post->categoria)
-                                <span class="inline-block text-xs font-semibold text-crimson-500 bg-crimson-500/10 rounded-sm px-3 py-1 mb-3 uppercase tracking-wider">
+                                <span class="inline-block text-xs font-semibold text-crimson-500 bg-crimson-500/10 rounded-2xl px-3 py-1 mb-3 uppercase tracking-wider">
                                     {{ $post->categoria }}
                                 </span>
                             @endif
@@ -96,7 +96,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @foreach($ejemplos as $item)
-                    <article class="bg-white border border-cream-200 rounded-sm overflow-hidden group hover:shadow-lg hover:border-gold-400 transition-all duration-300" x-reveal.delay.{{ $loop->index * 100 }}>
+                    <article class="bg-white border border-cream-200 rounded-2xl overflow-hidden group hover:shadow-lg hover:border-gold-400 transition-all duration-300" x-reveal.delay.{{ $loop->index * 100 }}>
                         <div class="h-48 bg-gradient-to-br from-gold-100 to-cream-200 flex items-center justify-center">
                             <svg class="w-14 h-14 text-gold-400/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -104,7 +104,7 @@
                             </svg>
                         </div>
                         <div class="p-6">
-                            <span class="inline-block text-xs font-semibold text-crimson-500 bg-crimson-500/10 rounded-sm px-3 py-1 mb-3 uppercase tracking-wider">
+                            <span class="inline-block text-xs font-semibold text-crimson-500 bg-crimson-500/10 rounded-2xl px-3 py-1 mb-3 uppercase tracking-wider">
                                 {{ $item['categoria'] }}
                             </span>
                             <h3 class="font-serif text-lg font-bold text-dark-800 mb-2 line-clamp-2 group-hover:text-gold-500 transition-colors">

@@ -1,10 +1,10 @@
-<section id="testimonios" class="py-24 bg-dark-800 relative overflow-hidden">
+<section id="testimonios" class="py-28 md:py-36 bg-dark-800 relative overflow-hidden">
     <div class="absolute inset-0 bg-gradient-to-br from-gold-500/5 via-transparent to-crimson-700/5"></div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div class="text-center mb-16" x-reveal>
-            <p class="section-subtitle text-gold-400 mb-3">Experiencias reales</p>
-            <h2 class="font-serif text-3xl md:text-4xl font-bold text-white mb-4">Lo que dicen <span class="text-gold-400">nuestros clientes</span></h2>
-            <div class="gold-divider"></div>
+        <div class="text-center mb-20">
+            <p class="section-subtitle text-gold-400 mb-4" x-reveal.blur>Experiencias reales</p>
+            <h2 class="font-serif text-4xl md:text-6xl font-bold leading-[1.05] text-white mb-4" style="letter-spacing:-0.035em" x-split>Lo que dicen <span class="text-gold-shine">nuestros clientes.</span></h2>
+            <div class="gold-divider" x-reveal.scale.delay.300></div>
         </div>
 
         {{-- Tarjetas de testimonios (carrusel) --}}
@@ -29,7 +29,7 @@
                 <div class="flex transition-transform duration-500 ease-in-out" :style="`transform: ${offset()}`">
                     @foreach($testimoniosData as $t)
                     <div class="flex-shrink-0 px-2" :style="`width: calc(100% / ${visibles})`">
-                        <div class="bg-dark-700 border border-dark-600 hover:border-gold-500/40 rounded-sm p-6 transition-all duration-300 relative overflow-hidden h-full">
+                        <div class="bg-dark-700/80 border border-white/10 hover:border-gold-500/40 rounded-3xl p-7 transition-all duration-500 relative overflow-hidden h-full hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/30">
                             <span class="absolute top-3 right-4 text-6xl font-serif text-crimson-600/30 leading-none select-none">"</span>
                             <div class="flex gap-1 mb-4">@for($i=0;$i<5;$i++)<svg class="w-4 h-4 text-gold-400 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>@endfor</div>
                             <p class="text-cream-300 text-sm leading-relaxed mb-5 italic">"{{ $t['texto'] }}"</p>
@@ -94,7 +94,7 @@
                 @mouseleave="startAutoplay()"
             >
                 {{-- Track --}}
-                <div class="overflow-hidden rounded-sm">
+                <div class="overflow-hidden rounded-2xl">
                     <div
                         class="flex transition-transform duration-500 ease-in-out"
                         :style="`transform: ${offset()}`"
@@ -104,7 +104,7 @@
                             class="foto-cliente-slide flex-shrink-0 px-2"
                             :style="`width: calc(100% / ${visibles})`"
                         >
-                            <div class="relative group overflow-hidden rounded-sm aspect-square bg-dark-700">
+                            <div class="relative group overflow-hidden rounded-2xl aspect-square bg-dark-700">
                                 <img
                                     src="{{ Storage::url($foto->foto) }}"
                                     alt="{{ $foto->nombre ?? 'Cliente' }}"

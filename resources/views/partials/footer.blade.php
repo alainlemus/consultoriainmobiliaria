@@ -3,7 +3,7 @@
     <div class="h-0.5 bg-gradient-to-r from-transparent via-gold-500 to-transparent"></div>
     <div class="h-1 bg-crimson-600"></div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10" x-reveal>
             <div class="lg:col-span-2">
                 <div class="flex items-center gap-3 mb-4">
                     @if(setting('logo'))
@@ -73,7 +73,7 @@
                     @foreach($redes as $clave => $red)
                         @if(setting($clave))
                         <a href="{{ setting($clave) }}" target="_blank" rel="noopener"
-                           class="w-9 h-9 bg-dark-700 hover:bg-gold-500 border border-dark-600 hover:border-gold-500 rounded-sm flex items-center justify-center transition-all duration-200 group"
+                           class="w-9 h-9 bg-dark-700 hover:bg-gold-500 border border-dark-600 hover:border-gold-500 rounded-2xl flex items-center justify-center transition-all duration-200 group"
                            title="{{ $red['label'] }}">
                             <svg class="w-4 h-4 fill-current text-cream-300 group-hover:text-dark-900 transition-colors" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path d="{{ $red['path'] }}"/>

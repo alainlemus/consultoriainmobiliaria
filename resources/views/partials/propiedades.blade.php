@@ -1,13 +1,13 @@
 {{-- Sección Propiedades en venta - últimas 4 destacadas --}}
 @if(isset($propiedades) && $propiedades->count())
-<section id="propiedades" class="py-20 bg-dark-900">
+<section id="propiedades" class="py-28 md:py-36 bg-dark-900">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" x-data="{ filtro: 'todas' }">
 
-        <div class="text-center mb-14" x-reveal>
-            <p class="section-subtitle text-gold-400 mb-3">En venta</p>
-            <h2 class="section-title text-white mb-4">Propiedades <span class="text-gold-400">Disponibles</span></h2>
-            <div class="gold-divider"></div>
-            <p class="text-cream-300 max-w-xl mx-auto mt-4 text-sm">
+        <div class="text-center mb-16">
+            <p class="section-subtitle text-gold-400 mb-4" x-reveal.blur>En venta</p>
+            <h2 class="section-title text-white mb-4" x-split>Propiedades <span class="text-gold-shine">disponibles.</span></h2>
+            <div class="gold-divider" x-reveal.scale.delay.300></div>
+            <p class="text-cream-300 max-w-xl mx-auto mt-4 text-lg" x-reveal.delay.400>
                 Encuentra tu hogar ideal. Te acompañamos en cada paso del proceso de compra.
             </p>
         </div>
@@ -16,17 +16,17 @@
         <div class="flex justify-center gap-2 mb-8">
             <button type="button" @click="filtro = 'todas'"
                 :class="filtro === 'todas' ? 'bg-gold-400 text-dark-900' : 'bg-dark-800 text-cream-300 hover:text-gold-400'"
-                class="px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors duration-200">
+                class="px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 active:scale-95">
                 Todas
             </button>
             <button type="button" @click="filtro = 'infonavit'"
                 :class="filtro === 'infonavit' ? 'bg-gold-400 text-dark-900' : 'bg-dark-800 text-cream-300 hover:text-gold-400'"
-                class="px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors duration-200">
+                class="px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 active:scale-95">
                 INFONAVIT
             </button>
             <button type="button" @click="filtro = 'fovissste'"
                 :class="filtro === 'fovissste' ? 'bg-gold-400 text-dark-900' : 'bg-dark-800 text-cream-300 hover:text-gold-400'"
-                class="px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors duration-200">
+                class="px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 active:scale-95">
                 FOVISSSTE
             </button>
         </div>
@@ -34,17 +34,17 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             @foreach($propiedades as $propiedad)
             <a href="{{ route('propiedades.show', $propiedad->slug) }}"
-               x-reveal.delay.{{ ($loop->index % 4) * 100 }}
+               x-reveal.scale.delay.{{ ($loop->index % 4) * 120 }} x-tilt.5
                x-show="filtro === 'todas' || (filtro === 'infonavit' && {{ $propiedad->acepta_infonavit ? 'true' : 'false' }}) || (filtro === 'fovissste' && {{ $propiedad->acepta_fovissste ? 'true' : 'false' }})"
                x-transition
-               class="group bg-dark-800 border border-dark-700 hover:border-gold-500/50 rounded-sm overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-gold-500/10 flex flex-col">
+               class="group relative bg-dark-800 border border-dark-700 hover:border-gold-500/50 rounded-3xl overflow-hidden hover:shadow-2xl hover:shadow-gold-500/15 flex flex-col">
 
                 {{-- Imagen --}}
-                <div class="relative h-48 bg-dark-700 overflow-hidden">
+                <div class="relative h-52 bg-dark-700 overflow-hidden">
                     @if($propiedad->imagen_principal)
                         <img src="{{ Storage::url($propiedad->imagen_principal) }}"
                              alt="{{ $propiedad->titulo }}"
-                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)]">
                     @else
                         <div class="w-full h-full flex items-center justify-center">
                             <svg class="w-12 h-12 text-dark-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,7 +120,7 @@
         </div>
 
         <div class="text-center mt-12">
-            <a href="{{ route('propiedades.index') }}" class="btn-gold">
+            <a href="{{ route('propiedades.index') }}" class="btn-gold !px-8 !py-4 text-base" x-magnetic>
                 Ver todas las propiedades
             </a>
         </div>

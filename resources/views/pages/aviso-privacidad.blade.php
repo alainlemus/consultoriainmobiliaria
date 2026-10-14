@@ -8,11 +8,11 @@
 
             <div class="text-center mb-12">
                 <p class="section-subtitle text-gold-400 mb-3">Legal</p>
-                <h1 class="section-title mb-4">Aviso de <span class="text-gold-400">Privacidad</span></h1>
+                <h1 class="section-title mb-4" x-split>Aviso de <span class="text-gold-400">Privacidad</span></h1>
                 <div class="gold-divider"></div>
             </div>
 
-            <div class="bg-white rounded-sm shadow-sm border border-cream-200 p-8 sm:p-12">
+            <div class="bg-white rounded-2xl shadow-sm border border-cream-200 p-8 sm:p-12">
                 @if (setting('aviso_privacidad'))
                     <div class="richtext">
                         {!! setting('aviso_privacidad') !!}

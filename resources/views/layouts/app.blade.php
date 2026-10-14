@@ -85,8 +85,7 @@
     <link rel="icon" href="{{ asset('favicon.ico') }}">
     @endif
 
-    {{-- View Transition API --}}
-    <meta name="view-transition" content="same-origin">
+    {{-- Transiciones entre páginas: se declaran en CSS (@view-transition, resources/css/app.css) --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 
@@ -103,9 +102,10 @@
 
     @include('partials.navbar')
 
-    <main style="view-transition-name: main-content;">@yield('content')</main>
+    {{-- x-data en <main>: Alpine solo activa las directivas de movimiento (x-reveal, x-split, x-tilt…) dentro de un componente --}}
+    <main x-data style="view-transition-name: main-content;">@yield('content')</main>
 
-    @include('partials.footer')
+    <div x-data>@include('partials.footer')</div>
 
     {{-- WhatsApp flotante --}}
     <a href="https://wa.me/{{ setting('whatsapp_1', '527711910395') }}?text=Hola,%20me%20interesa%20información%20sobre%20sus%20servicios"
@@ -116,31 +116,6 @@
     </a>
 
     @stack('scripts')
-
-    {{-- View Transition API — intercept same-origin navigation --}}
-    <script>
-        if ('startViewTransition' in document) {
-            document.addEventListener('click', (e) => {
-                const a = e.target.closest('a[href]');
-                if (!a) return;
-
-                const url = new URL(a.href, location.href);
-
-                // Solo misma origin, no anclas (#), no target="_blank", no admin
-                if (
-                    url.origin !== location.origin ||
-                    url.pathname === location.pathname && url.hash ||
-                    a.target === '_blank' ||
-                    url.pathname.startsWith('/admin')
-                ) return;
-
-                e.preventDefault();
-                document.startViewTransition(() => {
-                    location.href = a.href;
-                });
-            });
-        }
-    </script>
 
     {{-- Google Analytics 4 — solo carga tras consentimiento de cookies --}}
     @if(setting('ga4_id'))
