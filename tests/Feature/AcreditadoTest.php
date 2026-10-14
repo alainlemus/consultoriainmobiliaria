@@ -155,6 +155,30 @@ class AcreditadoTest extends TestCase
             ->assertTableColumnStateSet('notas', 'Recibo de luz de mi casa', $doc);
     }
 
+    public function test_el_tramite_pasa_a_en_proceso_solo_cuando_el_admin_valida_todos_los_documentos(): void
+    {
+        $acreditado = $this->crearAcreditado();
+        $exp        = $this->crearExpediente(['acreditado_id' => $acreditado->id]);
+        $a = DocumentoExpediente::create(['expediente_id' => $exp->id, 'tipo' => 'INE', 'nombre' => 'INE', 'seccion' => 'acreditado', 'estado' => 'recibido', 'ruta_archivo' => 'a.pdf']);
+        $b = DocumentoExpediente::create(['expediente_id' => $exp->id, 'tipo' => 'CURP', 'nombre' => 'CURP', 'seccion' => 'acreditado', 'estado' => 'recibido', 'ruta_archivo' => 'b.pdf']);
+
+        $estado = fn () => $this->actingAs($acreditado, 'sanctum')->getJson('/api/v1/acreditado/expediente')->json('data.estado');
+
+        $this->assertSame('en_revision', $estado());
+
+        $a->update(['validado_at' => now()]);
+        $this->assertSame('en_revision', $estado());   // falta uno por validar
+
+        $b->update(['validado_at' => now()]);
+        $this->assertSame('en_proceso', $estado());    // todos validados
+        $this->actingAs($acreditado, 'sanctum')->getJson('/api/v1/acreditado/expediente')
+            ->assertJsonPath('data.documentos_pendientes', 0)
+            ->assertJsonPath('data.guia_paso_actual', fn ($t) => str_contains($t, 'solo espera'));
+
+        $b->update(['validado_at' => null, 'estado' => 'rechazado']);
+        $this->assertSame('en_revision', $estado());   // uno rechazado: vuelve a revisión
+    }
+
     public function test_el_perfil_indica_si_el_acreditado_ya_envio_su_solicitud(): void
     {
         $acreditado = $this->crearAcreditado();
