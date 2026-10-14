@@ -142,8 +142,10 @@ class Expediente extends Model
     {
         $conArchivo = $this->documentos()->whereNotNull('ruta_archivo');
 
+        // Un documento solicitado al acreditado que aún no sube deja el expediente abierto
         return (clone $conArchivo)->exists()
-            && ! (clone $conArchivo)->whereNull('validado_at')->exists();
+            && ! (clone $conArchivo)->whereNull('validado_at')->exists()
+            && ! $this->documentos()->solicitadosPendientes()->exists();
     }
 
     /** Lo que se ve en la app: los expedientes ya completos solo se consultan en el panel. */
@@ -151,7 +153,8 @@ class Expediente extends Model
     {
         return $query->where(function ($q) {
             $q->whereDoesntHave('documentos', fn ($d) => $d->whereNotNull('ruta_archivo'))
-              ->orWhereHas('documentos', fn ($d) => $d->whereNotNull('ruta_archivo')->whereNull('validado_at'));
+              ->orWhereHas('documentos', fn ($d) => $d->whereNotNull('ruta_archivo')->whereNull('validado_at'))
+              ->orWhereHas('documentos', fn ($d) => $d->solicitadosPendientes());
         });
     }
 

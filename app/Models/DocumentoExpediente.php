@@ -24,12 +24,22 @@ class DocumentoExpediente extends Model
         'validado_at',
         'validado_por',
         'motivo_rechazo',
+        'solicitado_at',
+        'solicitado_por',
+        'solicitud_nota',
     ];
 
     protected $casts = [
         'capturado_at' => 'datetime',
         'validado_at'  => 'datetime',
+        'solicitado_at' => 'datetime',
     ];
+
+    /** Documentos que un administrador pidió al acreditado y aún no sube. */
+    public function scopeSolicitadosPendientes($query)
+    {
+        return $query->whereNotNull('solicitado_at')->whereNull('ruta_archivo');
+    }
 
     // ─── IDs de TipoTramite ───────────────────────────────────────────────────
     // 1  = Crédito Tradicional FOVISSSTE

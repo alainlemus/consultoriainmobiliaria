@@ -15,6 +15,9 @@ La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmo
 
 ## [Sin publicar]
 
+### Agregado
+- **Documento faltante:** un administrador puede pedir al acreditado un documento que faltaba, aunque los demás ya estén validados, escribiendo una nota que explica cuál es (desde el expediente en la app o desde la tabla de documentos del panel). El acreditado recibe una notificación y ve el aviso en Mi Trámite; mientras no lo suba, el trámite sigue "En revisión", y al subirlo el administrador debe validarlo. El administrador ve en la app también los expedientes ya completos para poder hacerlo.
+
 ### Corregido
 - Documentos subidos desde la app del acreditado: la subida respondía con error 500 al avisar al asesor (el archivo sí se guardaba, pero la app mostraba que falló). Ahora termina bien y el aviso lo dice sin asumir quién subió el documento.
 

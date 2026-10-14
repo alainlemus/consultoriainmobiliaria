@@ -160,6 +160,7 @@ class DocumentoController extends Controller
             'estado'                => $doc->estado,
             'tiene_archivo'         => (bool) $doc->ruta_archivo,
             'subido_por_acreditado' => (bool) $doc->subido_por_acreditado,
+            'solicitud_nota'        => $doc->solicitud_nota,
             'notas'                 => $doc->estado === 'rechazado' ? ($doc->motivo_rechazo ?? $doc->notas) : $doc->notas,
         ];
     }

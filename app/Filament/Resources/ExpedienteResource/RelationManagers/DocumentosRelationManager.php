@@ -209,6 +209,28 @@ class DocumentosRelationManager extends RelationManager
                     ]),
             ])
             ->headerActions([
+                // ── Pedir al acreditado un documento que faltaba (solo administradores) ──
+                \Filament\Actions\Action::make('solicitar_documento')
+                    ->label('Solicitar documento faltante')
+                    ->icon('heroicon-o-document-plus')
+                    ->color('warning')
+                    ->visible(fn () => auth()->user()?->hasRole('super_admin'))
+                    ->modalHeading('Solicitar un documento faltante')
+                    ->modalDescription('El acreditado recibe una notificación y verá tu nota en Mi Trámite de la app. Mientras no lo suba, el trámite sigue en revisión.')
+                    ->modalSubmitActionLabel('Solicitar')
+                    ->form([
+                        Forms\Components\Textarea::make('nota')
+                            ->label('¿Qué documento falta?')
+                            ->placeholder('Ej: Falta el acta de matrimonio, ya que en la escritura aparece como casado.')
+                            ->required()
+                            ->maxLength(500)
+                            ->rows(3),
+                    ])
+                    ->action(function (array $data) {
+                        app(\App\Services\SolicitudDocumentoService::class)->solicitar($this->getOwnerRecord(), auth()->user(), trim($data['nota']));
+                        \Filament\Notifications\Notification::make()->title('Documento solicitado')->success()->send();
+                    }),
+
                 // ── Subir carpeta completa ────────────────────────────────
                 \Filament\Actions\Action::make('subir_carpeta')
                     ->label('Subir carpeta')

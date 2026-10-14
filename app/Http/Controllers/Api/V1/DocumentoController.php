@@ -368,6 +368,25 @@ class DocumentoController extends Controller
     }
 
     /**
+     * POST /api/v1/expedientes/{expedienteId}/documentos-solicitados
+     *
+     * Solo administradores: piden al acreditado un documento que faltaba, con una nota que
+     * explica cuál. Queda pendiente en su expediente y se le avisa por push; mientras no lo
+     * suba, el trámite sigue "En revisión".
+     */
+    public function solicitar(Request $request, int $expedienteId): JsonResponse
+    {
+        $this->soloAdmin($request);
+
+        $exp  = Expediente::findOrFail($expedienteId);
+        $data = $request->validate(['nota' => ['required', 'string', 'max:500']]);
+
+        $doc = app(\App\Services\SolicitudDocumentoService::class)->solicitar($exp, $request->user(), trim($data['nota']));
+
+        return response()->json(['data' => $this->serialize($doc)], 201);
+    }
+
+    /**
      * POST /api/v1/expedientes/{expedienteId}/documentos/{documentoId}/rechazar
      *
      * Solo un administrador rechaza un documento (ilegible, vencido, incorrecto…) con un

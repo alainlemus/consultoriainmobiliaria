@@ -77,7 +77,8 @@ class ExpedienteController extends Controller
         // El trámite no se avanza por etapas. Está "en revisión" hasta que un administrador
         // valida TODOS los documentos; entonces pasa a "en proceso". Se conservan las llaves
         // de etapa/fechas para las versiones de la app que aún las leen.
-        $enProceso = $expediente->estaCompleto();
+        $enProceso   = $expediente->estaCompleto();
+        $solicitados = $expediente->documentos()->solicitadosPendientes()->get();
 
         return [
             'id'          => $expediente->id,
@@ -92,9 +93,17 @@ class ExpedienteController extends Controller
             'fecha_apertura' => $expediente->fecha_apertura?->format('d/m/Y'),
             'fecha_firma'    => null,
             'fecha_esperada_pago' => null,
-            'guia_paso_actual'   => $enProceso
+            'documentos_solicitados' => $solicitados->map(fn ($d) => [
+                'id'            => $d->id,
+                'tipo'          => $d->tipo,
+                'nota'          => $d->solicitud_nota,
+                'solicitado_at' => $d->solicitado_at?->toIso8601String(),
+            ])->values(),
+            'guia_paso_actual'   => $solicitados->isNotEmpty()
+                ? 'Necesitamos un documento adicional para continuar. Revisa la nota y súbelo desde Documentos.'
+                : ($enProceso
                 ? 'Tus documentos fueron validados y tu trámite está en proceso. No necesitas hacer nada más: solo espera, tu asesor te contactará cuando haya novedades.'
-                : 'Tu expediente está en revisión. Tu asesor se pondrá en contacto contigo si necesita algo más.',
+                : 'Tu expediente está en revisión. Tu asesor se pondrá en contacto contigo si necesita algo más.'),
             'asesor' => $expediente->asesor ? [
                 'name'     => $expediente->asesor->name,
                 'telefono' => $expediente->asesor->telefono,
