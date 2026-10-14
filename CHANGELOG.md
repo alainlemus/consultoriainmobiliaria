@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [Sin publicar]
+
+### Cambiado
+- Sitio público: la opción "Propiedades" del menú (escritorio y móvil) y su entrada en el sitemap solo aparecen si hay al menos una propiedad en venta; al vender, ocultar o eliminar la última desaparece sola.
+
 ## [1.4.1] - 2026-10-14
 
 ### Corregido

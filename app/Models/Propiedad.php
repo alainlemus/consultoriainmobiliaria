@@ -18,6 +18,14 @@ class Propiedad extends Model
         'imagenes', 'estatus', 'destacada',
     ];
 
+    public const CACHE_HAY_EN_VENTA = 'propiedades:hay_en_venta';
+
+    /** ¿Hay alguna propiedad visible en el sitio público (en venta)? */
+    public static function hayEnVenta(): bool
+    {
+        return \Illuminate\Support\Facades\Cache::remember(self::CACHE_HAY_EN_VENTA, 300, fn () => static::where('estatus', 'en_venta')->exists());
+    }
+
     protected $casts = [
         'imagenes'         => 'array',
         'acepta_infonavit' => 'boolean',
@@ -31,6 +39,10 @@ class Propiedad extends Model
     protected static function boot(): void
     {
         parent::boot();
+
+        // El menú público muestra "Propiedades" solo si hay alguna en venta: se recalcula al cambiar
+        static::saved(fn () => \Illuminate\Support\Facades\Cache::forget(self::CACHE_HAY_EN_VENTA));
+        static::deleted(fn () => \Illuminate\Support\Facades\Cache::forget(self::CACHE_HAY_EN_VENTA));
 
         static::creating(function ($propiedad) {
             if (empty($propiedad->slug)) {

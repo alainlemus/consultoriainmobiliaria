@@ -14,6 +14,7 @@ use App\Observers\ContactoObserver;
 use App\Observers\ExpedienteObserver;
 use App\Observers\MapaVisitasCacheObserver;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use DiogoGPinto\AuthUIEnhancer\Pages\Auth\AuthUiEnhancerLogin;
 use Livewire\Livewire;
@@ -36,6 +37,9 @@ class AppServiceProvider extends ServiceProvider
             'diogo-g-pinto.auth-u-i-enhancer.pages.auth.auth-ui-enhancer-login',
             AuthUiEnhancerLogin::class
         );
+
+        // Navbar y pie públicos: el enlace a Propiedades solo aparece si hay propiedades en venta
+        View::composer('partials.navbar', fn ($view) => $view->with('hayPropiedades', \App\Models\Propiedad::hayEnVenta()));
 
         Expediente::observe(ExpedienteObserver::class);
         Comision::observe(ComisionObserver::class);

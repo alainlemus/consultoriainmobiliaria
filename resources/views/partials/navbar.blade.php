@@ -74,10 +74,13 @@
                    :class="'{{ $isHome }}' === '1' && activeSection === 'cobertura' ? '{{ $active }}' : '{{ $inactive }}'"
                    class="{{ $navLink }}">Cobertura</a>
 
+                @if($hayPropiedades)
                 {{-- Propiedades --}}
                 <a href="{{ route('propiedades.index') }}"
                    :class="('{{ $isPropiedades }}' === '1' || ('{{ $isHome }}' === '1' && activeSection === 'propiedades')) ? '{{ $active }}' : '{{ $inactive }}'"
                    class="{{ $navLink }}">Propiedades</a>
+
+                @endif
 
                 {{-- Blog --}}
                 <a href="{{ route('blog.index') }}"
@@ -117,8 +120,10 @@
                class="block py-3 text-base font-medium border-b border-white/10 text-cream-200 hover:text-gold-400">Proceso</a>
             <a href="{{ route('home') }}#cobertura"
                class="block py-3 text-base font-medium border-b border-white/10 text-cream-200 hover:text-gold-400">Cobertura</a>
+            @if($hayPropiedades)
             <a href="{{ route('propiedades.index') }}"
                class="block py-3 text-base font-medium border-b border-white/10 {{ $isPropiedades ? 'text-gold-400' : 'text-cream-200 hover:text-gold-400' }}">Propiedades</a>
+            @endif
             <a href="{{ route('blog.index') }}"
                class="block py-3 text-base font-medium border-b border-white/10 {{ $isBlog ? 'text-gold-400' : 'text-cream-200 hover:text-gold-400' }}">Blog</a>
             <a href="{{ route('home') }}#contacto" class="btn-gold w-full justify-center mt-3">Contáctanos</a>
