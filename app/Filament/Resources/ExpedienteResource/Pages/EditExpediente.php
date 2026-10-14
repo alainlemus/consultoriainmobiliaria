@@ -206,6 +206,29 @@ class EditExpediente extends EditRecord
                     route('contratos.convenio_honorarios', $this->record->id)
                 )),
 
+            Action::make('pagare')
+                ->label('Pagaré')
+                ->icon('heroicon-o-banknotes')
+                ->color('gray')
+                ->modalHeading('Vista previa — Pagaré')
+                ->modalWidth('7xl')
+                ->modalSubmitActionLabel('Descargar PDF')
+                ->modalContent(fn () => new HtmlString(
+                    '<iframe src="' . route('pagare.expediente', $this->record->id) . '?preview=1"
+                        style="width:100%;height:88vh;border:none;border-radius:4px;"
+                        title="Pagaré">
+                    </iframe>'
+                ))
+                ->extraModalFooterActions([
+                    Action::make('pagare_word')
+                        ->label('Descargar Word')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('info')
+                        ->url(fn () => route('pagare.expediente', $this->record->id) . '?formato=word')
+                        ->openUrlInNewTab(),
+                ])
+                ->action(fn () => redirect()->away(route('pagare.expediente', $this->record->id))),
+
             Action::make('carta_mandato')
                 ->label('Carta Mandato')
                 ->icon('heroicon-o-identification')

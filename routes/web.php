@@ -66,6 +66,12 @@ Route::view('/descargar-app', 'pages.descargar-app')->name('descargar.app');
 // Reportes KPIs (solo super_admin — protegido en el controller)
 
 // Contratos PDF por expediente
+// Pagaré (PDF o Word) con los datos del acreditado
+Route::middleware(['web', 'auth'])->prefix('admin/pagare')->name('pagare.')->group(function () {
+    Route::get('/expediente/{expediente}', [\App\Http\Controllers\PagareController::class, 'expediente'])->name('expediente');
+    Route::get('/contrato-generado/{contrato}', [\App\Http\Controllers\PagareController::class, 'contratoGenerado'])->name('contrato_generado');
+});
+
 Route::middleware(['web', 'auth'])->prefix('admin/contratos')->name('contratos.')->group(function () {
     Route::get('/{expediente}/prestacion-servicios',[ContratosController::class, 'prestacionServicios'])->name('prestacion_servicios');
     Route::get('/{expediente}/convenio-honorarios', [ContratosController::class, 'convenioHonorarios'])->name('convenio_honorarios');
