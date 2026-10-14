@@ -166,6 +166,11 @@ class DocumentoController extends Controller
                     'estado'       => 'pendiente',
                     'notas'        => $request->input('notas'),
                     'ruta_archivo' => $ruta,
+                    // Archivo nuevo: hay que revisarlo y validarlo otra vez
+                    'capturado_at'   => null,
+                    'validado_at'    => null,
+                    'validado_por'   => null,
+                    'motivo_rechazo' => null,
                 ]
             );
         }

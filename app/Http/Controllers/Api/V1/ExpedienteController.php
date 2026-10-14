@@ -147,8 +147,24 @@ class ExpedienteController extends Controller
             'notas_internas'   => ['nullable', 'string'],
         ]);
 
+        $contacto = \App\Models\Contacto::find($data['contacto_id']);
+
+        // Un prospecto tiene un solo expediente abierto: si ya existe (doble toque, reintento
+        // tras una mala señal) se devuelve ese en lugar de crear otro.
+        $abierto = Expediente::where('contacto_id', $data['contacto_id'])
+            ->whereNotIn('estado', ['cerrado', 'cancelado'])
+            ->latest()
+            ->first();
+        if ($abierto) {
+            return response()->json(['data' => $abierto->load(['tipoTramite:id,nombre', 'contacto:id,nombre'])], 200);
+        }
+
         $exp = Expediente::create([
             ...$data,
+            // Datos del prospecto: sirven para ligarlo después con la cuenta del acreditado (correo/CURP)
+            'acreditado_email'    => $contacto?->email,
+            'acreditado_curp'     => $contacto?->curp,
+            'acreditado_telefono' => $contacto?->telefono,
             'asesor_id'        => $request->user()->id,
             'estado'           => $data['estado'] ?? 'en_proceso',
             'etapa_tramite_id' => $data['etapa_tramite_id']

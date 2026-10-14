@@ -111,12 +111,13 @@ class Acreditado extends Authenticatable
      */
     public function vincularExpedientesPendientes(): void
     {
-        if (! $this->contacto_id && ! $this->email) return;
+        if (! $this->contacto_id && ! $this->email && ! $this->curp) return;
 
         Expediente::whereNull('acreditado_id')
             ->where(function ($q) {
                 if ($this->contacto_id) $q->orWhere('contacto_id', $this->contacto_id);
                 if ($this->email)       $q->orWhere('acreditado_email', $this->email);
+                if ($this->curp)        $q->orWhere('acreditado_curp', $this->curp);
             })
             ->update(['acreditado_id' => $this->id]);
     }
