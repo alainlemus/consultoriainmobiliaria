@@ -99,4 +99,22 @@ class Contacto extends Model
             })
             ->first();
     }
+
+    /** Nombre legible del servicio de interés (para correos y pantallas). */
+    public function getServicioLabelAttribute(): ?string
+    {
+        if (! $this->servicio) {
+            return null;
+        }
+
+        return match (strtoupper($this->servicio)) {
+            'INFONAVIT'              => 'Crédito INFONAVIT',
+            'FOVISSSTE'              => 'Crédito FOVISSSTE',
+            'AVALUO'                 => 'Avalúo',
+            'ESCRITURACION'          => 'Escrituración',
+            'ASESORIA_PERSONALIZADA' => 'Asesoría personalizada',
+            'OTRO'                   => 'Otro',
+            default                  => ucfirst(strtolower($this->servicio)),
+        };
+    }
 }

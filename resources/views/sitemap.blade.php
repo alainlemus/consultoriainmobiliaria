@@ -11,12 +11,14 @@
         <priority>1.0</priority>
     </url>
 
-    {{-- Propiedades index --}}
+    {{-- Propiedades index: solo si hay propiedades publicadas --}}
+    @if($propiedades->isNotEmpty())
     <url>
         <loc>{{ route('propiedades.index') }}</loc>
         <changefreq>daily</changefreq>
         <priority>0.9</priority>
     </url>
+    @endif
 
     {{-- Blog index --}}
     <url>
