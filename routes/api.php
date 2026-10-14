@@ -110,6 +110,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/expedientes/{expedienteId}/enviar-carpeta',                              [DocumentoController::class, 'enviarCarpeta']);
         Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/validar',            [DocumentoController::class, 'validar']);
         Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/rechazar',           [DocumentoController::class, 'rechazar']);
+        Route::post('/expedientes/{expedienteId}/documentos-solicitados',                      [DocumentoController::class, 'solicitar']);
 
         // Ubicaciones GPS
         Route::post('/ubicaciones',                    [UbicacionController::class, 'store']);

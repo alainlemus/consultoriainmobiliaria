@@ -90,6 +90,109 @@ class AcreditadoTest extends TestCase
 
     // ─── Dispositivo (push) ─────────────────────────────────────────────────
 
+    public function test_expediente_abierto_en_el_panel_para_su_prospecto_aparece_en_la_app_del_acreditado(): void
+    {
+        $contacto   = \App\Models\Contacto::create(['nombre' => 'Cliente App', 'telefono' => '5522222222']);
+        $acreditado = $this->crearAcreditado(['contacto_id' => $contacto->id]);
+        $exp        = $this->crearExpediente(['contacto_id' => $contacto->id]);
+
+        $this->assertNull($exp->fresh()->acreditado_id);
+
+        $this->actingAs($acreditado, 'sanctum')
+            ->getJson('/api/v1/acreditado/expediente')
+            ->assertOk()
+            ->assertJsonPath('data.id', $exp->id);
+
+        $this->assertSame($acreditado->id, $exp->fresh()->acreditado_id);
+    }
+
+    public function test_el_expediente_de_otro_prospecto_no_se_liga_al_acreditado(): void
+    {
+        $acreditado = $this->crearAcreditado();
+        $this->crearExpediente(['contacto_id' => \App\Models\Contacto::create(['nombre' => 'Otro', 'telefono' => '5533333333'])->id]);
+
+        $this->actingAs($acreditado, 'sanctum')
+            ->getJson('/api/v1/acreditado/expediente')
+            ->assertOk()
+            ->assertJsonPath('data', null);
+    }
+
+    public function test_la_nota_del_documento_subido_por_el_acreditado_se_guarda_y_se_ve_en_el_panel(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        \Illuminate\Support\Facades\Storage::fake('private');
+        Notification::fake();
+        Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
+        $admin = User::factory()->create(['activo' => true]);
+        $admin->assignRole('super_admin');
+        $acreditado = $this->crearAcreditado();
+        $exp        = $this->crearExpediente(['acreditado_id' => $acreditado->id]);
+
+        $this->actingAs($acreditado, 'sanctum')
+            ->post('/api/v1/acreditado/expediente/documentos', [
+                'archivo'        => \Illuminate\Http\UploadedFile::fake()->create('luz.pdf', 50, 'application/pdf'),
+                'tipo_documento' => 'Comprobante de domicilio',
+                'notas'          => 'Recibo de luz de mi casa',
+            ], ['Accept' => 'application/json'])
+            ->assertCreated();
+
+        $doc = $exp->documentos()->where('tipo', 'Comprobante de domicilio')->first();
+        $this->assertSame('Recibo de luz de mi casa', $doc->notas);
+
+        // Aviso al asesor del expediente y a cada administrador (una sola vez cada uno)
+        Notification::assertSentTo($this->asesor, \App\Notifications\DocumentoSubido::class);
+        Notification::assertSentTo($admin, \App\Notifications\DocumentoSubido::class);
+        Notification::assertSentToTimes($admin, \App\Notifications\DocumentoSubido::class, 1);
+
+        // Panel: la columna "Nota" del expediente la muestra
+        $this->actingAs($admin);
+
+        \Livewire\Livewire::test(\App\Filament\Resources\ExpedienteResource\RelationManagers\DocumentosRelationManager::class, [
+            'ownerRecord' => $exp,
+            'pageClass'   => \App\Filament\Resources\ExpedienteResource\Pages\EditExpediente::class,
+        ])
+            ->assertCanSeeTableRecords([$doc])
+            ->assertTableColumnStateSet('notas', 'Recibo de luz de mi casa', $doc);
+    }
+
+    public function test_el_tramite_pasa_a_en_proceso_solo_cuando_el_admin_valida_todos_los_documentos(): void
+    {
+        $acreditado = $this->crearAcreditado();
+        $exp        = $this->crearExpediente(['acreditado_id' => $acreditado->id]);
+        $a = DocumentoExpediente::create(['expediente_id' => $exp->id, 'tipo' => 'INE', 'nombre' => 'INE', 'seccion' => 'acreditado', 'estado' => 'recibido', 'ruta_archivo' => 'a.pdf']);
+        $b = DocumentoExpediente::create(['expediente_id' => $exp->id, 'tipo' => 'CURP', 'nombre' => 'CURP', 'seccion' => 'acreditado', 'estado' => 'recibido', 'ruta_archivo' => 'b.pdf']);
+
+        $estado = fn () => $this->actingAs($acreditado, 'sanctum')->getJson('/api/v1/acreditado/expediente')->json('data.estado');
+
+        $this->assertSame('en_revision', $estado());
+
+        $a->update(['validado_at' => now()]);
+        $this->assertSame('en_revision', $estado());   // falta uno por validar
+
+        $b->update(['validado_at' => now()]);
+        $this->assertSame('en_proceso', $estado());    // todos validados
+        $this->actingAs($acreditado, 'sanctum')->getJson('/api/v1/acreditado/expediente')
+            ->assertJsonPath('data.documentos_pendientes', 0)
+            ->assertJsonPath('data.guia_paso_actual', fn ($t) => str_contains($t, 'solo espera'));
+
+        $b->update(['validado_at' => null, 'estado' => 'rechazado']);
+        $this->assertSame('en_revision', $estado());   // uno rechazado: vuelve a revisión
+    }
+
+    public function test_el_perfil_indica_si_el_acreditado_ya_envio_su_solicitud(): void
+    {
+        $acreditado = $this->crearAcreditado();
+        $this->assertFalse($acreditado->toApiArray()['solicitud_enviada']);
+
+        \App\Models\AcreditadoSolicitud::create([
+            'acreditado_id'    => $acreditado->id,
+            'servicio'         => 'Crédito Tradicional FOVISSSTE',
+            'estado_solicitud' => 'pendiente',
+        ]);
+
+        $this->assertTrue($acreditado->fresh()->toApiArray()['solicitud_enviada']);
+    }
+
     public function test_acreditado_puede_registrar_su_dispositivo(): void
     {
         $acreditado = $this->crearAcreditado();

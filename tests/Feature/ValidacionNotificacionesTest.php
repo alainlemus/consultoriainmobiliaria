@@ -114,10 +114,11 @@ class ValidacionNotificacionesTest extends TestCase
         $this->doc('CURP');
         $this->getJson('/api/v1/expedientes')->assertOk()->assertJsonCount(1, 'data');
 
-        // El administrador tampoco lo ve cuando está completo
+        // El asesor ya no lo ve cuando está completo; el administrador sí (puede pedir un documento faltante)
         $this->exp->documentos()->update(['validado_at' => now()]);
-        Sanctum::actingAs($this->admin);
         $this->getJson('/api/v1/expedientes')->assertOk()->assertJsonCount(0, 'data');
+        Sanctum::actingAs($this->admin);
+        $this->getJson('/api/v1/expedientes')->assertOk()->assertJsonCount(1, 'data');
     }
 
     public function test_un_expediente_sin_documentos_sigue_visible(): void
@@ -147,9 +148,15 @@ class ValidacionNotificacionesTest extends TestCase
         Mail::fake();
 
         Storage::disk('local')->put("expedientes/{$this->exp->id}/docs/INE.pdf", 'contenido');
-        $this->doc('INE');
+        $ine = $this->doc('INE');
 
         Sanctum::actingAs($this->admin);
+
+        // Hasta que el admin valide todos los documentos no se puede enviar la carpeta
+        $this->postJson("/api/v1/expedientes/{$this->exp->id}/enviar-carpeta")->assertStatus(422);
+        Mail::assertNothingSent();
+
+        $this->validar($ine)->assertOk();
         $this->postJson("/api/v1/expedientes/{$this->exp->id}/enviar-carpeta")
             ->assertOk()
             ->assertJsonPath('email', $this->admin->email);

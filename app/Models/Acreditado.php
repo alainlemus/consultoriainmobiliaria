@@ -104,9 +104,29 @@ class Acreditado extends Authenticatable
         return $expediente;
     }
 
+    /**
+     * Liga a este acreditado los expedientes que el asesor abrió desde el panel
+     * para su prospecto (mismo contacto) o con su correo, y que aún no tienen
+     * acreditado. Sin esto, abrir el expediente en el panel no se reflejaba en la app.
+     */
+    public function vincularExpedientesPendientes(): void
+    {
+        if (! $this->contacto_id && ! $this->email && ! $this->curp) return;
+
+        Expediente::whereNull('acreditado_id')
+            ->where(function ($q) {
+                if ($this->contacto_id) $q->orWhere('contacto_id', $this->contacto_id);
+                if ($this->email)       $q->orWhere('acreditado_email', $this->email);
+                if ($this->curp)        $q->orWhere('acreditado_curp', $this->curp);
+            })
+            ->update(['acreditado_id' => $this->id]);
+    }
+
     /** Payload de respuesta para la API */
     public function toApiArray(): array
     {
+        $this->vincularExpedientesPendientes();
+
         return [
             'id'                => $this->id,
             'name'              => $this->name,
@@ -118,6 +138,8 @@ class Acreditado extends Authenticatable
             'foto_perfil_url'   => $this->foto_perfil_url,
             'curp_verificado'   => (bool) $this->curp_verified_at,
             'tiene_expediente'  => $this->expedientes()->exists(),
+            // Ya pidió asesoría desde la app: está registrado como prospecto y un asesor lo contactará.
+            'solicitud_enviada' => $this->solicitudes()->exists(),
         ];
     }
 }

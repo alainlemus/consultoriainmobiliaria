@@ -170,16 +170,15 @@ class ContactoResource extends Resource
                             'email' => 'Ingresa un correo electrónico válido (ej: usuario@dominio.com).',
                             'max'   => 'El correo no puede superar los 150 caracteres.',
                         ]),
+                    // El servicio de interés es siempre Crédito FOVISSSTE: valor fijo, también en prospectos existentes.
                     Forms\Components\Select::make('servicio')
                         ->label('Servicio de interés')
-                        ->options([
-                            'INFONAVIT'              => 'Crédito INFONAVIT',
-                            'FOVISSSTE'              => 'Crédito FOVISSSTE',
-                            'AVALUO'                 => 'Avalúo',
-                            'ESCRITURACION'          => 'Escrituración',
-                            'ASESORIA_PERSONALIZADA' => 'Asesoría personalizada',
-                            'OTRO'                   => 'Otro',
-                        ])
+                        ->options(['FOVISSSTE' => 'Crédito FOVISSSTE'])
+                        ->default('FOVISSSTE')
+                        ->formatStateUsing(fn () => 'FOVISSSTE')
+                        ->disabled()
+                        ->dehydrated()
+                        ->dehydrateStateUsing(fn () => 'FOVISSSTE')
                         ->live(),
                     Forms\Components\TextInput::make('nss')
                         ->label('NSS (Número de Seguridad Social)')

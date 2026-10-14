@@ -13,6 +13,26 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.3.0] - 2026-10-14
+
+### Agregado
+- **Documento faltante:** un administrador puede pedir al acreditado un documento que faltaba, aunque los demás ya estén validados, escribiendo una nota que explica cuál es (desde el expediente en la app o desde la tabla de documentos del panel). El acreditado recibe una notificación y ve el aviso en Mi Trámite; mientras no lo suba, el trámite sigue "En revisión", y al subirlo el administrador debe validarlo. El administrador ve en la app también los expedientes ya completos para poder hacerlo. Se puede pedir al acreditado o al asesor (si el acreditado no usa la app, siempre al asesor, que recibe la notificación y el aviso en el expediente).
+- **Carpeta por correo:** solo se puede enviar cuando un administrador validó todos los documentos del expediente y no queda ningún documento solicitado pendiente.
+
+### Corregido
+- Documentos del acreditado: ahora solo ve los de su sección (los del vendedor o la vivienda no) y, si el asesor ya subió su INE, la que suba él se numera ("INE (2)") en lugar de quedar con el mismo nombre. Iniciar un expediente desde la cola de sincronización (sin señal) también evita duplicados.
+- Documentos del acreditado: al subir varios del mismo tipo (por ejemplo los 3 talones de pago) cada uno se guardaba encima del anterior y solo quedaba el último; ahora se conservan todos ("Talón de pago", "Talón de pago (2)"…). Solo se reemplaza el que un administrador rechazó o el que se pidió como faltante, y el archivo nuevo vuelve a revisión.
+- Documentos: al reemplazar o volver a subir un documento ya validado, seguía marcado como validado aunque el archivo era otro; ahora regresa a revisión y se borra el archivo anterior.
+- Expedientes: iniciar el expediente de un prospecto dos veces (doble toque o reintento por mala señal) creaba dos; ahora se devuelve el abierto. El expediente guarda el correo, CURP y teléfono del prospecto para ligarlo después con su cuenta de acreditado.
+- Documentos subidos desde la app del acreditado: la subida respondía con error 500 al avisar al asesor (el archivo sí se guardaba, pero la app mostraba que falló). Ahora termina bien y el aviso lo dice sin asumir quién subió el documento.
+
+### Cambiado
+- App del acreditado: el trámite se muestra "En revisión" hasta que un administrador valida todos los documentos; entonces pasa a "En proceso" con el mensaje de que solo debe esperar a que su asesor lo contacte (si se rechaza o falta validar alguno, vuelve a "En revisión").
+- Cuando un acreditado sube un documento desde la app, ahora se avisa con notificación push (y en la bandeja del panel) al asesor del expediente y a todos los administradores, que son quienes lo validan.
+- App del acreditado: un expediente que el asesor abre en el panel para su prospecto (o con su correo) se liga solo a su cuenta y aparece en la app.
+- App del acreditado: el perfil indica si ya envió su solicitud de asesoría (`solicitud_enviada`) para avisarle que ya está registrado.
+- Prospectos: el "Servicio de interés" ahora es siempre Crédito FOVISSSTE (campo fijo, también en los prospectos existentes).
+
 ## [1.2.0] - 2026-10-13
 
 ### Agregado

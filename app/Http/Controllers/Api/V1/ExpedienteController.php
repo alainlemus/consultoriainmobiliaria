@@ -14,8 +14,9 @@ class ExpedienteController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user  = $request->user();
-        // Los expedientes con todos sus documentos validados ya no se ven en la app (solo en el panel)
-        $query = Expediente::visiblesEnApp()->with([
+        // Los expedientes con todos sus documentos validados ya no se ven en la app del asesor
+        // (solo en el panel). El administrador sí los ve: puede pedir un documento faltante.
+        $query = Expediente::query()->when(! $user->hasRole('super_admin'), fn ($q) => $q->visiblesEnApp())->with([
             'contacto:id,nombre,foto',
             'tipoTramite:id,nombre',
             'etapa:id,nombre',
@@ -120,6 +121,9 @@ class ExpedienteController extends Controller
         $data['documentos_requeridos_total']   = $requeridos->count();
         $data['documentos_subidos_total']      = $exp->documentos->where('ruta_archivo', '!=', null)->count();
         $data['documentos_pendientes_total']   = $checklist->filter(fn ($d) => ! $d['tiene_archivo'])->count();
+        // Todos los documentos validados por un administrador (y ninguno solicitado pendiente): ya se puede enviar la carpeta
+        $data['completo']                      = $exp->estaCompleto();
+        $data['acreditado_en_app']             = (bool) $exp->acreditado_id;
 
         return response()->json(['data' => $data]);
     }
@@ -143,18 +147,11 @@ class ExpedienteController extends Controller
             'notas_internas'   => ['nullable', 'string'],
         ]);
 
-        $exp = Expediente::create([
-            ...$data,
-            'asesor_id'        => $request->user()->id,
-            'estado'           => $data['estado'] ?? 'en_proceso',
-            'etapa_tramite_id' => $data['etapa_tramite_id']
-                ?? EtapaTramite::where('tipo_tramite_id', $data['tipo_tramite_id'])->orderBy('orden')->value('id'),
-            // Si no se envía acreditado_nombre, se toma del contacto
-            'acreditado_nombre' => $data['acreditado_nombre']
-                ?? \App\Models\Contacto::find($data['contacto_id'])?->nombre,
-        ]);
+        // Un prospecto tiene un solo expediente abierto: si ya existe (doble toque, reintento
+        // tras una mala señal) se devuelve ese en lugar de crear otro.
+        [$exp, $creado] = app(\App\Services\ExpedienteInicioService::class)->iniciar($request->user(), $data);
 
-        return response()->json(['data' => $exp->load(['tipoTramite:id,nombre', 'contacto:id,nombre'])], 201);
+        return response()->json(['data' => $exp->load(['tipoTramite:id,nombre', 'contacto:id,nombre'])], $creado ? 201 : 200);
     }
 
     public function update(Request $request, int $id): JsonResponse

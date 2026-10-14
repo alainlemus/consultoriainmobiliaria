@@ -21,6 +21,7 @@ class DocumentoController extends Controller
     public function index(Request $request): JsonResponse
     {
         $acreditado = $request->user();
+        $acreditado->vincularExpedientesPendientes();
         $expediente = $acreditado->expedientes()->latest()->first();
 
         if (! $expediente) {
@@ -28,6 +29,8 @@ class DocumentoController extends Controller
         }
 
         $documentos = $expediente->documentos()
+            ->paraAcreditado()
+            ->where('seccion', 'acreditado')   // los documentos del vendedor, la vivienda u otros no son suyos
             ->orderBy('seccion')
             ->orderBy('nombre')
             ->get()
@@ -43,6 +46,7 @@ class DocumentoController extends Controller
     public function store(Request $request): JsonResponse
     {
         $acreditado = $request->user();
+        $acreditado->vincularExpedientesPendientes();
         $expediente = $acreditado->expedientes()->latest()->first();
 
         if (! $expediente) {
@@ -60,7 +64,7 @@ class DocumentoController extends Controller
         $heicMimes = ['image/heic', 'image/heif', 'image/x-heic', 'image/x-heif'];
         $esHeic   = in_array(strtolower($mimeReal), $heicMimes);
 
-        $nombreBase = Str::slug($request->tipo_documento) . '_acreditado_' . time();
+        $nombreBase = Str::slug($request->tipo_documento) . '_acreditado_' . time() . '_' . Str::lower(Str::random(5));
 
         if ($esHeic && class_exists(\Imagick::class)) {
             try {
@@ -83,25 +87,60 @@ class DocumentoController extends Controller
             Storage::disk(self::DISK)->putFileAs("expedientes/{$expediente->id}/docs/acreditada", $archivo, "{$nombreBase}.{$ext}");
         }
 
-        $doc = DocumentoExpediente::updateOrCreate(
-            [
+        // Varios documentos del mismo tipo son normales (los 3 talones, otra INE…): cada subida
+        // es un documento nuevo ("Talón de pago", "Talón de pago (2)"…). Solo se reemplaza el que
+        // un administrador rechazó o el que se pidió como faltante y aún no tiene archivo; en ese
+        // caso se borra el archivo anterior y hay que validarlo de nuevo.
+        $tipoBase    = $request->tipo_documento;
+        $candidatos  = DocumentoExpediente::where('expediente_id', $expediente->id)
+            ->where('seccion', 'acreditado')
+            // Incluye lo que subió el asesor (sin categoría): si ya hay una "INE" no se duplica el nombre
+            ->where(fn ($q) => $q->where('tipo', $tipoBase)->orWhere('tipo', 'like', $tipoBase . ' (%)'))
+            ->orderBy('id')
+            ->get();
+
+        $reemplazable = $candidatos->first(fn ($d) => $d->estado === 'rechazado' || ($d->solicitado_at && ! $d->ruta_archivo));
+
+        $datos = [
+            'estado'                => 'recibido',
+            'notas'                 => $request->input('notas'),
+            'ruta_archivo'          => $ruta,
+            'subido_por_acreditado' => true,
+            'capturado_at'          => null,
+            'validado_at'           => null,
+            'validado_por'          => null,
+            'motivo_rechazo'        => null,
+        ];
+
+        if ($reemplazable) {
+            if ($reemplazable->ruta_archivo && $reemplazable->ruta_archivo !== $ruta) {
+                Storage::disk(self::DISK)->delete($reemplazable->ruta_archivo);
+            }
+            $reemplazable->update($datos);
+            $doc = $reemplazable;
+        } else {
+            $tipo = $tipoBase;
+            for ($n = 2; $candidatos->contains('tipo', $tipo); $n++) {
+                $tipo = "{$tipoBase} ({$n})";
+            }
+            $doc = DocumentoExpediente::create([
+                ...$datos,
                 'expediente_id' => $expediente->id,
-                'tipo'          => $request->tipo_documento,
+                'tipo'          => $tipo,
+                'nombre'        => $tipo,
                 'seccion'       => 'acreditado',
                 'categoria'     => 'acreditada',
-            ],
-            [
-                'nombre'               => $request->tipo_documento,
-                'estado'               => 'recibido',
-                'notas'                => $request->input('notas'),
-                'ruta_archivo'         => $ruta,
-                'subido_por_acreditado'=> true,
-            ]
-        );
+            ]);
+        }
 
-        // Notificar al asesor
+        // Avisar (push + bandeja del panel) al asesor del expediente y a los administradores,
+        // que son quienes validan el documento. Sin duplicar si el asesor también es admin.
+        $destinatarios = \App\Models\User::role('super_admin')->get();
         if ($expediente->asesor) {
-            $expediente->asesor->notify(new \App\Notifications\DocumentoSubido($expediente, $doc));
+            $destinatarios->push($expediente->asesor);
+        }
+        foreach ($destinatarios->unique('id') as $usuario) {
+            $usuario->notify(new \App\Notifications\DocumentoSubido($doc, $expediente));
         }
 
         return response()->json([
@@ -117,6 +156,7 @@ class DocumentoController extends Controller
     public function ver(Request $request, int $documentoId): JsonResponse
     {
         $acreditado = $request->user();
+        $acreditado->vincularExpedientesPendientes();
         $expediente = $acreditado->expedientes()->latest()->first();
 
         if (! $expediente) {
@@ -152,6 +192,7 @@ class DocumentoController extends Controller
             'estado'                => $doc->estado,
             'tiene_archivo'         => (bool) $doc->ruta_archivo,
             'subido_por_acreditado' => (bool) $doc->subido_por_acreditado,
+            'solicitud_nota'        => $doc->solicitud_nota,
             'notas'                 => $doc->estado === 'rechazado' ? ($doc->motivo_rechazo ?? $doc->notas) : $doc->notas,
         ];
     }

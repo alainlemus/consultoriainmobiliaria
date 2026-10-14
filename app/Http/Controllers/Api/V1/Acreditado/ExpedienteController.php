@@ -15,6 +15,7 @@ class ExpedienteController extends Controller
     public function show(Request $request): JsonResponse
     {
         $acreditado = $request->user();
+        $acreditado->vincularExpedientesPendientes();
 
         $expediente = $acreditado->expedientes()
             ->with(['etapa', 'tipoTramite', 'asesor'])
@@ -40,6 +41,7 @@ class ExpedienteController extends Controller
     public function documentosPendientes(Request $request): JsonResponse
     {
         $acreditado = $request->user();
+        $acreditado->vincularExpedientesPendientes();
         $expediente = $acreditado->expedientes()->latest()->first();
 
         if (! $expediente) {
@@ -47,6 +49,7 @@ class ExpedienteController extends Controller
         }
 
         $pendientes = $expediente->documentos()
+            ->paraAcreditado()
             ->where('estado', 'pendiente')
             ->whereNull('ruta_archivo')
             ->whereIn('seccion', ['acreditado']) // solo los que son del acreditado
@@ -72,29 +75,44 @@ class ExpedienteController extends Controller
     // ─────────────────────────────────────────────────────────────────────────
     private function expedientePayload($expediente): array
     {
-        // El trámite ya no se avanza por etapas: para el acreditado el expediente
-        // siempre está "en revisión". Se conservan las llaves de etapa/fechas para
-        // las versiones de la app que aún las leen.
+        // El trámite no se avanza por etapas. Está "en revisión" hasta que un administrador
+        // valida TODOS los documentos; entonces pasa a "en proceso". Se conservan las llaves
+        // de etapa/fechas para las versiones de la app que aún las leen.
+        $enProceso   = $expediente->estaCompleto();
+        $solicitados = $expediente->documentos()->solicitadosPendientes()->paraAcreditado()->get();
+
         return [
             'id'          => $expediente->id,
             'folio'       => $expediente->folio,
-            'estado'      => 'en_revision',
+            'estado'      => $enProceso ? 'en_proceso' : 'en_revision',
             'etapa' => [
                 'orden'  => 1,
-                'nombre' => 'En revisión',
+                'nombre' => $enProceso ? 'En proceso' : 'En revisión',
                 'total'  => 1,
             ],
             'tipo_tramite'   => $expediente->tipoTramite?->nombre,
             'fecha_apertura' => $expediente->fecha_apertura?->format('d/m/Y'),
             'fecha_firma'    => null,
             'fecha_esperada_pago' => null,
-            'guia_paso_actual'   => 'Tu expediente está en revisión. Tu asesor se pondrá en contacto contigo si necesita algo más.',
+            'documentos_solicitados' => $solicitados->map(fn ($d) => [
+                'id'            => $d->id,
+                'tipo'          => $d->tipo,
+                'nota'          => $d->solicitud_nota,
+                'solicitado_at' => $d->solicitado_at?->toIso8601String(),
+            ])->values(),
+            'guia_paso_actual'   => $solicitados->isNotEmpty()
+                ? 'Necesitamos un documento adicional para continuar. Revisa la nota y súbelo desde Documentos.'
+                : ($enProceso
+                ? 'Tus documentos fueron validados y tu trámite está en proceso. No necesitas hacer nada más: solo espera, tu asesor te contactará cuando haya novedades.'
+                : 'Tu expediente está en revisión. Tu asesor se pondrá en contacto contigo si necesita algo más.'),
             'asesor' => $expediente->asesor ? [
                 'name'     => $expediente->asesor->name,
                 'telefono' => $expediente->asesor->telefono,
                 'email'    => $expediente->asesor->email,
             ] : null,
-            'documentos_pendientes' => $expediente->documentos()
+            // En proceso ya no se le pide nada: solo esperar
+            'documentos_pendientes' => $enProceso ? 0 : $expediente->documentos()
+                ->paraAcreditado()
                 ->where('estado', 'pendiente')
                 ->whereNull('ruta_archivo')
                 ->whereIn('seccion', ['acreditado'])

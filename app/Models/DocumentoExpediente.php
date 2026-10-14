@@ -24,12 +24,29 @@ class DocumentoExpediente extends Model
         'validado_at',
         'validado_por',
         'motivo_rechazo',
+        'solicitado_at',
+        'solicitado_por',
+        'solicitud_nota',
+        'solicitado_a',
     ];
 
     protected $casts = [
         'capturado_at' => 'datetime',
         'validado_at'  => 'datetime',
+        'solicitado_at' => 'datetime',
     ];
+
+    /** Excluye lo que se le pidió al asesor: el acreditado no lo ve ni se lo cuentan como pendiente. */
+    public function scopeParaAcreditado($query)
+    {
+        return $query->where(fn ($q) => $q->whereNull('solicitado_a')->orWhere('solicitado_a', 'acreditado'));
+    }
+
+    /** Documentos que un administrador pidió (al acreditado o al asesor) y aún no se suben. */
+    public function scopeSolicitadosPendientes($query)
+    {
+        return $query->whereNotNull('solicitado_at')->whereNull('ruta_archivo');
+    }
 
     // ─── IDs de TipoTramite ───────────────────────────────────────────────────
     // 1  = Crédito Tradicional FOVISSSTE

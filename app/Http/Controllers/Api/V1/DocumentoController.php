@@ -166,6 +166,11 @@ class DocumentoController extends Controller
                     'estado'       => 'pendiente',
                     'notas'        => $request->input('notas'),
                     'ruta_archivo' => $ruta,
+                    // Archivo nuevo: hay que revisarlo y validarlo otra vez
+                    'capturado_at'   => null,
+                    'validado_at'    => null,
+                    'validado_por'   => null,
+                    'motivo_rechazo' => null,
                 ]
             );
         }
@@ -368,6 +373,28 @@ class DocumentoController extends Controller
     }
 
     /**
+     * POST /api/v1/expedientes/{expedienteId}/documentos-solicitados
+     *
+     * Solo administradores: piden al acreditado un documento que faltaba, con una nota que
+     * explica cuál. Queda pendiente en su expediente y se le avisa por push; mientras no lo
+     * suba, el trámite sigue "En revisión".
+     */
+    public function solicitar(Request $request, int $expedienteId): JsonResponse
+    {
+        $this->soloAdmin($request);
+
+        $exp  = Expediente::findOrFail($expedienteId);
+        $data = $request->validate([
+            'nota' => ['required', 'string', 'max:500'],
+            'para' => ['nullable', 'in:acreditado,asesor'],
+        ]);
+
+        $doc = app(\App\Services\SolicitudDocumentoService::class)->solicitar($exp, $request->user(), trim($data['nota']), $data['para'] ?? null);
+
+        return response()->json(['data' => $this->serialize($doc)], 201);
+    }
+
+    /**
      * POST /api/v1/expedientes/{expedienteId}/documentos/{documentoId}/rechazar
      *
      * Solo un administrador rechaza un documento (ilegible, vencido, incorrecto…) con un
@@ -413,6 +440,7 @@ class DocumentoController extends Controller
         $admin = $request->user();
 
         abort_unless($exp->documentos()->whereNotNull('ruta_archivo')->exists(), 422, 'Este expediente no tiene documentos para enviar.');
+        abort_unless($exp->estaCompleto(), 422, 'Valida todos los documentos del expediente antes de enviar la carpeta.');
         abort_unless($admin->email, 422, 'Tu usuario no tiene un correo registrado.');
 
         $enlace = URL::temporarySignedRoute('expediente.carpeta.firmada', now()->addHours(72), ['expediente' => $exp->id]);
