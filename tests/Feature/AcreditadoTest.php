@@ -90,6 +90,33 @@ class AcreditadoTest extends TestCase
 
     // ─── Dispositivo (push) ─────────────────────────────────────────────────
 
+    public function test_expediente_abierto_en_el_panel_para_su_prospecto_aparece_en_la_app_del_acreditado(): void
+    {
+        $contacto   = \App\Models\Contacto::create(['nombre' => 'Cliente App', 'telefono' => '5522222222']);
+        $acreditado = $this->crearAcreditado(['contacto_id' => $contacto->id]);
+        $exp        = $this->crearExpediente(['contacto_id' => $contacto->id]);
+
+        $this->assertNull($exp->fresh()->acreditado_id);
+
+        $this->actingAs($acreditado, 'sanctum')
+            ->getJson('/api/v1/acreditado/expediente')
+            ->assertOk()
+            ->assertJsonPath('data.id', $exp->id);
+
+        $this->assertSame($acreditado->id, $exp->fresh()->acreditado_id);
+    }
+
+    public function test_el_expediente_de_otro_prospecto_no_se_liga_al_acreditado(): void
+    {
+        $acreditado = $this->crearAcreditado();
+        $this->crearExpediente(['contacto_id' => \App\Models\Contacto::create(['nombre' => 'Otro', 'telefono' => '5533333333'])->id]);
+
+        $this->actingAs($acreditado, 'sanctum')
+            ->getJson('/api/v1/acreditado/expediente')
+            ->assertOk()
+            ->assertJsonPath('data', null);
+    }
+
     public function test_el_perfil_indica_si_el_acreditado_ya_envio_su_solicitud(): void
     {
         $acreditado = $this->crearAcreditado();

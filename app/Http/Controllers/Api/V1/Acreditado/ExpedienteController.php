@@ -15,6 +15,7 @@ class ExpedienteController extends Controller
     public function show(Request $request): JsonResponse
     {
         $acreditado = $request->user();
+        $acreditado->vincularExpedientesPendientes();
 
         $expediente = $acreditado->expedientes()
             ->with(['etapa', 'tipoTramite', 'asesor'])
@@ -40,6 +41,7 @@ class ExpedienteController extends Controller
     public function documentosPendientes(Request $request): JsonResponse
     {
         $acreditado = $request->user();
+        $acreditado->vincularExpedientesPendientes();
         $expediente = $acreditado->expedientes()->latest()->first();
 
         if (! $expediente) {

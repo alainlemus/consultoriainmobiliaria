@@ -16,6 +16,7 @@ La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmo
 ## [Sin publicar]
 
 ### Cambiado
+- App del acreditado: un expediente que el asesor abre en el panel para su prospecto (o con su correo) se liga solo a su cuenta y aparece en la app.
 - App del acreditado: el perfil indica si ya envió su solicitud de asesoría (`solicitud_enviada`) para avisarle que ya está registrado.
 - Prospectos: el "Servicio de interés" ahora es siempre Crédito FOVISSSTE (campo fijo, también en los prospectos existentes).
 

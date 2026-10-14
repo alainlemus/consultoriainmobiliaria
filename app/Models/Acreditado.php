@@ -104,9 +104,28 @@ class Acreditado extends Authenticatable
         return $expediente;
     }
 
+    /**
+     * Liga a este acreditado los expedientes que el asesor abrió desde el panel
+     * para su prospecto (mismo contacto) o con su correo, y que aún no tienen
+     * acreditado. Sin esto, abrir el expediente en el panel no se reflejaba en la app.
+     */
+    public function vincularExpedientesPendientes(): void
+    {
+        if (! $this->contacto_id && ! $this->email) return;
+
+        Expediente::whereNull('acreditado_id')
+            ->where(function ($q) {
+                if ($this->contacto_id) $q->orWhere('contacto_id', $this->contacto_id);
+                if ($this->email)       $q->orWhere('acreditado_email', $this->email);
+            })
+            ->update(['acreditado_id' => $this->id]);
+    }
+
     /** Payload de respuesta para la API */
     public function toApiArray(): array
     {
+        $this->vincularExpedientesPendientes();
+
         return [
             'id'                => $this->id,
             'name'              => $this->name,

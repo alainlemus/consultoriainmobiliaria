@@ -21,6 +21,7 @@ class DocumentoController extends Controller
     public function index(Request $request): JsonResponse
     {
         $acreditado = $request->user();
+        $acreditado->vincularExpedientesPendientes();
         $expediente = $acreditado->expedientes()->latest()->first();
 
         if (! $expediente) {
@@ -43,6 +44,7 @@ class DocumentoController extends Controller
     public function store(Request $request): JsonResponse
     {
         $acreditado = $request->user();
+        $acreditado->vincularExpedientesPendientes();
         $expediente = $acreditado->expedientes()->latest()->first();
 
         if (! $expediente) {
@@ -117,6 +119,7 @@ class DocumentoController extends Controller
     public function ver(Request $request, int $documentoId): JsonResponse
     {
         $acreditado = $request->user();
+        $acreditado->vincularExpedientesPendientes();
         $expediente = $acreditado->expedientes()->latest()->first();
 
         if (! $expediente) {
