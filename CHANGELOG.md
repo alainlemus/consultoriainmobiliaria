@@ -20,6 +20,7 @@ La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmo
 - **Carpeta por correo:** solo se puede enviar cuando un administrador validó todos los documentos del expediente y no queda ningún documento solicitado pendiente.
 
 ### Corregido
+- Documentos del acreditado: ahora solo ve los de su sección (los del vendedor o la vivienda no) y, si el asesor ya subió su INE, la que suba él se numera ("INE (2)") en lugar de quedar con el mismo nombre. Iniciar un expediente desde la cola de sincronización (sin señal) también evita duplicados.
 - Documentos del acreditado: al subir varios del mismo tipo (por ejemplo los 3 talones de pago) cada uno se guardaba encima del anterior y solo quedaba el último; ahora se conservan todos ("Talón de pago", "Talón de pago (2)"…). Solo se reemplaza el que un administrador rechazó o el que se pidió como faltante, y el archivo nuevo vuelve a revisión.
 - Documentos: al reemplazar o volver a subir un documento ya validado, seguía marcado como validado aunque el archivo era otro; ahora regresa a revisión y se borra el archivo anterior.
 - Expedientes: iniciar el expediente de un prospecto dos veces (doble toque o reintento por mala señal) creaba dos; ahora se devuelve el abierto. El expediente guarda el correo, CURP y teléfono del prospecto para ligarlo después con su cuenta de acreditado.
