@@ -126,6 +126,17 @@ class ContratoGeneradoResource extends Resource
             ])
             ->actions([
                 static::accionVer('pdf', 'Ver contrato (PDF)'),
+                \Filament\Actions\Action::make('pagare_pdf')
+                    ->label('Pagaré (PDF)')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('gray')
+                    ->url(fn (ContratoGenerado $record) => route('pagare.contrato_generado', $record) . '?preview=1')
+                    ->openUrlInNewTab(),
+                \Filament\Actions\Action::make('pagare_word')
+                    ->label('Pagaré (Word)')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('gray')
+                    ->url(fn (ContratoGenerado $record) => route('pagare.contrato_generado', $record) . '?formato=word'),
                 \Filament\Actions\Action::make('exportar_word')
                     ->label('Exportar a Word')
                     ->icon('heroicon-o-document-arrow-down')

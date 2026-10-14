@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.2.0] - 2026-10-13
+
+### Agregado
+- **Pagaré:** formato de pagaré (PDF y Word, basado en el documento oficial) llenado con nombre, domicilio y RFC del acreditado y la fecha del día. Disponible en el expediente (grupo Contratos) y en Contratos generados. Importe y vencimiento quedan en blanco.
+
 ## [1.1.0] - 2026-10-13
 
 ### Cambiado
