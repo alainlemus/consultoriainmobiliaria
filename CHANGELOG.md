@@ -13,6 +13,12 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [Sin publicar]
+
+### Corregido
+- Sitio público: la barra inferior del pie de página (derechos reservados, descargar app, aviso de privacidad) no se veía porque el pie quedaba mal cerrado cuando hay redes sociales configuradas; ahora se ve sobre fondo oscuro y legible.
+- Sitio público: en "El proceso paso a paso" la línea solo cubría la primera fila de pasos y no se llenaba completa; ahora cada fila tiene su línea y se llena con el scroll.
+
 ## [1.4.0] - 2026-10-14
 
 ### Cambiado

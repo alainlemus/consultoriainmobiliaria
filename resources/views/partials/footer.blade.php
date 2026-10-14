@@ -79,22 +79,20 @@
                                 <path d="{{ $red['path'] }}"/>
                             </svg>
                         </a>
-                @endif
-            </div>
-        </div>
-    </div>
+                        @endif
                     @endforeach
                 </div>
                 @endif
-        </div>
-    </div>
+            </div>{{-- /columna Contacto --}}
+        </div>{{-- /grid --}}
+    </div>{{-- /contenedor --}}
     <div class="border-t border-dark-700">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p class="text-cream-300 text-xs">&copy; {{ date('Y') }} Consultoría Inmobiliaria. Todos los derechos reservados.</p>
+            <p class="text-cream-300/80 text-xs">&copy; {{ date('Y') }} Consultoría Inmobiliaria. Todos los derechos reservados.</p>
             <div class="flex items-center gap-4">
-                <a href="{{ route('descargar.app') }}" class="text-cream-300/60 hover:text-gold-400 text-xs transition-colors">Descargar App</a>
-                <a href="{{ route('aviso.privacidad') }}" class="text-cream-300/60 hover:text-gold-400 text-xs transition-colors">Aviso de Privacidad</a>
-                <p class="text-gold-500/50 text-xs">Confianza &bull; Transparencia &bull; Resultados</p>
+                <a href="{{ route('descargar.app') }}" class="text-cream-300/80 hover:text-gold-400 text-xs transition-colors">Descargar App</a>
+                <a href="{{ route('aviso.privacidad') }}" class="text-cream-300/80 hover:text-gold-400 text-xs transition-colors">Aviso de Privacidad</a>
+                <p class="text-gold-400/80 text-xs">Confianza &bull; Transparencia &bull; Resultados</p>
             </div>
         </div>
     </div>
