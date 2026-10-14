@@ -169,6 +169,7 @@ class ContactoDuplicadoTest extends TestCase
         $this->withSession(['captcha_resultado' => 7])
             ->post('/contacto', [
                 'captcha'  => '7',
+                'privacidad' => '1',   // el formulario exige autorizar el aviso de privacidad
                 'nombre'   => 'Pedro Ramirez',
                 'telefono' => '5533334444',
                 'email'    => 'pedro@example.com',
@@ -189,6 +190,7 @@ class ContactoDuplicadoTest extends TestCase
         $this->withSession(['captcha_resultado' => 7])
             ->post('/contacto', [
                 'captcha'  => '7',
+                'privacidad' => '1',
                 'nombre'   => 'Nuevo Cliente',
                 'telefono' => '5566667777',
                 'email'    => 'nuevo@example.com',

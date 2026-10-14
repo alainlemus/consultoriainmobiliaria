@@ -70,7 +70,7 @@ class EnviarReporteGestionTest extends TestCase
         Mail::fake();
         $this->artisan('reportes:enviar', ['--tipo' => 'diario'])
             ->assertSuccessful();
-        Mail::assertQueued(ReporteGestion::class);
+        Mail::assertSent(ReporteGestion::class);
     }
 
     public function test_comando_semanal_se_ejecuta_correctamente(): void
@@ -78,7 +78,7 @@ class EnviarReporteGestionTest extends TestCase
         Mail::fake();
         $this->artisan('reportes:enviar', ['--tipo' => 'semanal'])
             ->assertSuccessful();
-        Mail::assertQueued(ReporteGestion::class);
+        Mail::assertSent(ReporteGestion::class);
     }
 
     public function test_comando_mensual_se_ejecuta_correctamente(): void
@@ -86,7 +86,7 @@ class EnviarReporteGestionTest extends TestCase
         Mail::fake();
         $this->artisan('reportes:enviar', ['--tipo' => 'mensual'])
             ->assertSuccessful();
-        Mail::assertQueued(ReporteGestion::class);
+        Mail::assertSent(ReporteGestion::class);
     }
 
     public function test_tipo_invalido_retorna_failure(): void
@@ -94,7 +94,7 @@ class EnviarReporteGestionTest extends TestCase
         Mail::fake();
         $this->artisan('reportes:enviar', ['--tipo' => 'quincenal'])
             ->assertFailed();
-        Mail::assertNothingQueued();
+        Mail::assertNothingSent();
     }
 
     // ─── Destinatarios ────────────────────────────────────────────────────
@@ -110,8 +110,8 @@ class EnviarReporteGestionTest extends TestCase
         $this->artisan('reportes:enviar', ['--tipo' => 'diario'])
             ->assertSuccessful();
 
-        // Debe haberse encolado un email por cada admin (2)
-        Mail::assertQueued(ReporteGestion::class, 2);
+        // Debe haberse enviado un email por cada admin (2); el comando los envía directo, sin cola (así funciona con el cron)
+        Mail::assertSent(ReporteGestion::class, 2);
     }
 
     public function test_reporte_no_se_envia_si_no_hay_admins(): void
@@ -125,7 +125,7 @@ class EnviarReporteGestionTest extends TestCase
             ->assertSuccessful()
             ->expectsOutputToContain('No hay super_admin');
 
-        Mail::assertNothingQueued();
+        Mail::assertNothingSent();
     }
 
     public function test_asesor_no_recibe_el_reporte(): void
@@ -136,10 +136,10 @@ class EnviarReporteGestionTest extends TestCase
             ->assertSuccessful();
 
         // Solo el admin debe recibirlo
-        Mail::assertQueued(ReporteGestion::class, fn ($mail) =>
+        Mail::assertSent(ReporteGestion::class, fn ($mail) =>
             $mail->hasTo($this->admin->email)
         );
-        Mail::assertNotQueued(ReporteGestion::class, fn ($mail) =>
+        Mail::assertNotSent(ReporteGestion::class, fn ($mail) =>
             $mail->hasTo($this->asesor->email)
         );
     }
