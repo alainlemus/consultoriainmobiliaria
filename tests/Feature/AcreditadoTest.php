@@ -117,6 +117,38 @@ class AcreditadoTest extends TestCase
             ->assertJsonPath('data', null);
     }
 
+    public function test_la_nota_del_documento_subido_por_el_acreditado_se_guarda_y_se_ve_en_el_panel(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        \Illuminate\Support\Facades\Storage::fake('private');
+        $acreditado = $this->crearAcreditado();
+        $exp        = $this->crearExpediente(['acreditado_id' => $acreditado->id]);
+
+        $this->actingAs($acreditado, 'sanctum')
+            ->post('/api/v1/acreditado/expediente/documentos', [
+                'archivo'        => \Illuminate\Http\UploadedFile::fake()->create('luz.pdf', 50, 'application/pdf'),
+                'tipo_documento' => 'Comprobante de domicilio',
+                'notas'          => 'Recibo de luz de mi casa',
+            ], ['Accept' => 'application/json'])
+            ->assertCreated();
+
+        $doc = $exp->documentos()->where('tipo', 'Comprobante de domicilio')->first();
+        $this->assertSame('Recibo de luz de mi casa', $doc->notas);
+
+        // Panel: la columna "Nota" del expediente la muestra
+        Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
+        $admin = User::factory()->create(['activo' => true]);
+        $admin->assignRole('super_admin');
+        $this->actingAs($admin);
+
+        \Livewire\Livewire::test(\App\Filament\Resources\ExpedienteResource\RelationManagers\DocumentosRelationManager::class, [
+            'ownerRecord' => $exp,
+            'pageClass'   => \App\Filament\Resources\ExpedienteResource\Pages\EditExpediente::class,
+        ])
+            ->assertCanSeeTableRecords([$doc])
+            ->assertTableColumnStateSet('notas', 'Recibo de luz de mi casa', $doc);
+    }
+
     public function test_el_perfil_indica_si_el_acreditado_ya_envio_su_solicitud(): void
     {
         $acreditado = $this->crearAcreditado();

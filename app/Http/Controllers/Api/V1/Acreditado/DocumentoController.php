@@ -103,7 +103,7 @@ class DocumentoController extends Controller
 
         // Notificar al asesor
         if ($expediente->asesor) {
-            $expediente->asesor->notify(new \App\Notifications\DocumentoSubido($expediente, $doc));
+            $expediente->asesor->notify(new \App\Notifications\DocumentoSubido($doc, $expediente));
         }
 
         return response()->json([

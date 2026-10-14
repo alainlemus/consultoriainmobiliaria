@@ -37,7 +37,7 @@ class DocumentoSubido extends Notification
 
         return FilamentNotification::make()
             ->title('📄 Documento recibido')
-            ->body("El asesor subió **{$tipo}** para el expediente {$folio} ({$cliente}).")
+            ->body("Se subió **{$tipo}** para el expediente {$folio} ({$cliente}).")
             ->info()
             ->icon('heroicon-o-paper-clip')
             ->actions([

@@ -15,6 +15,9 @@ La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmo
 
 ## [Sin publicar]
 
+### Corregido
+- Documentos subidos desde la app del acreditado: la subida respondía con error 500 al avisar al asesor (el archivo sí se guardaba, pero la app mostraba que falló). Ahora termina bien y el aviso lo dice sin asumir quién subió el documento.
+
 ### Cambiado
 - App del acreditado: un expediente que el asesor abre en el panel para su prospecto (o con su correo) se liga solo a su cuenta y aparece en la app.
 - App del acreditado: el perfil indica si ya envió su solicitud de asesoría (`solicitud_enviada`) para avisarle que ya está registrado.
