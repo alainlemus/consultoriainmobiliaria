@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.5.1] - 2026-10-14
+
+### Corregido
+- Sitio público: al cambiar de página el logo del menú ya no aparece gigante por un instante antes de ajustarse; ahora conserva su tamaño desde que carga.
+
 ## [1.5.0] - 2026-10-14
 
 ### Cambiado

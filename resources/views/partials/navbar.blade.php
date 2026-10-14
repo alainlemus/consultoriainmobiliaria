@@ -36,9 +36,9 @@
 
             <a href="{{ route('home') }}" class="flex items-center gap-3">
                 @if(setting('logo'))
-                    <img src="{{ Storage::url(setting('logo')) }}" alt="{{ setting('site_name', 'Consultoría Inmobiliaria') }}" class="w-auto object-contain transition-all duration-700" :class="scrolled ? 'h-8' : 'h-11'">
+                    <img src="{{ Storage::url(setting('logo')) }}" alt="{{ setting('site_name', 'Consultoría Inmobiliaria') }}" class="h-11 w-auto object-contain transition-all duration-700" :class="scrolled && '!h-8'">
                 @else
-                    <svg viewBox="0 0 100 110" class="transition-all duration-700" :class="scrolled ? 'w-8 h-8' : 'w-11 h-11'" xmlns="http://www.w3.org/2000/svg">
+                    <svg viewBox="0 0 100 110" class="w-11 h-11 transition-all duration-700" :class="scrolled && '!w-8 !h-8'" xmlns="http://www.w3.org/2000/svg">
                         <path d="M50 5 L95 25 L95 60 Q95 90 50 105 Q5 90 5 60 L5 25 Z" fill="#1a1a1a" stroke="#C9A84C" stroke-width="3"/>
                         <rect x="20" y="22" width="60" height="53" rx="2" fill="#2a2a2a"/>
                         <rect x="10" y="10" width="80" height="14" rx="2" fill="#8B1A1A"/>
