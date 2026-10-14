@@ -78,6 +78,75 @@ class SolicitudDocumentoTest extends TestCase
         $this->assertTrue($this->exp->fresh()->estaCompleto());
     }
 
+    public function test_la_carpeta_solo_se_envia_con_todo_validado_y_sin_documentos_solicitados_pendientes(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        $this->actingAs($this->admin, 'sanctum');
+
+        // Todo validado: se puede enviar
+        $this->postJson("/api/v1/expedientes/{$this->exp->id}/enviar-carpeta")->assertOk();
+
+        // Si a destiempo falta un documento, deja de poder enviarse hasta que se suba y se valide
+        $doc = app(\App\Services\SolicitudDocumentoService::class)->solicitar($this->exp, $this->admin, 'Falta el RFC', 'asesor');
+        $this->postJson("/api/v1/expedientes/{$this->exp->id}/enviar-carpeta")->assertStatus(422);
+
+        $doc->update(['ruta_archivo' => 'rfc.pdf', 'estado' => 'recibido']);
+        $this->postJson("/api/v1/expedientes/{$this->exp->id}/enviar-carpeta")->assertStatus(422);   // falta validarlo
+
+        $doc->update(['validado_at' => now()]);
+        $this->postJson("/api/v1/expedientes/{$this->exp->id}/enviar-carpeta")->assertOk();
+    }
+
+    public function test_el_admin_puede_pedirselo_al_asesor_y_el_acreditado_no_lo_ve(): void
+    {
+        Notification::fake();
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->postJson("/api/v1/expedientes/{$this->exp->id}/documentos-solicitados", ['nota' => 'Falta el RFC del vendedor', 'para' => 'asesor'])
+            ->assertCreated();
+
+        Notification::assertSentTo($this->asesor, DocumentoSolicitado::class, fn ($n) => $n->documento->solicitado_a === 'asesor');
+        Notification::assertNotSentTo($this->acreditado, DocumentoSolicitado::class);
+
+        // El asesor lo ve en los documentos del expediente
+        $this->actingAs($this->asesor, 'sanctum')
+            ->getJson("/api/v1/expedientes/{$this->exp->id}/documentos")
+            ->assertOk()
+            ->assertJsonFragment(['solicitud_nota' => 'Falta el RFC del vendedor', 'solicitado_a' => 'asesor']);
+
+        // El acreditado no: ni en Mi Trámite ni como pendiente
+        $this->actingAs($this->acreditado, 'sanctum')
+            ->getJson('/api/v1/acreditado/expediente')
+            ->assertJsonPath('data.documentos_solicitados', [])
+            ->assertJsonPath('data.documentos_pendientes', 0);
+    }
+
+    public function test_sin_acreditado_en_la_app_siempre_se_le_pide_al_asesor(): void
+    {
+        Notification::fake();
+        $this->exp->update(['acreditado_id' => null]);
+
+        $doc = app(\App\Services\SolicitudDocumentoService::class)->solicitar($this->exp->fresh(), $this->admin, 'Falta algo', 'acreditado');
+
+        $this->assertSame('asesor', $doc->solicitado_a);
+        Notification::assertSentTo($this->asesor, DocumentoSolicitado::class);
+    }
+
+    public function test_el_asesor_puede_subir_el_documento_solicitado_con_reemplazar(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $doc = app(\App\Services\SolicitudDocumentoService::class)->solicitar($this->exp, $this->admin, 'Falta el RFC', 'asesor');
+
+        $this->actingAs($this->asesor, 'sanctum')
+            ->post("/api/v1/expedientes/{$this->exp->id}/documentos/{$doc->id}/reemplazar", [
+                'archivo' => \Illuminate\Http\UploadedFile::fake()->create('rfc.pdf', 20, 'application/pdf'),
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $this->assertFalse($this->exp->fresh()->documentos()->solicitadosPendientes()->exists());
+        $this->assertNull($doc->fresh()->validado_at);   // el admin debe validarlo
+    }
+
     public function test_solo_un_administrador_puede_solicitarlo(): void
     {
         $this->actingAs($this->asesor, 'sanctum')

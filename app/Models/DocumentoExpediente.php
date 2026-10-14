@@ -27,6 +27,7 @@ class DocumentoExpediente extends Model
         'solicitado_at',
         'solicitado_por',
         'solicitud_nota',
+        'solicitado_a',
     ];
 
     protected $casts = [
@@ -35,7 +36,13 @@ class DocumentoExpediente extends Model
         'solicitado_at' => 'datetime',
     ];
 
-    /** Documentos que un administrador pidió al acreditado y aún no sube. */
+    /** Excluye lo que se le pidió al asesor: el acreditado no lo ve ni se lo cuentan como pendiente. */
+    public function scopeParaAcreditado($query)
+    {
+        return $query->where(fn ($q) => $q->whereNull('solicitado_a')->orWhere('solicitado_a', 'acreditado'));
+    }
+
+    /** Documentos que un administrador pidió (al acreditado o al asesor) y aún no se suben. */
     public function scopeSolicitadosPendientes($query)
     {
         return $query->whereNotNull('solicitado_at')->whereNull('ruta_archivo');

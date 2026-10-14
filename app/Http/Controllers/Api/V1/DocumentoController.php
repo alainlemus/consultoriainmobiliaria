@@ -379,9 +379,12 @@ class DocumentoController extends Controller
         $this->soloAdmin($request);
 
         $exp  = Expediente::findOrFail($expedienteId);
-        $data = $request->validate(['nota' => ['required', 'string', 'max:500']]);
+        $data = $request->validate([
+            'nota' => ['required', 'string', 'max:500'],
+            'para' => ['nullable', 'in:acreditado,asesor'],
+        ]);
 
-        $doc = app(\App\Services\SolicitudDocumentoService::class)->solicitar($exp, $request->user(), trim($data['nota']));
+        $doc = app(\App\Services\SolicitudDocumentoService::class)->solicitar($exp, $request->user(), trim($data['nota']), $data['para'] ?? null);
 
         return response()->json(['data' => $this->serialize($doc)], 201);
     }
@@ -432,6 +435,7 @@ class DocumentoController extends Controller
         $admin = $request->user();
 
         abort_unless($exp->documentos()->whereNotNull('ruta_archivo')->exists(), 422, 'Este expediente no tiene documentos para enviar.');
+        abort_unless($exp->estaCompleto(), 422, 'Valida todos los documentos del expediente antes de enviar la carpeta.');
         abort_unless($admin->email, 422, 'Tu usuario no tiene un correo registrado.');
 
         $enlace = URL::temporarySignedRoute('expediente.carpeta.firmada', now()->addHours(72), ['expediente' => $exp->id]);

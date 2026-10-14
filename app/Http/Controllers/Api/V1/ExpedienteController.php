@@ -121,6 +121,9 @@ class ExpedienteController extends Controller
         $data['documentos_requeridos_total']   = $requeridos->count();
         $data['documentos_subidos_total']      = $exp->documentos->where('ruta_archivo', '!=', null)->count();
         $data['documentos_pendientes_total']   = $checklist->filter(fn ($d) => ! $d['tiene_archivo'])->count();
+        // Todos los documentos validados por un administrador (y ninguno solicitado pendiente): ya se puede enviar la carpeta
+        $data['completo']                      = $exp->estaCompleto();
+        $data['acreditado_en_app']             = (bool) $exp->acreditado_id;
 
         return response()->json(['data' => $data]);
     }

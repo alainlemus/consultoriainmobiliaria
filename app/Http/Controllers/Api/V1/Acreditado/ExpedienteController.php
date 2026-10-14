@@ -49,6 +49,7 @@ class ExpedienteController extends Controller
         }
 
         $pendientes = $expediente->documentos()
+            ->paraAcreditado()
             ->where('estado', 'pendiente')
             ->whereNull('ruta_archivo')
             ->whereIn('seccion', ['acreditado']) // solo los que son del acreditado
@@ -78,7 +79,7 @@ class ExpedienteController extends Controller
         // valida TODOS los documentos; entonces pasa a "en proceso". Se conservan las llaves
         // de etapa/fechas para las versiones de la app que aún las leen.
         $enProceso   = $expediente->estaCompleto();
-        $solicitados = $expediente->documentos()->solicitadosPendientes()->get();
+        $solicitados = $expediente->documentos()->solicitadosPendientes()->paraAcreditado()->get();
 
         return [
             'id'          => $expediente->id,
@@ -111,6 +112,7 @@ class ExpedienteController extends Controller
             ] : null,
             // En proceso ya no se le pide nada: solo esperar
             'documentos_pendientes' => $enProceso ? 0 : $expediente->documentos()
+                ->paraAcreditado()
                 ->where('estado', 'pendiente')
                 ->whereNull('ruta_archivo')
                 ->whereIn('seccion', ['acreditado'])

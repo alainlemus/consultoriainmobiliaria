@@ -216,9 +216,17 @@ class DocumentosRelationManager extends RelationManager
                     ->color('warning')
                     ->visible(fn () => auth()->user()?->hasRole('super_admin'))
                     ->modalHeading('Solicitar un documento faltante')
-                    ->modalDescription('El acreditado recibe una notificación y verá tu nota en Mi Trámite de la app. Mientras no lo suba, el trámite sigue en revisión.')
+                    ->modalDescription('Quien se elija recibe una notificación con tu nota (el acreditado la ve en Mi Trámite; el asesor, en el expediente de la app). Mientras no se suba, el expediente no se considera completo.')
                     ->modalSubmitActionLabel('Solicitar')
                     ->form([
+                        Forms\Components\Select::make('para')
+                            ->label('¿A quién se le pide?')
+                            ->options(fn () => $this->getOwnerRecord()->acreditado_id
+                                ? ['acreditado' => 'Al acreditado (app)', 'asesor' => 'Al asesor']
+                                : ['asesor' => 'Al asesor'])
+                            ->default(fn () => $this->getOwnerRecord()->acreditado_id ? 'acreditado' : 'asesor')
+                            ->required()
+                            ->native(false),
                         Forms\Components\Textarea::make('nota')
                             ->label('¿Qué documento falta?')
                             ->placeholder('Ej: Falta el acta de matrimonio, ya que en la escritura aparece como casado.')
@@ -227,7 +235,7 @@ class DocumentosRelationManager extends RelationManager
                             ->rows(3),
                     ])
                     ->action(function (array $data) {
-                        app(\App\Services\SolicitudDocumentoService::class)->solicitar($this->getOwnerRecord(), auth()->user(), trim($data['nota']));
+                        app(\App\Services\SolicitudDocumentoService::class)->solicitar($this->getOwnerRecord(), auth()->user(), trim($data['nota']), $data['para'] ?? null);
                         \Filament\Notifications\Notification::make()->title('Documento solicitado')->success()->send();
                     }),
 

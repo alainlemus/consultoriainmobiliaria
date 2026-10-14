@@ -148,9 +148,15 @@ class ValidacionNotificacionesTest extends TestCase
         Mail::fake();
 
         Storage::disk('local')->put("expedientes/{$this->exp->id}/docs/INE.pdf", 'contenido');
-        $this->doc('INE');
+        $ine = $this->doc('INE');
 
         Sanctum::actingAs($this->admin);
+
+        // Hasta que el admin valide todos los documentos no se puede enviar la carpeta
+        $this->postJson("/api/v1/expedientes/{$this->exp->id}/enviar-carpeta")->assertStatus(422);
+        Mail::assertNothingSent();
+
+        $this->validar($ine)->assertOk();
         $this->postJson("/api/v1/expedientes/{$this->exp->id}/enviar-carpeta")
             ->assertOk()
             ->assertJsonPath('email', $this->admin->email);

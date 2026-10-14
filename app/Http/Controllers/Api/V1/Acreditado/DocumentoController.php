@@ -29,6 +29,7 @@ class DocumentoController extends Controller
         }
 
         $documentos = $expediente->documentos()
+            ->paraAcreditado()
             ->orderBy('seccion')
             ->orderBy('nombre')
             ->get()
