@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [Sin publicar]
+
+### Cambiado
+- Prospectos: el "Servicio de interés" ahora es siempre Crédito FOVISSSTE (campo fijo, también en los prospectos existentes).
+
 ## [1.2.0] - 2026-10-13
 
 ### Agregado
