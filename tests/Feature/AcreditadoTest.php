@@ -90,6 +90,20 @@ class AcreditadoTest extends TestCase
 
     // ─── Dispositivo (push) ─────────────────────────────────────────────────
 
+    public function test_el_perfil_indica_si_el_acreditado_ya_envio_su_solicitud(): void
+    {
+        $acreditado = $this->crearAcreditado();
+        $this->assertFalse($acreditado->toApiArray()['solicitud_enviada']);
+
+        \App\Models\AcreditadoSolicitud::create([
+            'acreditado_id'    => $acreditado->id,
+            'servicio'         => 'Crédito Tradicional FOVISSSTE',
+            'estado_solicitud' => 'pendiente',
+        ]);
+
+        $this->assertTrue($acreditado->fresh()->toApiArray()['solicitud_enviada']);
+    }
+
     public function test_acreditado_puede_registrar_su_dispositivo(): void
     {
         $acreditado = $this->crearAcreditado();

@@ -118,6 +118,8 @@ class Acreditado extends Authenticatable
             'foto_perfil_url'   => $this->foto_perfil_url,
             'curp_verificado'   => (bool) $this->curp_verified_at,
             'tiene_expediente'  => $this->expedientes()->exists(),
+            // Ya pidió asesoría desde la app: está registrado como prospecto y un asesor lo contactará.
+            'solicitud_enviada' => $this->solicitudes()->exists(),
         ];
     }
 }
