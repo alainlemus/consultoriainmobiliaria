@@ -17,8 +17,8 @@ class ContratosSettings extends Page
     }
 
     protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-document-text';
-    protected static ?string $navigationLabel = 'Contratos para clientes';
-    protected static ?string $title           = 'Contratos para clientes';
+    protected static ?string $navigationLabel = 'Configuración de contrato';
+    protected static ?string $title           = 'Configuración de contrato';
     protected static string | \UnitEnum | null $navigationGroup = 'CRM';
     protected static ?int    $navigationSort  = 90;
     protected string $view = 'filament.pages.contratos-settings';

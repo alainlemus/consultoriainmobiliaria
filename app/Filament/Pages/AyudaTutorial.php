@@ -215,7 +215,7 @@ class AyudaTutorial extends Page implements HasInfolists
                             ->label('Personalizar textos y firmas')
                             ->icon('heroicon-o-pencil-square')
                             ->columnSpanFull()
-                            ->state('En Configuración → "Contratos para clientes" editas los nombres que aparecen en las firmas, el domicilio jurídico y los textos de introducción/cláusulas del Contrato de Servicios y el Convenio de Honorarios. Usa placeholders como {acreditado}, {folio}, {monto_credito} o {curp}: se sustituyen automáticamente al generar cada contrato.'),
+                            ->state('En Configuración → "Configuración de contrato" editas los nombres que aparecen en las firmas, el domicilio jurídico y los textos de introducción/cláusulas del Contrato de Servicios y el Convenio de Honorarios. Usa placeholders como {acreditado}, {folio}, {monto_credito} o {curp}: se sustituyen automáticamente al generar cada contrato.'),
                     ]),
 
                 Section::make('Acreditados en la App')
