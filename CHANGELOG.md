@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.5.2] - 2026-10-26
+
+### Cambiado
+- Panel: la página "Contratos para clientes" ahora se llama "Configuración de contrato" (en el menú, en su título y en la Ayuda).
+
 ## [1.5.1] - 2026-10-14
 
 ### Corregido
