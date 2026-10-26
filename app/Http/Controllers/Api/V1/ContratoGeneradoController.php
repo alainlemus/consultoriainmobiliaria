@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\ContratoGenerado;
+use App\Services\PagareService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 
@@ -74,7 +76,34 @@ class ContratoGeneradoController extends Controller
             );
         }
 
+        // El pagaré no se guarda: se arma al vuelo con los datos del contrato.
+        $urls['pagare_url'] = URL::temporarySignedRoute(
+            'api.contratos_generados.pagare',
+            now()->addMinutes(5),
+            ['id' => $id]
+        );
+
         return response()->json([...$urls, 'expira_en' => 300]);
+    }
+
+    /**
+     * GET /contratos-generados/{id}/pagare (ruta firmada)
+     *
+     * PDF del pagaré del contrato, con los datos del acreditado y la fecha
+     * en que se generó el contrato. La firma de la URL es la autorización.
+     */
+    public function pagare(int $id, PagareService $pagare): Response
+    {
+        $contrato = ContratoGenerado::findOrFail($id);
+
+        $datos = $pagare->datos(
+            $contrato->acreditado_nombre,
+            $contrato->acreditado_domicilio,
+            $contrato->acreditado_rfc,
+            $contrato->created_at,
+        );
+
+        return $pagare->pdf($datos)->stream('pagare-' . ($contrato->folio ?: $contrato->id) . '.pdf');
     }
 
     /**

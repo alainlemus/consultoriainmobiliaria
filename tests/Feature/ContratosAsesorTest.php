@@ -48,6 +48,35 @@ class ContratosAsesorTest extends TestCase
         $this->getJson('/api/v1/contratos/generados')->assertOk()->assertJsonCount(2, 'data');
     }
 
+    public function test_el_asesor_puede_ver_el_pagare_de_su_contrato(): void
+    {
+        Storage::fake('local');
+        Role::findOrCreate('asesor', 'web');
+
+        $asesor = User::factory()->create();
+        $otro   = User::factory()->create();
+        $asesor->assignRole('asesor');
+        $otro->assignRole('asesor');
+
+        Sanctum::actingAs($asesor);
+        $id = $this->postJson('/api/v1/contratos/generados', [
+            ...$this->contrato('p-1'),
+            'acreditado_rfc'       => 'PRUE800101AAA',
+            'acreditado_domicilio' => 'Calle Uno 1, Pachuca',
+        ])->assertSuccessful()->json('data.id');
+
+        $url = $this->getJson("/api/v1/contratos/generados/{$id}/ver")
+            ->assertOk()
+            ->json('pagare_url');
+        $this->assertNotEmpty($url);
+
+        $this->get($url)->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->get(route('api.contratos_generados.pagare', ['id' => $id]))->assertForbidden();
+
+        Sanctum::actingAs($otro);
+        $this->getJson("/api/v1/contratos/generados/{$id}/ver")->assertForbidden();
+    }
+
     public function test_solo_el_administrador_edita_la_plantilla(): void
     {
         Role::findOrCreate('asesor', 'web');

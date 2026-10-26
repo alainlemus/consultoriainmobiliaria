@@ -59,6 +59,10 @@ Route::get(
     '/contratos-generados/{id}/{campo}/descargar',
     [ContratoGeneradoController::class, 'descargar']
 )->middleware('signed')->name('api.contratos_generados.descargar');
+Route::get(
+    '/contratos-generados/{id}/pagare',
+    [ContratoGeneradoController::class, 'pagare']
+)->middleware('signed')->name('api.contratos_generados.pagare');
 
 Route::prefix('v1')->group(function () {
 

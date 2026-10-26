@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\ContratoGenerado;
 use App\Models\Expediente;
 use App\Services\PagareService;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -56,9 +55,7 @@ class PagareController extends Controller
             return response()->download($this->pagare->docx($datos), "{$nombre}.docx")->deleteFileAfterSend(true);
         }
 
-        $pdf = Pdf::loadView('contratos.pagare', ['d' => $datos])
-            ->setPaper('letter', 'portrait')
-            ->setOption('defaultFont', 'DejaVu Sans');
+        $pdf = $this->pagare->pdf($datos);
 
         return request()->boolean('preview') ? $pdf->stream("{$nombre}.pdf") : $pdf->download("{$nombre}.pdf");
     }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Carbon;
 use RuntimeException;
 use ZipArchive;
@@ -46,6 +47,18 @@ class PagareService
             $registro->acreditado_municipio ?? null,
             $registro->acreditado_estado ?? null,
         ])->filter()->implode(', ');
+    }
+
+    /**
+     * PDF del pagaré (hoja carta) con la vista contratos.pagare.
+     *
+     * @param  array<string, string>  $d  resultado de datos()
+     */
+    public function pdf(array $d): \Barryvdh\DomPDF\PDF
+    {
+        return Pdf::loadView('contratos.pagare', ['d' => $d])
+            ->setPaper('letter', 'portrait')
+            ->setOption('defaultFont', 'DejaVu Sans');
     }
 
     /**
