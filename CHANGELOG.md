@@ -13,6 +13,14 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.6.0] - 2026-10-26
+
+### Agregado
+- App móvil: el pagaré de cada contrato generado se puede ver y compartir desde el historial de contratos, también en contratos anteriores; el servidor lo arma con los datos del contrato.
+
+### Corregido
+- Pagaré en PDF del panel (contratos generados y expedientes): ya no sale pegado a las orillas de la hoja; ahora lleva márgenes como el de la app y cabe en una sola página.
+
 ## [1.5.2] - 2026-10-26
 
 ### Cambiado

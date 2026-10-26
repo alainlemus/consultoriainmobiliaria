@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <title>Pagaré</title>
     <style>
-        @page { margin: 72pt 90pt; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page { margin: 40pt 50pt; }
+        /* Sin '*': en dompdf el selector universal también anula los márgenes de @page. */
+        body, h1, p, table, td { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 9pt; line-height: 1.5; color: #000; }
         h1 { font-size: 20pt; font-weight: bold; text-align: center; margin-bottom: 22pt; letter-spacing: 1px; }
         p { margin-bottom: 11pt; text-transform: uppercase; }
