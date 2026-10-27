@@ -22,7 +22,7 @@ class ContratoGeneradoWordController extends Controller
      */
     public function export(ContratoGenerado $contratoGenerado): StreamedResponse
     {
-        abort_unless(auth()->user()?->hasRole('super_admin'), 403);
+        abort_unless(auth()->user()?->hasRole('super_admin') || auth()->user()?->can('View:ContratoGenerado'), 403);
 
         $siteName       = strtoupper(Configuracion::get('site_name') ?? 'CONSULTORÍA INMOBILIARIA');
         $firmaPrestador = strtoupper(Configuracion::get('firma_prestador', 'C. JOSE ANTONIO SOLIS SANTUARIO'));

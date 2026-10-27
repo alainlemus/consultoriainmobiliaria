@@ -75,20 +75,7 @@ class AdminPanelProvider extends PanelProvider
                     ->emptyPanelBackgroundColor(Color::hex('#0d0d0d'), 950)
                     ->showEmptyPanelOnMobile(false),
             ])
-            ->homeUrl(function () {
-                $user = auth()->user();
-                if ($user?->hasRole('asesor')) {
-                    return '/admin/dashboard-asesor';
-                }
-                if ($user?->hasRole('Revisor de Rutas')) {
-                    return '/admin/mapa-visitas';
-                }
-                if ($user?->hasRole('super_admin') || $user?->hasRole('admin')) {
-                    return '/admin';
-                }
-                // Cualquier otro rol (capturista, etc.) aterriza en expedientes
-                return '/admin/expedientes';
-            })
+            ->homeUrl(fn () => RedirectAsesorToExpedientes::inicio(auth()->user()))
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

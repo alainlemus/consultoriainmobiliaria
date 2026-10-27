@@ -16,7 +16,9 @@ class ContratoGeneradoResource extends Resource
 {
     public static function canViewAny(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('super_admin');
+        // super_admin o cualquier rol con el permiso de Shield (ej. "Contratos")
+        return auth()->check()
+            && (auth()->user()->hasRole('super_admin') || auth()->user()->can('ViewAny:ContratoGenerado'));
     }
 
     protected static ?string $model = ContratoGenerado::class;
