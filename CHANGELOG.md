@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.6.1] - 2026-10-26
+
+### Corregido
+- Los roles con permiso de contratos (por ejemplo "Contratos") ya no ven "403 Prohibido" al entrar al panel: aterrizan en "Contratos generados", pueden verlos y descargar el pagaré y el Word. Cada rol llega a la primera sección que tiene permitida.
+
 ## [1.6.0] - 2026-10-26
 
 ### Agregado

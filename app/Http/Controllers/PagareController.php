@@ -37,7 +37,7 @@ class PagareController extends Controller
     /** GET /admin/pagare/contrato-generado/{contrato}?formato=word|pdf&preview=1 */
     public function contratoGenerado(ContratoGenerado $contrato): Response|BinaryFileResponse
     {
-        abort_unless(auth()->user()?->hasRole('super_admin'), 403);
+        abort_unless(auth()->user()?->hasRole('super_admin') || auth()->user()?->can('View:ContratoGenerado'), 403);
 
         $datos = $this->pagare->datos(
             $contrato->acreditado_nombre,
