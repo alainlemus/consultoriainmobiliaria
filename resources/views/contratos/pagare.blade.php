@@ -4,19 +4,19 @@
     <meta charset="UTF-8">
     <title>Pagaré</title>
     <style>
-        @page { margin: 40pt 50pt; }
+        @page { margin: 36pt 54pt; }
         /* Sin '*': en dompdf el selector universal también anula los márgenes de @page. */
-        body, h1, p, table, td { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 9pt; line-height: 1.5; color: #000; }
-        h1 { font-size: 20pt; font-weight: bold; text-align: center; margin-bottom: 22pt; letter-spacing: 1px; }
-        p { margin-bottom: 11pt; text-transform: uppercase; }
+        body, h1, h2, p, table, td { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 9pt; line-height: 1.45; color: #000; }
+        h1 { font-size: 18pt; font-weight: bold; text-align: center; margin-bottom: 8pt; letter-spacing: 1px; }
+        h2 { font-size: 9pt; font-weight: bold; margin: 12pt 0 5pt; }
+        p { margin-bottom: 5pt; }
         .j { text-align: justify; }
-        .lugar { margin-left: 72pt; }
+        .bueno { text-align: right; font-weight: bold; margin-bottom: 10pt; }
+        .firma { margin-top: 18pt; }
+        table.testigos { width: 100%; border-collapse: collapse; }
+        table.testigos td { width: 50%; vertical-align: top; }
         .linea { border-bottom: 1px solid #000; display: inline-block; min-width: 60pt; }
-        table.firma { width: 100%; border-collapse: collapse; margin-top: 18pt; }
-        table.firma td { border: 1px solid #000; padding: 10pt 6pt; text-transform: uppercase; }
-        table.firma td.fila-lugar { height: 40pt; vertical-align: top; }
-        table.firma td.fila-firma { height: 70pt; vertical-align: top; }
     </style>
 </head>
 <body>
@@ -26,27 +26,45 @@
 
 <h1>PAGARÉ</h1>
 
-<p class="lugar">Ciudad de Pachuca de Soto, Hidalgo, a {{ $d['dia'] }} de {{ $d['mes'] }} de {{ $d['anio'] }}.</p>
+<p class="bueno">BUENO POR: ${!! $en(null, 110) !!}</p>
 
-<p class="j">
-    Yo, C. {!! $en($d['nombre'], 220) !!}, con domicilio en {!! $en($d['domicilio'], 240) !!},
-    y RFC: {!! $en($d['rfc'], 110) !!}, en adelante "El Deudor", reconozco deber y pagar incondicionalmente
-    a la orden de <strong>C. Jose Antonio Solis Santuario</strong>, con domicilio en Avenida Revolución 1014
-    Despacho 55 Plaza Las Marialuisas Colonia Periodistas Código Postal 42060 Pachuca de Soto Hidalgo,
-    y RFC: <strong>SOSA860530LM7</strong>, en adelante "El Acreedor", la cantidad de:
+<p>Lugar y fecha de suscripción: {!! $en($d['lugar'], 140) !!}, a {{ $d['fecha'] }}.</p>
+<p>Fecha de vencimiento: {!! $en(null, 220) !!}</p>
+
+<p class="j" style="margin-top: 10pt">
+    Por este pagaré, yo, {!! $en($d['nombre'], 220) !!}, prometo pagar incondicionalmente a la orden de
+    <strong>{{ $d['acreedor'] }}</strong>, la cantidad de:
 </p>
+<p>${!! $en(null, 110) !!} ({!! $en(null, 230) !!} PESOS 00/100 M.N.)</p>
+<p class="j">Cantidad que pagaré en la fecha de vencimiento señalada, en el domicilio ubicado en: <strong>{{ $d['domicilio_pago'] }}</strong>.</p>
+<p class="j">En caso de incumplimiento en el pago oportuno, me obligo a cubrir intereses moratorios a razón del {!! $en(null, 36) !!}% mensual, hasta la total liquidación del adeudo.</p>
 
-<p>1. Importe: la cantidad de ${!! $en(null, 80) !!} ({!! $en(null, 210) !!} pesos 00/100 M.N.).</p>
-<p>2. Vencimiento: el presente pagaré vencerá el día {!! $en(null, 30) !!} de {!! $en(null, 90) !!} de 20{!! $en(null, 24) !!}, fecha en la cual deberá efectuarse el pago total del importe.</p>
-<p class="j">3. Intereses: se causarán intereses moratorios a razón del 3% anual sobre saldos insolutos a partir del día siguiente al vencimiento.</p>
-<p class="j">4. Lugar de pago: el pago se realizará en <strong>Pachuca de Soto, Hidalgo</strong> o en el domicilio que el acreedor designe por escrito.</p>
-<p class="j">5. Gastos: cualquier gasto, desembolso o comisión que se origine por la cobranza o por incumplimiento será responsabilidad de El Deudor.</p>
-<p>6. Jurisdicción: para la interpretación y cumplimiento de este documento, ambas partes se someten a las leyes y tribunales competentes de la ciudad de Pachuca de Soto, Hidalgo.</p>
+<h2>DATOS DEL SUSCRIPTOR (DEUDOR)</h2>
+<p>Nombre completo: {!! $en($d['nombre'], 300) !!}</p>
+<p>Domicilio: {!! $en($d['domicilio'], 340) !!}</p>
+<p>Identificación oficial: {!! $en($d['identificacion'], 280) !!}</p>
+<p class="firma">Firma: {!! $en(null, 300) !!}</p>
 
-<table class="firma">
-    <tr><td class="fila-lugar">Lugar y fecha:</td></tr>
-    <tr><td class="fila-firma">Nombre y firma de El Deudor:</td></tr>
-</table>
+<h2>DATOS DEL AVAL</h2>
+<p class="j">
+    Por medio del presente, yo, {!! $en($d['aval_nombre'], 220) !!}, declaro que avalo al suscriptor de este pagaré
+    y garantizo el pago total de la obligación consignada en el mismo, obligándome solidariamente en los términos de
+    la Ley General de Títulos y Operaciones de Crédito.
+</p>
+<p>Domicilio: {!! $en($d['aval_domicilio'], 340) !!}</p>
+<p>Identificación oficial: {!! $en(null, 280) !!}</p>
+<p class="firma">NOMBRE Y FIRMA DEL AVAL: {!! $en(null, 250) !!}</p>
+
+<h2>TESTIGOS</h2>
+<table class="testigos"><tr>
+    @foreach ([1, 2] as $n)
+        <td>
+            <p><strong>TESTIGO {{ $n }}</strong></p>
+            <p>Nombre: {!! $en(null, 175) !!}</p>
+            <p class="firma">Firma: {!! $en(null, 180) !!}</p>
+        </td>
+    @endforeach
+</tr></table>
 
 </body>
 </html>

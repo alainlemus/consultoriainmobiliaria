@@ -139,6 +139,12 @@ class ContratoGeneradoResource extends Resource
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('gray')
                     ->url(fn (ContratoGenerado $record) => route('pagare.contrato_generado', $record) . '?formato=word'),
+                \Filament\Actions\Action::make('regresion_fases')
+                    ->label('Regresión de fases (PDF)')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('gray')
+                    ->url(fn (ContratoGenerado $record) => route('pagare.regresion_fases', $record) . '?preview=1')
+                    ->openUrlInNewTab(),
                 \Filament\Actions\Action::make('exportar_word')
                     ->label('Exportar a Word')
                     ->icon('heroicon-o-document-arrow-down')

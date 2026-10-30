@@ -13,6 +13,14 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.7.0] - 2026-10-30
+
+### Agregado
+- Oficio de "Regresión de fases" para FOVISSSTE (AT'N Hipotecaria Hogar) en cada contrato generado: lleva los nombres del acreditado y del obligado solidario, la ciudad y la fecha; el número de crédito se llena a mano. Se ve en el panel ("Regresión de fases (PDF)" en Contratos generados) y en la app.
+
+### Cambiado
+- Pagaré con el formato nuevo: incluye datos del deudor (nombre, domicilio e INE con clave de elector), del aval (el obligado solidario), lugar y fecha de suscripción, el acreedor y su domicilio de pago, y espacio para dos testigos. El importe, el vencimiento, el % de intereses mensual y las firmas se llenan a mano. Aplica al PDF y al Word del panel y al pagaré de la app.
+
 ## [1.6.1] - 2026-10-26
 
 ### Corregido
