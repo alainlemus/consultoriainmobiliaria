@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\ContratoGenerado;
 use App\Services\PagareService;
+use App\Services\RegresionFasesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -76,12 +77,14 @@ class ContratoGeneradoController extends Controller
             );
         }
 
-        // El pagaré no se guarda: se arma al vuelo con los datos del contrato.
-        $urls['pagare_url'] = URL::temporarySignedRoute(
-            'api.contratos_generados.pagare',
-            now()->addMinutes(5),
-            ['id' => $id]
-        );
+        // El pagaré y el oficio de regresión de fases no se guardan: se arman al vuelo con los datos del contrato.
+        foreach (['pagare', 'regresion_fases'] as $doc) {
+            $urls["{$doc}_url"] = URL::temporarySignedRoute(
+                "api.contratos_generados.{$doc}",
+                now()->addMinutes(5),
+                ['id' => $id]
+            );
+        }
 
         return response()->json([...$urls, 'expira_en' => 300]);
     }
@@ -89,21 +92,26 @@ class ContratoGeneradoController extends Controller
     /**
      * GET /contratos-generados/{id}/pagare (ruta firmada)
      *
-     * PDF del pagaré del contrato, con los datos del acreditado y la fecha
-     * en que se generó el contrato. La firma de la URL es la autorización.
+     * PDF del pagaré del contrato, con los datos del acreditado, del aval y
+     * el lugar y la fecha en que se generó el contrato. La firma de la URL es la autorización.
      */
     public function pagare(int $id, PagareService $pagare): Response
     {
         $contrato = ContratoGenerado::findOrFail($id);
 
-        $datos = $pagare->datos(
-            $contrato->acreditado_nombre,
-            $contrato->acreditado_domicilio,
-            $contrato->acreditado_rfc,
-            $contrato->created_at,
-        );
+        return $pagare->pdf($pagare->datosDeContrato($contrato))->stream('pagare-' . ($contrato->folio ?: $contrato->id) . '.pdf');
+    }
 
-        return $pagare->pdf($datos)->stream('pagare-' . ($contrato->folio ?: $contrato->id) . '.pdf');
+    /**
+     * GET /contratos-generados/{id}/regresion-fases (ruta firmada)
+     *
+     * PDF del oficio de regresión de fases del contrato. La firma de la URL es la autorización.
+     */
+    public function regresionFases(int $id, RegresionFasesService $oficio): Response
+    {
+        $contrato = ContratoGenerado::findOrFail($id);
+
+        return $oficio->pdf($contrato)->stream('regresion-fases-' . ($contrato->folio ?: $contrato->id) . '.pdf');
     }
 
     /**

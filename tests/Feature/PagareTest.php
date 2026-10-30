@@ -29,38 +29,47 @@ class PagareTest extends TestCase
         return $xml;
     }
 
-    public function test_el_word_se_llena_con_los_datos_del_acreditado_y_conserva_el_formato(): void
+    public function test_el_word_se_llena_con_los_datos_del_acreditado_y_del_aval(): void
     {
         $servicio = new PagareService();
-        $datos = $servicio->datos('Gilberto Hernández Hernández', 'Calle 1, Col. Centro, Huejutla', 'HEHG800101ABC', Carbon::create(2026, 10, 14));
+        $datos = $servicio->datos(
+            'Gilberto Hernández Hernández', 'Calle 1, Col. Centro, Huejutla', 'HRHRGL80010113H400',
+            'María López', 'Calle 2, Huejutla', 'Huejutla de Reyes', Carbon::create(2026, 10, 14),
+        );
 
         $ruta = $servicio->docx($datos);
         $xml  = $this->documentoXml($ruta);
         unlink($ruta);
 
-        $this->assertStringContainsString('A 14 DE OCTUBRE DE 2026.', $xml);
-        $this->assertStringContainsString('YO, C. GILBERTO HERNÁNDEZ HERNÁNDEZ, CON DOMICILIO EN CALLE 1, COL. CENTRO, HUEJUTLA, Y RFC: HEHG800101ABC, EN ADELANTE', $xml);
-        // El texto fijo del formato sigue intacto (acreedor, intereses, jurisdicción)
-        $this->assertStringContainsString('SOSA860530LM7', $xml);
-        $this->assertStringContainsString('3% ANUAL', $xml);
-        $this->assertStringContainsString('NOMBRE Y FIRMA DE EL DEUDOR', $xml);
+        $this->assertStringContainsString('HUEJUTLA DE REYES, a 14 DE OCTUBRE DE 2026.', $xml);
+        $this->assertStringContainsString('yo, GILBERTO HERNÁNDEZ HERNÁNDEZ, prometo pagar', $xml);
+        $this->assertStringContainsString('Domicilio: CALLE 1, COL. CENTRO, HUEJUTLA', $xml);
+        $this->assertStringContainsString('INE, CLAVE DE ELECTOR HRHRGL80010113H400', $xml);
+        $this->assertStringContainsString('yo, MARÍA LÓPEZ, declaro que avalo', $xml);
+        $this->assertStringContainsString('Domicilio: CALLE 2, HUEJUTLA', $xml);
+        // Acreedor y domicilio de pago fijos; el resto queda para llenarse al firmar
+        $this->assertStringContainsString(PagareService::ACREEDOR, $xml);
+        $this->assertStringContainsString('PERIODISTAS, C.P. 42060', $xml);
+        $this->assertStringContainsString('TESTIGO 2', $xml);
+        $this->assertStringNotContainsString('{', strip_tags($xml));
     }
 
     public function test_sin_datos_se_dejan_las_rayas_para_llenar_a_mano(): void
     {
         $servicio = new PagareService();
-        $ruta = $servicio->docx($servicio->datos(null, null, null, Carbon::create(2026, 1, 5)));
+        $ruta = $servicio->docx($servicio->datos(null, null, fecha: Carbon::create(2026, 1, 5)));
         $xml  = $this->documentoXml($ruta);
         unlink($ruta);
 
-        $this->assertMatchesRegularExpression('/YO, C\. _+, CON DOMICILIO EN _+, Y RFC: _+,/', $xml);
-        $this->assertStringContainsString('A 5 DE ENERO DE 2026.', $xml);
+        $this->assertMatchesRegularExpression('/suscripción: _+, a 5 DE ENERO DE 2026\./u', $xml);
+        $this->assertMatchesRegularExpression('/yo, _+, prometo pagar/u', $xml);
+        $this->assertMatchesRegularExpression('/yo, _+, declaro que avalo/u', $xml);
     }
 
     public function test_los_caracteres_especiales_se_escapan_en_el_word(): void
     {
         $servicio = new PagareService();
-        $ruta = $servicio->docx($servicio->datos('Pérez & Hijos <SA>', 'Calle "A"', 'X', Carbon::create(2026, 3, 1)));
+        $ruta = $servicio->docx($servicio->datos('Pérez & Hijos <SA>', 'Calle "A"', fecha: Carbon::create(2026, 3, 1)));
         $xml  = $this->documentoXml($ruta);
         unlink($ruta);
 
@@ -84,6 +93,7 @@ class PagareTest extends TestCase
 
         $this->actingAs($admin)->get(route('pagare.contrato_generado', $contrato))
             ->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertSame('LUIS', app(PagareService::class)->datosDeContrato($contrato)['aval_nombre']);
 
         $this->actingAs($admin)->get(route('pagare.contrato_generado', $contrato) . '?formato=word')
             ->assertOk()->assertHeader('content-disposition');

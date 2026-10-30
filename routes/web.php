@@ -70,6 +70,7 @@ Route::view('/descargar-app', 'pages.descargar-app')->name('descargar.app');
 Route::middleware(['web', 'auth'])->prefix('admin/pagare')->name('pagare.')->group(function () {
     Route::get('/expediente/{expediente}', [\App\Http\Controllers\PagareController::class, 'expediente'])->name('expediente');
     Route::get('/contrato-generado/{contrato}', [\App\Http\Controllers\PagareController::class, 'contratoGenerado'])->name('contrato_generado');
+    Route::get('/contrato-generado/{contrato}/regresion-fases', [\App\Http\Controllers\PagareController::class, 'regresionFases'])->name('regresion_fases');
 });
 
 Route::middleware(['web', 'auth'])->prefix('admin/contratos')->name('contratos.')->group(function () {

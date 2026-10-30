@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ContratoGenerado;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Carbon;
 use RuntimeException;
@@ -10,29 +11,72 @@ use ZipArchive;
 /**
  * Pagaré que acompaña al contrato de prestación de servicios.
  *
- * El formato (texto, acreedor, intereses, jurisdicción) es el documento Word que entregó
- * el cliente (resources/documentos/formato-pagare.docx). Se llena con los datos del
- * acreditado y la fecha del día; el importe y el vencimiento quedan en blanco para
- * capturarse al firmar.
+ * El formato es el que entregó el cliente (deudor, aval y testigos). Se llena con los
+ * datos del acreditado y del obligado solidario (aval), el lugar y la fecha del contrato,
+ * y el acreedor con su domicilio de pago. El importe, el vencimiento, el % de intereses
+ * y los testigos quedan en blanco para capturarse al firmar.
+ *
+ * El Word sale de resources/documentos/formato-pagare.docx, que trae marcas {campo}
+ * donde va cada dato; si el dato falta, la marca se cambia por una raya.
  */
 class PagareService
 {
+    public const ACREEDOR = 'C. JOSE ANTONIO SOLIS SANTUARIO';
+    public const DOMICILIO_PAGO = 'AVENIDA REVOLUCIÓN 1014 DESPACHO 55 PLAZA LAS MARIALUISAS, COLONIA PERIODISTAS, C.P. 42060, PACHUCA DE SOTO, HIDALGO';
+
+    /** Largo de la raya en el Word por campo, cuando el dato falta. */
+    private const RAYAS = [
+        'lugar'          => 25,
+        'nombre'         => 40,
+        'domicilio'      => 50,
+        'identificacion' => 39,
+        'aval_nombre'    => 40,
+        'aval_domicilio' => 50,
+    ];
+
     /**
-     * @return array{dia: string, mes: string, anio: string, nombre: string, domicilio: string, rfc: string}
+     * @return array{lugar: string, fecha: string, nombre: string, domicilio: string, identificacion: string,
+     *               aval_nombre: string, aval_domicilio: string, acreedor: string, domicilio_pago: string}
      */
-    public function datos(?string $nombre, ?string $domicilio, ?string $rfc, ?Carbon $fecha = null): array
-    {
+    public function datos(
+        ?string $nombre,
+        ?string $domicilio,
+        ?string $claveElector = null,
+        ?string $avalNombre = null,
+        ?string $avalDomicilio = null,
+        ?string $lugar = null,
+        ?Carbon $fecha = null,
+    ): array {
         $fecha ??= now();
         $fecha  = $fecha->copy()->locale('es');
+        $txt    = fn (?string $v) => mb_strtoupper(trim((string) $v));
+        $clave  = $txt($claveElector);
 
         return [
-            'dia'       => (string) $fecha->day,
-            'mes'       => mb_strtoupper($fecha->translatedFormat('F')),
-            'anio'      => (string) $fecha->year,
-            'nombre'    => mb_strtoupper(trim((string) $nombre)),
-            'domicilio' => mb_strtoupper(trim((string) $domicilio)),
-            'rfc'       => mb_strtoupper(trim((string) $rfc)),
+            'lugar'          => $txt($lugar),
+            'fecha'          => mb_strtoupper($fecha->translatedFormat('j \d\e F \d\e Y')),
+            'nombre'         => $txt($nombre),
+            'domicilio'      => $txt($domicilio),
+            'identificacion' => $clave !== '' ? "INE, CLAVE DE ELECTOR {$clave}" : '',
+            'aval_nombre'    => $txt($avalNombre),
+            'aval_domicilio' => $txt($avalDomicilio),
+            'acreedor'       => self::ACREEDOR,
+            'domicilio_pago' => self::DOMICILIO_PAGO,
         ];
+    }
+
+    /** Datos del pagaré de un contrato generado en la app: lugar y fecha en que se firmó. */
+    public function datosDeContrato(ContratoGenerado $c): array
+    {
+        return $this->datos(
+            $c->acreditado_nombre,
+            $c->acreditado_domicilio,
+            $c->acreditado_clave_elector,
+            $c->solidario_nombre,
+            $c->solidario_domicilio,
+            $c->ciudad,
+            $c->created_at,
+        );
     }
 
     /**
@@ -88,27 +132,15 @@ class PagareService
         return $destino;
     }
 
-    /** Sustituye las rayas del formato por los datos; si un dato falta, deja la raya. */
+    /** Sustituye las marcas {campo} del formato por los datos; si un dato falta, deja la raya. */
     private function llenar(string $xml, array $d): string
     {
         $xmlEsc = fn (string $v) => htmlspecialchars($v, ENT_XML1 | ENT_QUOTES, 'UTF-8');
 
-        // CIUDAD DE PACHUCA DE SOTO, HIDALGO, A __ DE ______ DE 2026.
-        $xml = preg_replace_callback(
-            '/(A )_+( DE )_+( DE )\d{4}(\.)/u',
-            fn ($m) => $m[1] . $xmlEsc($d['dia']) . $m[2] . $xmlEsc($d['mes']) . $m[3] . $xmlEsc($d['anio']) . $m[4],
-            $xml,
-            1,
-        );
+        return preg_replace_callback('/\{([a-z_]+)\}/', function ($m) use ($d, $xmlEsc) {
+            $valor = $d[$m[1]] ?? '';
 
-        // YO, C. ____, CON DOMICILIO EN ____, Y RFC: ____,
-        return preg_replace_callback(
-            '/(YO, C\. )(_+)(, CON DOMICILIO EN )(_+)(, Y RFC: )(_+)(,)/u',
-            fn ($m) => $m[1] . ($d['nombre'] !== '' ? $xmlEsc($d['nombre']) : $m[2])
-                . $m[3] . ($d['domicilio'] !== '' ? $xmlEsc($d['domicilio']) : $m[4])
-                . $m[5] . ($d['rfc'] !== '' ? $xmlEsc($d['rfc']) : $m[6]) . $m[7],
-            $xml,
-            1,
-        );
+            return $valor !== '' ? $xmlEsc($valor) : str_repeat('_', self::RAYAS[$m[1]] ?? 30);
+        }, $xml);
     }
 }
