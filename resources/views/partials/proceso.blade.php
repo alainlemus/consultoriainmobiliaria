@@ -47,7 +47,7 @@
         @foreach($procesos as $index => $paso)
         {
             "@@type": "HowToStep",
-            "position": {{ $paso->numero }},
+            "position": {{ (int) $paso->numero }},
             "name": "{{ addslashes($paso->titulo) }}",
             "text": "{{ addslashes($paso->descripcion) }}"
         }{{ !$loop->last ? ',' : '' }}

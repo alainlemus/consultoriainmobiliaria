@@ -17,18 +17,19 @@
         {{-- Contenido centrado --}}
         <div class="relative z-10 mx-auto max-w-5xl px-5 text-center"
              style="transform: translate3d(0, calc(var(--p, 0) * -70px), 0) scale(calc(1 - var(--p, 0) * 0.06)); opacity: calc(1 - var(--p, 0) * 1.6);">
-            <p class="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-gold-300 sm:text-sm" x-data x-reveal.blur>
-                Consultoría Inmobiliaria · Huejutla de Reyes, Hidalgo
-            </p>
-
-            <h1 class="font-serif text-[2.9rem] font-bold leading-[0.98] text-white sm:text-7xl lg:text-[6.5rem]"
-                style="letter-spacing:-0.045em" x-data x-split.delay.150>
-                Tu <span class="text-gold-shine">patrimonio,</span><br>
-                nuestra <span class="text-gold-shine">prioridad.</span>
+            {{-- H1 con la palabra clave (SEO); el eslogan grande se queda como texto de apoyo --}}
+            <h1 class="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-gold-300 sm:text-sm" x-data x-reveal.blur>
+                Consultoría Inmobiliaria en Huejutla de Reyes, Hidalgo
             </h1>
 
+            <p class="font-serif text-[2.9rem] font-bold leading-[0.98] text-white sm:text-7xl lg:text-[6.5rem]"
+               style="letter-spacing:-0.045em" x-data x-split.delay.150>
+                Tu <span class="text-gold-shine">patrimonio,</span><br>
+                nuestra <span class="text-gold-shine">prioridad.</span>
+            </p>
+
             <p class="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-white/75 sm:text-xl" x-data x-reveal.delay.700>
-                Tramitamos tu crédito <strong class="font-semibold text-white">INFONAVIT</strong> o
+                Asesores inmobiliarios en la Huasteca: tramitamos tu crédito <strong class="font-semibold text-white">INFONAVIT</strong> o
                 <strong class="font-semibold text-white">FOVISSSTE</strong> en Hidalgo, Veracruz y San Luis Potosí.
                 Avalúos, escrituras y gestoría sin costo inicial.
             </p>

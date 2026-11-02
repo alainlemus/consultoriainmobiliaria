@@ -11,6 +11,7 @@ use App\Http\Controllers\ContratoGeneradoWordController;
 use App\Http\Controllers\TestimonioPublicoController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\FovisssteController;
+use App\Http\Controllers\PaginaSeoController;
 use App\Models\UbicacionFoto;
 use Illuminate\Support\Facades\Storage;
 
@@ -49,6 +50,19 @@ Route::get('/fovissste', [FovisssteController::class, 'index'])->name('fovissste
 Route::post('/fovissste', [FovisssteController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('fovissste.store');
+
+// Páginas de servicio y de zona (SEO) — contenido en App\Support\PaginasSeo
+Route::prefix('servicios')->name('servicios.')->group(function () {
+    Route::get('/avaluos-inmobiliarios',    [PaginaSeoController::class, 'servicio'])->defaults('slug', 'avaluos-inmobiliarios')->name('avaluos');
+    Route::get('/credito-infonavit',        [PaginaSeoController::class, 'servicio'])->defaults('slug', 'credito-infonavit')->name('infonavit');
+    Route::get('/escrituracion-y-gestoria', [PaginaSeoController::class, 'servicio'])->defaults('slug', 'escrituracion-y-gestoria')->name('escrituracion');
+});
+Route::prefix('consultoria-inmobiliaria')->name('zonas.')->group(function () {
+    Route::get('/huejutla-hidalgo',     [PaginaSeoController::class, 'zona'])->defaults('slug', 'huejutla-hidalgo')->name('huejutla');
+    Route::get('/pachuca-hidalgo',      [PaginaSeoController::class, 'zona'])->defaults('slug', 'pachuca-hidalgo')->name('pachuca');
+    Route::get('/huasteca-veracruzana', [PaginaSeoController::class, 'zona'])->defaults('slug', 'huasteca-veracruzana')->name('veracruz');
+    Route::get('/san-luis-potosi',      [PaginaSeoController::class, 'zona'])->defaults('slug', 'san-luis-potosi')->name('slp');
+});
 
 // Propiedades
 Route::get('/propiedades', [PropiedadController::class, 'index'])->name('propiedades.index');

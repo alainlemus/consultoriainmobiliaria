@@ -13,6 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        // www.dominio → dominio (301): una sola versión del sitio para Google
+        $middleware->web(prepend: [\App\Http\Middleware\RedirigirSinWww::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

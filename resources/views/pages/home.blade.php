@@ -1,9 +1,17 @@
 @extends('layouts.app')
 
-@section('seo_title', 'Consultoría Inmobiliaria - Tu patrimonio, nuestra prioridad')
-@section('seo_description', 'Asesores expertos en crédito INFONAVIT y FOVISSSTE, avalúos comerciales y gestión de escrituras en Hidalgo, Veracruz y San Luis Potosí. +500 familias asesoradas.')
-@section('og_title', 'Consultoría Inmobiliaria - Tu patrimonio, nuestra prioridad')
-@section('og_description', 'Asesores expertos en crédito INFONAVIT y FOVISSSTE, avalúos comerciales y gestión de escrituras en Hidalgo, Veracruz y San Luis Potosí. +500 familias asesoradas.')
+@php
+    // Título y descripción pensados para la búsqueda "consultoría inmobiliaria" + servicio + zona.
+    $seoTitulo = 'Consultoría Inmobiliaria en Hidalgo | Crédito INFONAVIT, FOVISSSTE y Avalúos';
+    $seoDesc   = 'Consultoría inmobiliaria en Huejutla de Reyes, Hidalgo: tramitamos tu crédito INFONAVIT o FOVISSSTE, avalúos con perito certificado y escrituras en Hidalgo, Veracruz y San Luis Potosí. +500 familias asesoradas, pagas al terminar.';
+@endphp
+@section('seo_title', $seoTitulo)
+@section('seo_description', $seoDesc)
+@section('og_title', $seoTitulo)
+@section('og_description', $seoDesc)
+{{-- Google elige la versión con diagonal final como canónica; la declaramos igual --}}
+@section('canonical', rtrim(config('app.url'), '/') . '/')
+@section('og_url', rtrim(config('app.url'), '/') . '/')
 
 @section('content')
     @include('partials.hero')

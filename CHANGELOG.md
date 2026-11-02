@@ -13,6 +13,24 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.8.0] - 2026-11-01
+
+### Agregado
+- Páginas de servicio para posicionamiento en Google: avalúos inmobiliarios, crédito INFONAVIT y escrituración y gestoría (`/servicios/...`), con preguntas frecuentes, pasos del trámite, artículos relacionados y botón de WhatsApp.
+- Páginas por zona de cobertura: Huejutla de Reyes, Pachuca (con Tula e Ixmiquilpan), Huasteca veracruzana y San Luis Potosí (`/consultoria-inmobiliaria/...`), para aparecer en búsquedas locales.
+- Cada artículo del blog termina con una invitación a contratar el servicio relacionado con su categoría (avalúos, INFONAVIT o FOVISSSTE).
+- Las páginas nuevas se incluyen en el sitemap y se enlazan desde el pie de página y desde las tarjetas de servicios de la portada.
+
+### Cambiado
+- La portada ahora lleva "Consultoría Inmobiliaria en Hidalgo | Crédito INFONAVIT, FOVISSSTE y Avalúos" como título y la palabra clave en el encabezado principal; el eslogan "Tu patrimonio, nuestra prioridad" se mantiene igual a la vista.
+- El título de la página de propiedades ya no repite el nombre de la empresa, para que no compita con la portada en Google.
+- Los títulos de los artículos del blog ya no llevan el sufijo "— Blog Inmobiliario".
+
+### Corregido
+- Entrar con `www.` redirige de forma permanente al dominio sin `www`, para que Google no vea dos copias del sitio.
+- El bloque de datos estructurados del proceso paso a paso generaba JSON inválido (números con cero a la izquierda).
+- La dirección canónica de la portada ahora coincide con la que elige Google (con diagonal final).
+
 ## [1.7.0] - 2026-10-30
 
 ### Agregado

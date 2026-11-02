@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('seo_title', $post->titulo . ' — Blog Inmobiliario')
+@section('seo_title', $post->titulo)
 @section('seo_description', $post->resumen ?? Str::limit(strip_tags($post->contenido ?? ''), 155))
 @section('og_title', $post->titulo)
 @section('og_description', $post->resumen ?? Str::limit(strip_tags($post->contenido ?? ''), 155))
@@ -108,6 +108,25 @@
         <div class="richtext richtext--dark">
             {!! $post->contenido !!}
         </div>
+
+        {{-- CTA al servicio relacionado con la categoría del artículo --}}
+        @php
+            $ctaServicio = match (mb_strtolower($post->categoria ?? '')) {
+                'avalúos', 'avaluos' => ['url' => route('servicios.avaluos'),   'texto' => '¿Necesitas un avalúo?', 'boton' => 'Cotizar mi avalúo'],
+                'infonavit'          => ['url' => route('servicios.infonavit'), 'texto' => '¿Quieres ejercer tu crédito INFONAVIT?', 'boton' => 'Ver cómo te ayudamos'],
+                'fovissste'          => ['url' => route('fovissste.index'),     'texto' => '¿Quieres ejercer tu crédito FOVISSSTE?', 'boton' => 'Ver cómo te ayudamos'],
+                default              => ['url' => route('home') . '#contacto', 'texto' => '¿Tienes dudas sobre tu trámite?', 'boton' => 'Hablar con un asesor'],
+            };
+            $ctaWa = 'https://wa.me/' . setting('whatsapp_1', '527711910395') . '?text=' . rawurlencode('Hola, leí el artículo "' . $post->titulo . '" y quiero asesoría');
+        @endphp
+        <aside class="mt-12 rounded-3xl border border-gold-500/30 bg-gradient-to-br from-gold-500/10 to-transparent p-8 text-center">
+            <p class="font-serif text-2xl font-bold text-white mb-2">{{ $ctaServicio['texto'] }}</p>
+            <p class="text-cream-300 text-sm mb-6">Te orientamos sin costo y pagas nuestros honorarios al terminar tu trámite. Atendemos Hidalgo, Veracruz y San Luis Potosí.</p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="{{ $ctaServicio['url'] }}" class="btn-gold justify-center">{{ $ctaServicio['boton'] }}</a>
+                <a href="{{ $ctaWa }}" target="_blank" rel="noopener noreferrer" class="btn-dark justify-center">Escribir por WhatsApp</a>
+            </div>
+        </aside>
 
         {{-- Compartir en redes sociales --}}
         @php

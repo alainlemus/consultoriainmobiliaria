@@ -6,7 +6,7 @@
 
     {{-- Home --}}
     <url>
-        <loc>{{ route('home') }}</loc>
+        <loc>{{ rtrim(config('app.url'), '/') }}/</loc>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
@@ -33,6 +33,24 @@
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
+
+    {{-- Páginas de servicio --}}
+    @foreach(['servicios.avaluos', 'servicios.infonavit', 'servicios.escrituracion'] as $ruta)
+    <url>
+        <loc>{{ route($ruta) }}</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    @endforeach
+
+    {{-- Páginas de zona --}}
+    @foreach(['zonas.huejutla', 'zonas.pachuca', 'zonas.veracruz', 'zonas.slp'] as $ruta)
+    <url>
+        <loc>{{ route($ruta) }}</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    @endforeach
 
     {{-- Descarga la app --}}
     <url>

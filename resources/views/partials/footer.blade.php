@@ -32,12 +32,19 @@
             <div>
                 <h4 class="text-gold-400 font-serif font-semibold text-base mb-4 uppercase tracking-wider">Servicios</h4>
                 <ul class="space-y-2 text-sm text-cream-300">
-                    <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Crédito INFONAVIT</a></li>
-                    <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Crédito FOVISSSTE</a></li>
-                    <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Avalúos Inmobiliarios</a></li>
-                    <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Avalúos Fiscales</a></li>
-                    <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Gestión de Escrituras</a></li>
+                    <li><a href="{{ route('servicios.infonavit') }}" class="hover:text-gold-400 transition-colors">Crédito INFONAVIT</a></li>
+                    <li><a href="{{ route('fovissste.index') }}" class="hover:text-gold-400 transition-colors">Crédito FOVISSSTE</a></li>
+                    <li><a href="{{ route('servicios.avaluos') }}" class="hover:text-gold-400 transition-colors">Avalúos Inmobiliarios</a></li>
+                    <li><a href="{{ route('servicios.avaluos') }}" class="hover:text-gold-400 transition-colors">Avalúos Fiscales</a></li>
+                    <li><a href="{{ route('servicios.escrituracion') }}" class="hover:text-gold-400 transition-colors">Gestión de Escrituras</a></li>
                     <li><a href="{{ route('home') }}#servicios" class="hover:text-gold-400 transition-colors">Asesoría Personalizada</a></li>
+                </ul>
+                <h4 class="text-gold-400 font-serif font-semibold text-base mt-8 mb-4 uppercase tracking-wider">Dónde estamos</h4>
+                <ul class="space-y-2 text-sm text-cream-300">
+                    <li><a href="{{ route('zonas.huejutla') }}" class="hover:text-gold-400 transition-colors">Huejutla de Reyes, Hidalgo</a></li>
+                    <li><a href="{{ route('zonas.pachuca') }}" class="hover:text-gold-400 transition-colors">Pachuca, Tula e Ixmiquilpan</a></li>
+                    <li><a href="{{ route('zonas.veracruz') }}" class="hover:text-gold-400 transition-colors">Huasteca veracruzana</a></li>
+                    <li><a href="{{ route('zonas.slp') }}" class="hover:text-gold-400 transition-colors">San Luis Potosí</a></li>
                 </ul>
             </div>
             <div>
