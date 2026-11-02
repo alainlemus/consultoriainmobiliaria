@@ -5,9 +5,19 @@
             <h2 class="section-title mb-4" x-split>Nuestros <span class="text-crimson-600">servicios.</span></h2>
             <div class="gold-divider" x-reveal.scale.delay.300></div>
         </div>
+        @php
+            // Servicios con página propia (SEO): se enlazan desde la tarjeta
+            $paginaServicio = [
+                'crédito infonavit'     => route('servicios.infonavit'),
+                'crédito fovissste'     => route('fovissste.index'),
+                'avalúos'               => route('servicios.avaluos'),
+                'gestión de escrituras' => route('servicios.escrituracion'),
+            ];
+        @endphp
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
             @foreach($servicios as $s)
+            @php $urlServicio = $paginaServicio[mb_strtolower(trim($s->titulo))] ?? null; @endphp
             <div x-tilt.6 data-spotlight class="card-service group flex flex-col" x-reveal.scale.delay.{{ ($loop->index % 3) * 120 }} x-tilt.6 data-spotlight>
                 <div class="icon-gold group-hover:bg-gold-500 group-hover:rotate-6 transition-all duration-500">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -23,6 +33,9 @@
                 </ul>
                 <a href="https://wa.me/{{ setting('whatsapp_1', '527711910395') }}?text=Quiero%20información%20sobre%20{{ urlencode($s->wa_texto) }}"
                    target="_blank" rel="noopener noreferrer" class="btn-gold text-xs w-full justify-center">Consultar ahora</a>
+                @if($urlServicio)
+                <a href="{{ $urlServicio }}" class="mt-3 text-xs font-semibold text-dark-600 hover:text-gold-600 transition-colors">Más información →</a>
+                @endif
             </div>
             @endforeach
 

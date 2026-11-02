@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('seo_title', 'Propiedades en venta — ' . setting('site_name', 'Consultoría Inmobiliaria'))
+@section('seo_title', 'Casas y terrenos en venta en Hidalgo, Veracruz y San Luis Potosí')
 @section('seo_description', 'Encuentra propiedades en venta con crédito INFONAVIT y FOVISSSTE en Hidalgo, Veracruz y San Luis Potosí. Casas y terrenos con asesoría especializada.')
 @section('canonical', route('propiedades.index'))
 
