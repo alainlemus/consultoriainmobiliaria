@@ -13,6 +13,23 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.10.0] - 2026-11-03
+
+### Agregado
+- Nuevo rol **gestor**: la persona que hace los trámites en las dependencias públicas. Lo crea el administrador en Usuarios; entra al panel y a la app y solo ve los expedientes que le envían.
+- **Enviar a gestor**: en el expediente (pestaña Gestores o botón de arriba) el super_admin elige al gestor, qué tramitar, la fecha de entrega, los documentos que verá y qué datos del expediente comparte. Un expediente puede tener varios gestores a la vez.
+- **Revisión de ida y vuelta**: el gestor revisa cada documento y marca los incorrectos con una nota; el administrador sube el correcto desde "Corregir y reenviar" y el gestor solo revisa lo que cambió. Con todo correcto empieza el trámite.
+- El gestor sube lo que tramita (PDF, Word o imagen) y el administrador lo valida o rechaza en Documentos; el encargo se cierra solo cuando todo está validado. Historial de cada vuelta.
+- Avisos en la campana del panel y en la app: al gestor cuando le envían o regresan un expediente y cuando le validan o rechazan algo; a todos los super_admin cuando el gestor marca documentos mal, empieza el trámite o sube un documento.
+- Instrucciones claras para el super_admin (pestaña Gestores) y para el gestor (su página "Mis expedientes").
+
+### Cambiado
+- El logo del panel lleva al lado "Consultoría / Inmobiliaria" en dos renglones.
+- "Configuración CRM" y "API Móvil" van al final del menú y siempre inician cerrados.
+
+### Seguridad
+- Un gestor no puede usar la API del asesor (crear prospectos, expedientes o contratos) aunque inicie sesión con el mismo login.
+
 ## [1.9.0] - 2026-11-03
 
 ### Agregado

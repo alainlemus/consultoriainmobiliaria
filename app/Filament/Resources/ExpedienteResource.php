@@ -996,6 +996,7 @@ public static function canDelete(Model $record): bool
     {
         return [
             RelationManagers\DocumentosRelationManager::class,
+            RelationManagers\EncargosGestorRelationManager::class,
         ];
     }
 

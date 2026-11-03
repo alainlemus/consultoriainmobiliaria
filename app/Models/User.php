@@ -54,6 +54,12 @@ class User extends Authenticatable implements FilamentUser
         return $this->roles()->exists();
     }
 
+    /** Encargos recibidos como gestor */
+    public function encargosGestor(): HasMany
+    {
+        return $this->hasMany(EncargoGestor::class, 'gestor_id');
+    }
+
     public function expedientes(): HasMany
     {
         return $this->hasMany(Expediente::class, 'asesor_id');

@@ -75,7 +75,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
 
     // ── Protegidas (requieren Bearer token Sanctum) ───────────────────────
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', \App\Http\Middleware\BloquearGestorEnApiAsesor::class])->group(function () {
 
         // Auth
         Route::post('/auth/logout',                [AuthController::class, 'logout']);
@@ -146,6 +146,15 @@ Route::prefix('v1')->group(function () {
 
         // Dispositivos FCM
         Route::post('/dispositivos',      [DeviceTokenController::class, 'store']);
+
+        // Gestor: encargos que le envía la administración
+        Route::prefix('gestor')->middleware(\App\Http\Middleware\SoloGestor::class)->group(function () {
+            Route::get('/encargos',                                   [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'index']);
+            Route::get('/encargos/{id}',                              [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'show']);
+            Route::get('/encargos/{id}/documentos/{documentoId}/url', [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'urlDocumento']);
+            Route::post('/encargos/{id}/revision',                    [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'revision']);
+            Route::post('/encargos/{id}/documentos',                  [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'subir']);
+        });
 
     });
 

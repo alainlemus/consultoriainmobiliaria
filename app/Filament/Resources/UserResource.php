@@ -160,7 +160,7 @@ class UserResource extends Resource
                     ->multiple()
                     ->required()
                     ->validationMessages(['required' => 'Debes asignar al menos un rol al usuario.'])
-                    ->helperText('super_admin: acceso total | asesor: acceso restringido a sus registros'),
+                    ->helperText('super_admin: acceso total | asesor: acceso restringido a sus registros | gestor: solo los expedientes que le envíen para tramitar'),
 
                 Forms\Components\Toggle::make('activo')
                     ->label('Usuario activo')

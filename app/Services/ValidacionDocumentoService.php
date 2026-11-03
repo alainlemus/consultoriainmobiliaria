@@ -29,6 +29,13 @@ class ValidacionDocumentoService
             return; // revalidar no vuelve a avisar
         }
 
+        // Lo subió un gestor: avisarle a él y cerrar el encargo si ya está todo validado
+        if ($doc->encargo_gestor_id) {
+            app(EncargoGestorService::class)->alValidar($doc, $admin);
+
+            return;
+        }
+
         $exp    = $doc->expediente;
         $asesor = $exp?->asesor;
 
@@ -52,6 +59,13 @@ class ValidacionDocumentoService
             'validado_at'    => null,
             'validado_por'   => null,
         ]);
+
+        // Lo subió un gestor: el motivo le llega a él (no al acreditado)
+        if ($doc->encargo_gestor_id) {
+            app(EncargoGestorService::class)->alRechazar($doc, $motivo, auth()->user());
+
+            return;
+        }
 
         $exp = $doc->expediente;
 

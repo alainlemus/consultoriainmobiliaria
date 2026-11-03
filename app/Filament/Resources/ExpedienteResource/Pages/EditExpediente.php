@@ -105,6 +105,10 @@ class EditExpediente extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            // ── Enviar a gestor (super_admin) — sobre todo cuando ya validaste los documentos ──
+            \App\Filament\Resources\ExpedienteResource\RelationManagers\EncargosGestorRelationManager::accionEnviar(fn () => $this->record, 'enviar_a_gestor_header')
+                ->color(fn () => $this->record->estaCompleto() ? 'primary' : 'gray'),
+
             // ── Descargar carpeta completa como ZIP ───────────────────────
             Action::make('descargar_zip')
                 ->label('Descargar carpeta')
