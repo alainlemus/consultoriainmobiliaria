@@ -190,6 +190,11 @@ class Expediente extends Model
         return $this->belongsTo(Acreditado::class, 'acreditado_id');
     }
 
+    public function encargosGestor(): HasMany
+    {
+        return $this->hasMany(EncargoGestor::class);
+    }
+
     public function documentos(): HasMany
     {
         return $this->hasMany(DocumentoExpediente::class);

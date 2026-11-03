@@ -13,6 +13,8 @@ class DocumentoExpediente extends Model
 
     protected $fillable = [
         'expediente_id',
+        'encargo_gestor_id',
+        'subido_por_id',
         'tipo',
         'nombre',
         'seccion',
@@ -195,6 +197,17 @@ class DocumentoExpediente extends Model
     public function validadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'validado_por');
+    }
+
+    /** Encargo de gestor por el que se subió este documento (si lo subió un gestor) */
+    public function encargoGestor(): BelongsTo
+    {
+        return $this->belongsTo(EncargoGestor::class, 'encargo_gestor_id');
+    }
+
+    public function subidoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'subido_por_id');
     }
 
     public function expediente(): BelongsTo
