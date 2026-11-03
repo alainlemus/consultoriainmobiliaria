@@ -50,6 +50,14 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('Consultoría Inmobiliaria')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            // Orden del menú: "Configuración CRM" y "API Móvil" al final y cerrados
+            ->navigationGroups([
+                \Filament\Navigation\NavigationGroup::make('CRM'),
+                \Filament\Navigation\NavigationGroup::make('Configuración del sitio'),
+                \Filament\Navigation\NavigationGroup::make(fn () => __('filament-shield::filament-shield.nav.group')),
+                \Filament\Navigation\NavigationGroup::make('Configuración CRM')->collapsed(),
+                \Filament\Navigation\NavigationGroup::make('API Móvil')->collapsed(),
+            ])
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
             // pages([]) vacío para que discoverPages tome el control (incluye nuestro Dashboard)
@@ -91,15 +99,32 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ]);
 
-        if ($logo) {
-            $panel->brandLogo(asset('storage/' . $logo))
-                ->brandName('Consultoría Inmobiliaria')
-                ->brandLogoHeight('2.5rem');
-        }
+        // Logo + texto "Consultoría / Inmobiliaria" en dos renglones (gris y dorado).
+        // En el login, AuthUIEnhancer muestra la marca en grande y ya tiene su propio texto.
+        $logoUrl = $logo ? asset('storage/' . $logo) : null;
+        $panel->brandLogo(fn () => view('filament.brand', ['logo' => $logoUrl]))
+            ->brandName('Consultoría Inmobiliaria')
+            ->brandLogoHeight('2.5rem');
 
         if ($favicon) {
             $panel->favicon(asset('storage/' . $favicon));
         }
+
+        // Filament recuerda en el navegador qué grupos abrió cada quien; estos dos
+        // deben iniciar SIEMPRE cerrados, así que se vuelven a cerrar en cada carga.
+        $panel->renderHook(
+            PanelsRenderHook::HEAD_END,
+            fn (): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(<<<'HTML'
+                <script>
+                    try {
+                        var k = '_x_collapsedGroups';
+                        var g = JSON.parse(localStorage.getItem(k) || 'null') || [];
+                        ['Configuración CRM', 'API Móvil'].forEach(function (x) { if (g.indexOf(x) === -1) g.push(x); });
+                        localStorage.setItem(k, JSON.stringify(g));
+                    } catch (e) {}
+                </script>
+            HTML)
+        );
 
         $panel->renderHook(
             PanelsRenderHook::AUTH_LOGIN_FORM_BEFORE,
