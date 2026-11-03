@@ -23,9 +23,12 @@ class AuthController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'max:255', 'unique:acreditados,email'],
             'password' => ['required', 'confirmed', PasswordRule::min(8)],
-            'curp'     => ['nullable', 'string', 'size:18', 'regex:/^[A-Z]{4}\d{6}[HM][A-Z]{2}[A-Z]{3}[A-Z0-9]\d$/i'],
+            'curp'     => ['nullable', 'string', 'size:18', 'regex:/^[A-Z]{4}\d{6}[HM][A-Z]{2}[A-Z]{3}[A-Z0-9]\d$/i', 'unique:acreditados,curp'],
             'telefono' => ['nullable', 'string', 'max:20'],
             'nss'      => ['nullable', 'string', 'max:15'],
+        ], [
+            'email.unique' => 'Ya existe una cuenta con este correo. Inicia sesión o recupera tu contraseña.',
+            'curp.unique'  => 'Ya existe una cuenta con esta CURP. Inicia sesión con el correo que usaste al registrarte.',
         ]);
 
         $acreditado = Acreditado::create([

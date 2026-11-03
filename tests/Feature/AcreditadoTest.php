@@ -193,6 +193,50 @@ class AcreditadoTest extends TestCase
         $this->assertTrue($acreditado->fresh()->toApiArray()['solicitud_enviada']);
     }
 
+    public function test_la_solicitud_del_acreditado_guarda_la_captura_del_simulador(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Mail::fake();
+        $acreditado = $this->crearAcreditado(['telefono' => '7711234567']);
+
+        $this->actingAs($acreditado, 'sanctum')
+            ->post('/api/v1/acreditado/solicitudes', [
+                'tipo_tramite_id' => $this->tipo->id,
+                'mensaje'         => 'Precalificación: $485,000',
+                'screenshot'      => \Illuminate\Http\UploadedFile::fake()->image('captura.jpg'),
+            ], ['Accept' => 'application/json'])
+            ->assertCreated();
+
+        $contacto = \App\Models\Contacto::findOrFail($acreditado->fresh()->contacto_id);
+        $this->assertNotNull($contacto->simulador_screenshot);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($contacto->simulador_screenshot);
+    }
+
+    public function test_la_solicitud_del_acreditado_sigue_funcionando_sin_captura(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        $acreditado = $this->crearAcreditado(['telefono' => '7719876543']);
+
+        $this->actingAs($acreditado, 'sanctum')
+            ->postJson('/api/v1/acreditado/solicitudes', ['tipo_tramite_id' => $this->tipo->id])
+            ->assertCreated();
+
+        $this->assertNull(\App\Models\Contacto::findOrFail($acreditado->fresh()->contacto_id)->simulador_screenshot);
+    }
+
+    public function test_registro_con_curp_ya_usada_responde_422_y_no_error_sql(): void
+    {
+        $this->crearAcreditado(['curp' => 'LEMA901006HHGMXL00']);
+
+        $this->postJson('/api/v1/acreditado/auth/registro', [
+            'name'                  => 'Otra Persona',
+            'email'                 => 'otra@example.com',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
+            'curp'                  => 'LEMA901006HHGMXL00',
+        ])->assertStatus(422)->assertJsonValidationErrors('curp');
+    }
+
     public function test_acreditado_puede_registrar_su_dispositivo(): void
     {
         $acreditado = $this->crearAcreditado();

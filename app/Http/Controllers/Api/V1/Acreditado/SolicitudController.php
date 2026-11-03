@@ -12,6 +12,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class SolicitudController extends Controller
 {
@@ -46,6 +47,8 @@ class SolicitudController extends Controller
             'mensaje'         => ['nullable', 'string', 'max:1000'],
             'municipio'       => ['nullable', 'string', 'max:100'],
             'estado'          => ['nullable', 'string', 'max:100'],
+            // Captura del simulador oficial (Infonavit/Fovissste) — opcional
+            'screenshot'      => ['nullable', 'image', 'max:10240'],
         ]);
 
         // Verificar si ya tiene un expediente activo
@@ -90,6 +93,17 @@ class SolicitudController extends Controller
                 ...$datosContacto,
                 'origen'           => 'app_acreditado',
                 'estado_prospecto' => 'nuevo',
+            ]);
+        }
+
+        // Captura del simulador: se guarda en el mismo campo que usa el asesor,
+        // así aparece en el panel del prospecto sin cambios extra.
+        if ($request->hasFile('screenshot')) {
+            if ($contacto->simulador_screenshot && Storage::disk('public')->exists($contacto->simulador_screenshot)) {
+                Storage::disk('public')->delete($contacto->simulador_screenshot);
+            }
+            $contacto->update([
+                'simulador_screenshot' => $request->file('screenshot')->store('contactos/simulador', 'public'),
             ]);
         }
 
