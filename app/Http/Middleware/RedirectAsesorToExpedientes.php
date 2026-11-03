@@ -32,6 +32,10 @@ class RedirectAsesorToExpedientes
             return '/admin/dashboard-asesor';
         }
 
+        if ($user?->hasRole('gestor')) {
+            return '/admin/gestor';
+        }
+
         if ($user?->hasRole('Revisor de Rutas')) {
             return '/admin/mapa-visitas';
         }

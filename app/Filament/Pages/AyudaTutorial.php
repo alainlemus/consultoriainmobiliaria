@@ -22,7 +22,8 @@ class AyudaTutorial extends Page implements HasInfolists
 
     public static function canAccess(): bool
     {
-        return auth()->check();
+        // El tutorial es para administración y asesores; el gestor tiene su propia sección.
+        return auth()->check() && ! auth()->user()->hasRole('gestor');
     }
 
     public function getRol(): string
