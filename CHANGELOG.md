@@ -13,6 +13,14 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.9.0] - 2026-11-03
+
+### Agregado
+- La app del acreditado puede adjuntar la captura del simulador oficial (Infonavit o Fovissste) al pedir que un asesor lo llame; la captura aparece en el prospecto igual que cuando la sube el asesor.
+
+### Corregido
+- Registrarse en la app con una CURP o un correo que ya tienen cuenta muestra un mensaje claro en lugar de un error técnico.
+
 ## [1.8.0] - 2026-11-01
 
 ### Agregado
