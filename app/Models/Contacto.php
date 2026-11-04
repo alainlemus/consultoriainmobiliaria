@@ -39,7 +39,7 @@ class Contacto extends Model
     // Normaliza servicio a mayúsculas al leer (datos legacy en minúsculas)
     public function getServicioAttribute(?string $value): ?string
     {
-        return $value ? strtoupper($value) : null;
+        return $value ? mb_strtoupper($value) : null;
     }
 
     public function getFotoUrlAttribute(): ?string
@@ -107,14 +107,14 @@ class Contacto extends Model
             return null;
         }
 
-        return match (strtoupper($this->servicio)) {
+        return match (mb_strtoupper($this->servicio)) {
             'INFONAVIT'              => 'Crédito INFONAVIT',
             'FOVISSSTE'              => 'Crédito FOVISSSTE',
             'AVALUO'                 => 'Avalúo',
             'ESCRITURACION'          => 'Escrituración',
             'ASESORIA_PERSONALIZADA' => 'Asesoría personalizada',
             'OTRO'                   => 'Otro',
-            default                  => ucfirst(strtolower($this->servicio)),
+            default                  => mb_strtoupper(mb_substr($this->servicio, 0, 1)) . mb_substr(mb_strtolower($this->servicio), 1),
         };
     }
 }

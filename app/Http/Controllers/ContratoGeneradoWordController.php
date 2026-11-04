@@ -24,9 +24,9 @@ class ContratoGeneradoWordController extends Controller
     {
         abort_unless(auth()->user()?->hasRole('super_admin') || auth()->user()?->can('View:ContratoGenerado'), 403);
 
-        $siteName       = strtoupper(Configuracion::get('site_name') ?? 'CONSULTORÍA INMOBILIARIA');
-        $firmaPrestador = strtoupper(Configuracion::get('firma_prestador', 'C. JOSE ANTONIO SOLIS SANTUARIO'));
-        $firmaJuridico  = strtoupper(Configuracion::get('firma_juridico', 'LIC. LUZ ANGÉLICA PÉREZ MEJÍA'));
+        $siteName       = mb_strtoupper(Configuracion::get('site_name') ?? 'CONSULTORÍA INMOBILIARIA');
+        $firmaPrestador = mb_strtoupper(Configuracion::get('firma_prestador', 'C. JOSE ANTONIO SOLIS SANTUARIO'));
+        $firmaJuridico  = mb_strtoupper(Configuracion::get('firma_juridico', 'LIC. LUZ ANGÉLICA PÉREZ MEJÍA'));
         $domicilio      = Cobertura::first()?->detalle ?? 'Huejutla de Reyes, Hidalgo';
         $ciudad         = $contratoGenerado->ciudad ?: 'Huejutla de Reyes';
         $fecha          = now()->locale('es')->isoFormat('D [días del mes de] MMMM [del año] YYYY');

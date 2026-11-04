@@ -13,6 +13,12 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.10.1] - 2026-11-04
+
+### Corregido
+- La ruta del asesor usa el día y la hora de México: una visita después de las 6 pm ya no aparece en la ruta del día siguiente y las horas ya no salen 6 horas adelantadas (app y panel).
+- Las mayúsculas respetan los acentos: el servicio del prospecto se ve «CRÉDITO FOVISSSTE» (antes «CRéDITO»), igual en el panel y en el contrato en Word.
+
 ## [1.10.0] - 2026-11-03
 
 ### Agregado

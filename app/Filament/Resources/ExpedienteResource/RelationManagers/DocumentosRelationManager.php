@@ -87,7 +87,7 @@ class DocumentosRelationManager extends RelationManager
                         $state === 'vivienda'                   => 'success',
                         default                                 => 'gray',
                     })
-                    ->formatStateUsing(fn (?string $state) => $state ? strtoupper($state) : '—')
+                    ->formatStateUsing(fn (?string $state) => $state ? mb_strtoupper($state) : '—')
                     ->placeholder('—')
                     ->sortable(),
 
@@ -166,7 +166,7 @@ class DocumentosRelationManager extends RelationManager
                         return \App\Models\DocumentoExpediente::where('expediente_id', $this->getOwnerRecord()?->id)
                             ->whereNotNull('categoria')
                             ->pluck('categoria')
-                            ->map(fn ($c) => strtoupper($c))
+                            ->map(fn ($c) => mb_strtoupper($c))
                             ->unique()
                             ->sort()
                             ->mapWithKeys(fn ($c) => [strtolower($c) => $c])

@@ -339,9 +339,9 @@ class ExpedienteResource extends Resource
 
                                             $fotoHtml = $c->foto_url
                                                 ? "<img src='{$c->foto_url}' style='width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;' />"
-                                                : "<div style='width:72px;height:72px;border-radius:50%;background:#1c1917;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#d97706;'>" . strtoupper(substr($c->nombre ?? '?', 0, 1)) . "</div>";
+                                                : "<div style='width:72px;height:72px;border-radius:50%;background:#1c1917;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#d97706;'>" . mb_strtoupper(mb_substr($c->nombre ?? '?', 0, 1)) . "</div>";
 
-                                            $servicio = strtoupper($c->servicio ?? '');
+                                            $servicio = mb_strtoupper($c->servicio ?? '');
                                             $row = fn(string $lbl, ?string $val) => $val
                                                 ? "<tr><td style='padding:4px 12px 4px 0;font-size:13px;color:#6b7280;white-space:nowrap;font-weight:600;'>{$lbl}</td><td style='padding:4px 0;font-size:13px;color:#111827;'>" . e($val) . "</td></tr>"
                                                 : '';
