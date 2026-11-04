@@ -5,11 +5,28 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\RoutePoint;
 use App\Models\Ubicacion;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class RouteController extends Controller
 {
+    /**
+     * Los asesores trabajan en hora del centro de México. Las horas se guardan
+     * en UTC (la app manda ISO con Z), así que "el día" de una ruta y la hora
+     * que se muestra se calculan en esta zona; si no, una visita de las 7 pm
+     * caería en la ruta del día siguiente y las horas saldrían +6 h.
+     */
+    private const ZONA = 'America/Mexico_City';
+
+    /** Rango UTC [inicio, fin) que corresponde a un día local. */
+    private function rangoDia(string $fecha): array
+    {
+        $inicio = CarbonImmutable::parse($fecha, self::ZONA)->startOfDay();
+
+        return [$inicio->utc(), $inicio->addDay()->utc()];
+    }
+
     /**
      * POST /api/v1/routes/points
      * Guarda uno o varios puntos de ruta del asesor.
@@ -71,13 +88,13 @@ class RouteController extends Controller
         // "puntos" combina route_points (inicio/fin de ruta) + ubicaciones
         // (visitas a clientes/escuelas/propiedades con coordenadas) — ambas
         // fuentes alimentan el recorrido del asesor, ver getPoints().
-        $hoy = now()->toDateString();
+        [$desde, $hasta] = $this->rangoDia(now(self::ZONA)->toDateString());
 
         $asesores = \App\Models\User::role('asesor')
             ->where('activo', true)
-            ->withCount(['routePoints as rp_hoy'   => fn ($q) => $q->whereDate('timestamp', $hoy)])
+            ->withCount(['routePoints as rp_hoy'   => fn ($q) => $q->where('timestamp', '>=', $desde)->where('timestamp', '<', $hasta)])
             ->withCount(['routePoints as rp_total'])
-            ->withCount(['ubicaciones as ub_hoy'    => fn ($q) => $q->whereDate('visitado_en', $hoy)->whereNotNull('latitud')])
+            ->withCount(['ubicaciones as ub_hoy'    => fn ($q) => $q->where('visitado_en', '>=', $desde)->where('visitado_en', '<', $hasta)->whereNotNull('latitud')])
             ->withCount(['ubicaciones as ub_total'   => fn ($q) => $q->whereNotNull('latitud')])
             ->orderBy('name')
             ->get(['id', 'name'])
@@ -111,7 +128,7 @@ class RouteController extends Controller
         $user = $request->user();
 
         $asesorId = $request->input('asesor_id');
-        $fecha = $request->input('fecha', now()->toDateString());
+        $fecha = $request->input('fecha', now(self::ZONA)->toDateString());
 
         if (! $user->hasRole('super_admin')) {
             $asesorId = $user->id;
@@ -123,8 +140,9 @@ class RouteController extends Controller
 
         $todos = $asesorId === 'todos';
 
-        $routeQuery = RoutePoint::whereDate('timestamp', $fecha);
-        $ubicacionQuery = Ubicacion::whereDate('visitado_en', $fecha)
+        [$desde, $hasta] = $this->rangoDia($fecha);
+        $routeQuery = RoutePoint::where('timestamp', '>=', $desde)->where('timestamp', '<', $hasta);
+        $ubicacionQuery = Ubicacion::where('visitado_en', '>=', $desde)->where('visitado_en', '<', $hasta)
             ->whereNotNull('latitud')
             ->whereNotNull('longitud');
 
@@ -147,7 +165,7 @@ class RouteController extends Controller
             'velocidad'     => $p->velocidad,
             'tipo'          => 'gps',
             'nombre_lugar'  => null,
-            'hora'          => $p->timestamp->format('H:i:s'),
+            'hora'          => $p->timestamp->copy()->setTimezone(self::ZONA)->format('H:i:s'),
             'timestamp'     => $p->timestamp->toIso8601String(),
             'asesor_id'     => $p->user_id,
             'asesor_nombre' => $todos ? $p->user?->name : null,
@@ -161,7 +179,7 @@ class RouteController extends Controller
             'velocidad'     => 0,
             'tipo'          => $u->tipo,
             'nombre_lugar'  => $u->nombre_lugar,
-            'hora'          => $u->visitado_en->format('H:i:s'),
+            'hora'          => $u->visitado_en->copy()->setTimezone(self::ZONA)->format('H:i:s'),
             'timestamp'     => $u->visitado_en->toIso8601String(),
             'asesor_id'     => $u->user_id,
             'asesor_nombre' => $todos ? $u->user?->name : null,
@@ -216,13 +234,15 @@ class RouteController extends Controller
             $ubicacionQuery->where('user_id', $asesorId);
         }
 
-        $diasRoute = $routeQuery->selectRaw('DATE(timestamp) as fecha, COUNT(*) as puntos')
-            ->groupByRaw('DATE(timestamp)')
-            ->pluck('puntos', 'fecha');
+        // Agrupar por día local en PHP (DATE() de SQL agrupa en UTC). Solo se
+        // muestran los últimos 30 días con registros, así que basta con ~40 días.
+        $limite = now()->subDays(40);
+        $porDia = fn ($fechas) => $fechas
+            ->map(fn ($f) => \Illuminate\Support\Carbon::parse($f)->setTimezone(self::ZONA)->toDateString())
+            ->countBy();
 
-        $diasUbicaciones = $ubicacionQuery->selectRaw('DATE(visitado_en) as fecha, COUNT(*) as puntos')
-            ->groupByRaw('DATE(visitado_en)')
-            ->pluck('puntos', 'fecha');
+        $diasRoute = $porDia($routeQuery->where('timestamp', '>=', $limite)->pluck('timestamp'));
+        $diasUbicaciones = $porDia($ubicacionQuery->where('visitado_en', '>=', $limite)->pluck('visitado_en'));
 
         $dias = collect($diasRoute->keys())
             ->merge($diasUbicaciones->keys())
