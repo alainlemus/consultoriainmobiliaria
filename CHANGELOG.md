@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.10.2] - 2026-11-04
+
+### Agregado
+- Presentaciones de la app (paso 4 de Primeros pasos) en `public/presentaciones`: video y PDF de «Crédito Infonavit paso a paso» y de «Tu crédito Fovissste, explicado». Ya viajan con el despliegue; antes había que subirlas a mano.
+
 ## [1.10.1] - 2026-11-04
 
 ### Corregido
