@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.10.4] - 2026-11-04
+
+### Corregido
+- Mapa de anuncios en la app: cada asesor solo ve los anuncios que él colocó; antes veía los de todos los asesores. El super_admin sigue viendo los de todos (incluidos los retirados).
+
 ## [1.10.3] - 2026-11-04
 
 ### Cambiado
