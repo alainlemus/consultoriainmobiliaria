@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.10.3] - 2026-11-04
+
+### Cambiado
+- El panel ya no muestra en el menú «WhatsApp Configuración» ni «Flujo del Chatbot» (y sus secciones en «Ayuda y Tutorial»), porque por ahora no se usan. No se borró nada: la configuración se conserva y basta con quitar el ocultamiento para volver a mostrarlas.
+
 ## [1.10.2] - 2026-11-04
 
 ### Agregado

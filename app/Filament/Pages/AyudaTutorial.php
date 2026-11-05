@@ -245,6 +245,7 @@ class AyudaTutorial extends Page implements HasInfolists
                     ]),
 
                 Section::make('WhatsApp — Configuración')
+                    ->hidden() // WhatsApp/chatbot oculto en el menú
                     ->description('Conectar y gestionar la sesión de WhatsApp')
                     ->icon('heroicon-o-chat-bubble-left-right')
                     ->collapsible()
@@ -278,6 +279,7 @@ class AyudaTutorial extends Page implements HasInfolists
                     ]),
 
                 Section::make('WhatsApp — Chatbot y Flujo')
+                    ->hidden() // WhatsApp/chatbot oculto en el menú
                     ->description('Configurar el chatbot conversacional')
                     ->icon('heroicon-o-cpu-chip')
                     ->collapsible()
