@@ -17,6 +17,12 @@ class WhatsAppSettings extends Page
         return auth()->check() && auth()->user()->hasRole('super_admin');
     }
 
+    // Oculta del menú mientras WhatsApp/chatbot no se usa; para volver a mostrarla, borra este método.
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     protected static string|\BackedEnum|null $navigationIcon  = 'heroicon-o-chat-bubble-left-ellipsis';
     protected static ?string $navigationLabel = 'WhatsApp Configuración';
     protected static ?string $title           = 'Configuración WhatsApp';

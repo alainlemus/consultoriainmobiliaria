@@ -27,6 +27,12 @@ class ChatbotSettings extends Page implements HasTable
         return auth()->check() && auth()->user()->hasRole('super_admin');
     }
 
+    // Oculta del menú mientras WhatsApp/chatbot no se usa; para volver a mostrarla, borra este método.
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     protected static string|\BackedEnum|null $navigationIcon  = 'heroicon-o-chat-bubble-bottom-center-text';
     protected static ?string $navigationLabel = 'Flujo del Chatbot';
     protected static ?string $title           = 'Configuración del Chatbot WhatsApp';
