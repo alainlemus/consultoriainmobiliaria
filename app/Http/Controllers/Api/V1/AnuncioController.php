@@ -18,8 +18,8 @@ class AnuncioController extends Controller
 
     /**
      * GET /api/v1/anuncios/mapa
-     * Devuelve todos los anuncios para el mapa (todos los asesores ven todos).
-     * Esto es intencional: el objetivo es ver dónde hay anuncios para no duplicar.
+     * Anuncios para el mapa: el super_admin ve los de todos los asesores; cada
+     * asesor solo ve los que él colocó.
      */
     public function mapa(Request $request): JsonResponse
     {
@@ -31,11 +31,10 @@ class AnuncioController extends Controller
                 'colonia', 'municipio', 'estado_geo', 'colocado_en',
             ]);
 
-        // Todos los asesores ven todos los anuncios para evitar duplicados de territorio
-        // (a diferencia del mapa de visitas que es privado)
-        // Solo el super_admin puede ver los retirados; asesores solo ven activos
+        // El asesor solo ve sus anuncios activos; el super_admin ve todos
+        // (de todos los asesores, incluidos los retirados).
         if (! $user->hasRole('super_admin')) {
-            $query->where('estado', 'activo');
+            $query->where('user_id', $user->id)->where('estado', 'activo');
         }
 
         $anuncios = $query->latest('colocado_en')->limit(1000)->get()
