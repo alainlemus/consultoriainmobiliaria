@@ -13,6 +13,18 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.11.1] - 2026-11-06
+
+### Cambiado
+- Blog «Infonavit vs Fovissste»: nuevo título y descripción para buscadores, tabla comparativa al inicio y preguntas frecuentes. La dirección del artículo no cambia.
+- `/propiedades` queda con `noindex, follow` mientras no haya propiedades en venta, y vuelve a indexarse sola al publicar la primera.
+
+### Agregado
+- Estilos de tabla para el contenido del blog.
+
+### Importante
+- Requiere la migración `mejorar_seo_post_infonavit_vs_fovissste`, que actualiza el artículo en la base de datos.
+
 ## [1.11.0] - 2026-11-06
 
 ### Agregado

@@ -52,7 +52,10 @@ class PropiedadController extends Controller
         $propiedades = $query->latest()->paginate($perPage)->withQueryString();
         $estados     = Propiedad::distinct()->orderBy('estado')->pluck('estado');
 
-        return view('pages.propiedades.index', compact('propiedades', 'estados'));
+        // Sin propiedades publicadas la página está vacía: que Google no la indexe (ni compita con la home).
+        $hayPropiedades = Propiedad::hayEnVenta();
+
+        return view('pages.propiedades.index', compact('propiedades', 'estados', 'hayPropiedades'));
     }
 
     public function show(string $slug)
