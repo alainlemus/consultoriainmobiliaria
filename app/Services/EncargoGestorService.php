@@ -20,8 +20,11 @@ use Illuminate\Validation\ValidationException;
  *  enviarRevision()  gestor marca ✓/✗ cada documento (con_observaciones | en_tramite)
  *  reenviar()        super_admin corrigió → gestor   (por_revisar, vuelta + 1)
  *  subirDocumento()  gestor sube lo que tramitó      (solo en_tramite)
- *  alValidar()/alRechazar()  desde ValidacionDocumentoService; cierra el encargo
- *                    cuando todo lo del gestor está validado.
+ *  entregar()        gestor toca «Ya terminé»        (por_validar, o terminado si ya está todo validado)
+ *  reabrir()         gestor olvidó algo              (por_validar → en_tramite)
+ *  alValidar()/alRechazar()  desde ValidacionDocumentoService. El encargo solo se
+ *                    termina si el gestor ya entregó Y todo está validado; un
+ *                    rechazo lo regresa a en_tramite para que lo vuelva a subir.
  *
  * Avisos: al gestor lo que le toca hacer; a todos los super_admin lo que hizo el gestor.
  */
@@ -183,7 +186,9 @@ class EncargoGestorService
     public function subirDocumento(EncargoGestor $encargo, User $gestor, UploadedFile $archivo, string $tipo, ?string $notas, ?int $reemplazaId = null): DocumentoExpediente
     {
         if ($encargo->estado !== EncargoGestor::EN_TRAMITE) {
-            throw ValidationException::withMessages(['estado' => 'Podrás subir documentos cuando todos los del expediente estén correctos.']);
+            throw ValidationException::withMessages(['estado' => $encargo->estado === EncargoGestor::POR_VALIDAR
+                ? 'Ya avisaste que terminaste. Reabre el encargo para subir más documentos.'
+                : 'Podrás subir documentos cuando todos los del expediente estén correctos.']);
         }
 
         $ext  = strtolower($archivo->getClientOriginalExtension() ?: $archivo->extension() ?: 'pdf');
@@ -229,27 +234,80 @@ class EncargoGestorService
         return $doc;
     }
 
+    /** «Ya terminé»: el gestor entregó todo lo que tenía que subir. */
+    public function entregar(EncargoGestor $encargo, User $gestor): void
+    {
+        if ($encargo->estado !== EncargoGestor::EN_TRAMITE) {
+            throw ValidationException::withMessages(['estado' => 'Este encargo no está en trámite.']);
+        }
+
+        $subidos = $encargo->documentosSubidos()->get();
+        if ($subidos->isEmpty()) {
+            throw ValidationException::withMessages(['estado' => 'Sube al menos un documento antes de terminar.']);
+        }
+
+        $rechazados = $subidos->where('validacion', 'rechazado');
+        if ($rechazados->isNotEmpty()) {
+            throw ValidationException::withMessages(['estado' => 'Primero vuelve a subir: ' . $rechazados->pluck('nombre')->join(', ') . '.']);
+        }
+
+        $this->evento($encargo, $gestor, 'entregado');
+        $folio = $this->folio($encargo);
+        $faltan = $this->porValidar($encargo);
+
+        if ($faltan === 0) {
+            $encargo->update(['entregado_at' => now()]);
+            $this->avisarAdmins($encargo, 'entregado', "🏁 {$gestor->name} terminó — {$folio}", 'Ya validaste todo lo que subió: el encargo quedó terminado.', 'success');
+            $this->cerrar($encargo, $gestor);
+
+            return;
+        }
+
+        $encargo->update(['estado' => EncargoGestor::POR_VALIDAR, 'entregado_at' => now(), 'ultimo_recordatorio_at' => null]);
+        $this->avisarAdmins($encargo, 'entregado', "📬 {$gestor->name} terminó — {$folio}", "Faltan {$faltan} documento(s) por validar.");
+    }
+
+    /** El gestor olvidó algo: mientras nadie cierre el encargo puede volver a subir. */
+    public function reabrir(EncargoGestor $encargo, User $gestor): void
+    {
+        if ($encargo->estado !== EncargoGestor::POR_VALIDAR) {
+            throw ValidationException::withMessages(['estado' => 'Solo se reabren encargos que están por validar.']);
+        }
+
+        $encargo->update(['estado' => EncargoGestor::EN_TRAMITE, 'entregado_at' => null, 'ultimo_recordatorio_at' => null]);
+        $this->evento($encargo, $gestor, 'reabierto');
+        $this->avisarAdmins($encargo, 'reabierto', "🔓 {$gestor->name} reabrió el encargo — {$this->folio($encargo)}", 'Va a subir más documentos. Te avisaremos cuando vuelva a terminar.');
+    }
+
+    /** Recordatorio al admin de un encargo entregado que sigue sin validar. */
+    public function recordarValidacion(EncargoGestor $encargo): void
+    {
+        $faltan = $this->porValidar($encargo);
+        if ($faltan === 0) {
+            return;
+        }
+
+        $this->avisarAdmins(
+            $encargo, 'recordatorio_validacion', "⏰ Encargo por validar — {$this->folio($encargo)}",
+            ($encargo->gestor?->name ?? 'El gestor') . " ya terminó y faltan {$faltan} documento(s) por validar.", 'warning',
+        );
+        $encargo->update(['ultimo_recordatorio_at' => now()]);
+    }
+
     // ── Validación del admin sobre lo que subió el gestor ───────────────────
 
     public function alValidar(DocumentoExpediente $doc, User $admin): void
     {
         $encargo = $doc->encargoGestor;
-        if (! $encargo || $encargo->estado !== EncargoGestor::EN_TRAMITE) {
+        if (! $encargo || ! in_array($encargo->estado, [EncargoGestor::EN_TRAMITE, EncargoGestor::POR_VALIDAR], true)) {
             return;
         }
 
         $this->evento($encargo, $admin, 'documento_validado', $doc->nombre);
 
-        $subidos = $encargo->documentosSubidos()->get();
-        $todoValidado = $subidos->isNotEmpty() && $subidos->every(fn ($d) => $d->validacion === 'validado');
-
-        if ($todoValidado) {
-            $encargo->update(['estado' => EncargoGestor::TERMINADO, 'terminado_at' => now()]);
-            $this->evento($encargo, $admin, 'terminado');
-            $encargo->gestor?->notify(new EncargoGestorNotificacion(
-                $encargo, 'terminado', "🏁 Encargo terminado — {$this->folio($encargo)}",
-                'La administración validó todo lo que subiste. ¡Gracias!', true, 'success',
-            ));
+        // Mientras el gestor no toque «Ya terminé» el encargo sigue abierto: puede faltarle subir algo.
+        if ($encargo->estado === EncargoGestor::POR_VALIDAR && $this->porValidar($encargo) === 0) {
+            $this->cerrar($encargo, $admin);
         } else {
             $encargo->gestor?->notify(new EncargoGestorNotificacion(
                 $encargo, 'documento_validado', "✔️ Documento validado — {$this->folio($encargo)}", $doc->nombre, true, 'success',
@@ -265,6 +323,12 @@ class EncargoGestorService
         }
 
         $this->evento($encargo, $admin, 'documento_rechazado', "{$doc->nombre}: {$motivo}");
+
+        // Ya había entregado: se le regresa para que lo vuelva a subir y avise otra vez.
+        if ($encargo->estado === EncargoGestor::POR_VALIDAR) {
+            $encargo->update(['estado' => EncargoGestor::EN_TRAMITE, 'entregado_at' => null, 'ultimo_recordatorio_at' => null]);
+        }
+
         $encargo->gestor?->notify(new EncargoGestorNotificacion(
             $encargo, 'documento_rechazado', "⚠️ Te rechazaron un documento — {$this->folio($encargo)}",
             "{$doc->nombre}: {$motivo}", true, 'danger',
@@ -272,6 +336,22 @@ class EncargoGestorService
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private function cerrar(EncargoGestor $encargo, ?User $por): void
+    {
+        $encargo->update(['estado' => EncargoGestor::TERMINADO, 'terminado_at' => now()]);
+        $this->evento($encargo, $por, 'terminado');
+        $encargo->gestor?->notify(new EncargoGestorNotificacion(
+            $encargo, 'terminado', "🏁 Encargo terminado — {$this->folio($encargo)}",
+            'La administración validó todo lo que subiste. ¡Gracias!', true, 'success',
+        ));
+    }
+
+    /** Documentos subidos por el gestor que aún no están validados. */
+    private function porValidar(EncargoGestor $encargo): int
+    {
+        return $encargo->documentosSubidos()->get()->filter(fn ($d) => $d->validacion !== 'validado')->count();
+    }
 
     private function avisarAdmins(EncargoGestor $encargo, string $tipo, string $titulo, string $mensaje, string $color = 'info'): void
     {

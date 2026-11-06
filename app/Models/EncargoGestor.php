@@ -16,6 +16,7 @@ class EncargoGestor extends Model
     public const POR_REVISAR       = 'por_revisar';
     public const CON_OBSERVACIONES = 'con_observaciones';
     public const EN_TRAMITE        = 'en_tramite';
+    public const POR_VALIDAR       = 'por_validar';
     public const TERMINADO         = 'terminado';
     public const CANCELADO         = 'cancelado';
 
@@ -23,6 +24,7 @@ class EncargoGestor extends Model
         self::POR_REVISAR       => 'Por revisar',
         self::CON_OBSERVACIONES => 'Con observaciones',
         self::EN_TRAMITE        => 'En trámite',
+        self::POR_VALIDAR       => 'Por validar',
         self::TERMINADO         => 'Terminado',
         self::CANCELADO         => 'Cancelado',
     ];
@@ -39,13 +41,15 @@ class EncargoGestor extends Model
 
     protected $fillable = [
         'expediente_id', 'gestor_id', 'enviado_por', 'instrucciones', 'fecha_entrega', 'datos_compartidos',
-        'estado', 'vuelta', 'tramite_iniciado_at', 'terminado_at',
+        'estado', 'vuelta', 'tramite_iniciado_at', 'entregado_at', 'ultimo_recordatorio_at', 'terminado_at',
     ];
 
     protected $casts = [
         'fecha_entrega'       => 'date',
         'datos_compartidos'   => 'array',
         'tramite_iniciado_at' => 'datetime',
+        'entregado_at'        => 'datetime',
+        'ultimo_recordatorio_at' => 'datetime',
         'terminado_at'        => 'datetime',
         'vuelta'              => 'integer',
     ];

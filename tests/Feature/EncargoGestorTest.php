@@ -193,11 +193,13 @@ class EncargoGestorTest extends TestCase
             'archivo' => UploadedFile::fake()->create('acuse2.pdf', 20, 'application/pdf'), 'tipo' => 'Acuse', 'reemplaza_documento_id' => $word,
         ], ['Accept' => 'application/json'])->assertCreated()->assertJsonPath('data.id', $word);
 
-        // Validar uno no cierra; validar todo sí
+        // Sin «Ya terminé» el encargo sigue abierto aunque todo esté validado
         $validacion->validar(DocumentoExpediente::find($pdf), $this->admin);
-        $this->assertSame(EncargoGestor::EN_TRAMITE, $encargo->fresh()->estado);
         $validacion->validar(DocumentoExpediente::find($word), $this->admin);
-        $this->assertSame(EncargoGestor::TERMINADO, $encargo->fresh()->estado);
+        $this->assertSame(EncargoGestor::EN_TRAMITE, $encargo->fresh()->estado);
+
+        // Avisa que terminó y ya estaba todo validado: se cierra
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/entregar")->assertOk()->assertJsonPath('data.estado', EncargoGestor::TERMINADO);
         Notification::assertSentTo($this->gestor, EncargoGestorNotificacion::class, fn ($n) => $n->tipo === 'terminado');
 
         $this->assertGreaterThanOrEqual(8, $encargo->eventos()->count());
@@ -278,5 +280,155 @@ class EncargoGestorTest extends TestCase
         $this->assertFalse(\App\Filament\Resources\ExpedienteResource\RelationManagers\EncargosGestorRelationManager::canViewForRecord(
             $this->exp, \App\Filament\Resources\ExpedienteResource\Pages\EditExpediente::class,
         ));
+    }
+
+    // ── «Ya terminé», reabrir y recordatorio ─────────────────────────────────
+
+    private function enTramite(): EncargoGestor
+    {
+        $encargo = $this->enviar();
+        Sanctum::actingAs($this->gestor);
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/revision", ['revisiones' => [
+            ['documento_id' => $this->escritura->id, 'revision' => 'correcto'],
+            ['documento_id' => $this->ine->id, 'revision' => 'correcto'],
+        ]])->assertOk();
+
+        return $encargo->fresh();
+    }
+
+    private function subir(EncargoGestor $encargo, string $tipo = 'CLG'): DocumentoExpediente
+    {
+        $id = $this->post("/api/v1/gestor/encargos/{$encargo->id}/documentos", [
+            'archivo' => UploadedFile::fake()->create('a.pdf', 20, 'application/pdf'), 'tipo' => $tipo,
+        ], ['Accept' => 'application/json'])->assertCreated()->json('data.id');
+
+        return DocumentoExpediente::find($id);
+    }
+
+    public function test_validar_lo_subido_no_cierra_si_el_gestor_no_ha_terminado(): void
+    {
+        $encargo = $this->enTramite();
+        $doc = $this->subir($encargo);
+
+        app(ValidacionDocumentoService::class)->validar($doc, $this->admin);
+        $this->assertSame(EncargoGestor::EN_TRAMITE, $encargo->fresh()->estado);
+
+        // Puede seguir subiendo lo que le falta
+        $this->subir($encargo, 'Acuse');
+        $this->assertCount(2, $encargo->documentosSubidos()->get());
+    }
+
+    public function test_ya_termine_sin_validar_espera_al_admin_y_se_cierra_al_validar_todo(): void
+    {
+        $encargo = $this->enTramite();
+        $a = $this->subir($encargo, 'CLG');
+        $b = $this->subir($encargo, 'Acuse');
+
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/entregar")->assertOk()
+            ->assertJsonPath('data.estado', EncargoGestor::POR_VALIDAR)
+            ->assertJsonPath('data.estado_label', 'Por validar');
+        Notification::assertSentTo($this->admin, EncargoGestorNotificacion::class, fn ($n) => $n->tipo === 'entregado' && str_contains($n->mensaje, 'Faltan 2'));
+
+        // Sigue en la lista de activos y ya no se puede subir
+        $this->getJson('/api/v1/gestor/encargos')->assertOk()->assertJsonCount(1, 'data');
+        $this->post("/api/v1/gestor/encargos/{$encargo->id}/documentos", [
+            'archivo' => UploadedFile::fake()->create('x.pdf', 20, 'application/pdf'), 'tipo' => 'X',
+        ], ['Accept' => 'application/json'])->assertStatus(422);
+
+        $validacion = app(ValidacionDocumentoService::class);
+        $validacion->validar($a, $this->admin);
+        $this->assertSame(EncargoGestor::POR_VALIDAR, $encargo->fresh()->estado);
+        $validacion->validar($b, $this->admin);
+        $this->assertSame(EncargoGestor::TERMINADO, $encargo->fresh()->estado);
+        Notification::assertSentTo($this->gestor, EncargoGestorNotificacion::class, fn ($n) => $n->tipo === 'terminado');
+    }
+
+    public function test_no_puede_terminar_sin_subir_nada_ni_con_un_rechazado(): void
+    {
+        $encargo = $this->enTramite();
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/entregar")->assertStatus(422);
+
+        $doc = $this->subir($encargo);
+        $this->actingAs($this->admin);
+        app(ValidacionDocumentoService::class)->rechazar($doc, 'Ilegible');
+
+        Sanctum::actingAs($this->gestor);
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/entregar")->assertStatus(422);
+        $this->assertSame(EncargoGestor::EN_TRAMITE, $encargo->fresh()->estado);
+    }
+
+    public function test_un_rechazo_despues_de_terminar_le_regresa_el_encargo_al_gestor(): void
+    {
+        $encargo = $this->enTramite();
+        $doc = $this->subir($encargo);
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/entregar")->assertOk();
+
+        $this->actingAs($this->admin);
+        app(ValidacionDocumentoService::class)->rechazar($doc, 'Falta el sello');
+
+        $fresco = $encargo->fresh();
+        $this->assertSame(EncargoGestor::EN_TRAMITE, $fresco->estado);
+        $this->assertNull($fresco->entregado_at);
+        Notification::assertSentTo($this->gestor, EncargoGestorNotificacion::class, fn ($n) => $n->tipo === 'documento_rechazado');
+    }
+
+    public function test_el_gestor_puede_reabrir_mientras_esta_por_validar(): void
+    {
+        $encargo = $this->enTramite();
+        $this->subir($encargo);
+
+        // No se reabre lo que no está por validar
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/reabrir")->assertStatus(422);
+
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/entregar")->assertOk();
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/reabrir")->assertOk()
+            ->assertJsonPath('data.estado', EncargoGestor::EN_TRAMITE);
+        Notification::assertSentTo($this->admin, EncargoGestorNotificacion::class, fn ($n) => $n->tipo === 'reabierto');
+
+        $this->subir($encargo, 'Acuse');
+        $this->assertCount(2, $encargo->documentosSubidos()->get());
+    }
+
+    public function test_otro_gestor_no_puede_terminar_ni_reabrir(): void
+    {
+        $encargo = $this->enTramite();
+        $this->subir($encargo);
+        $otro = User::factory()->create(['activo' => true]);
+        $otro->assignRole('gestor');
+
+        Sanctum::actingAs($otro);
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/entregar")->assertNotFound();
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/reabrir")->assertNotFound();
+    }
+
+    public function test_recuerda_al_admin_a_los_2_dias_y_luego_cada_2_dias(): void
+    {
+        $recordatorios = fn () => Notification::sent($this->admin, EncargoGestorNotificacion::class)
+            ->filter(fn ($n) => $n->tipo === 'recordatorio_validacion')->count();
+
+        $encargo = $this->enTramite();
+        $this->subir($encargo);
+        $this->travelTo('2026-11-02 18:00:00');
+        $this->postJson("/api/v1/gestor/encargos/{$encargo->id}/entregar")->assertOk();
+
+        $correr = fn (string $cuando) => tap($this->travelTo($cuando), fn () => $this->artisan('encargos:recordar-validacion')->assertSuccessful());
+
+        $correr('2026-11-03 15:00:00'); // 1 día: todavía no
+        $this->assertSame(0, $recordatorios());
+
+        $correr('2026-11-04 15:00:00'); // 2 días: primero
+        $this->assertSame(1, $recordatorios());
+
+        $correr('2026-11-05 15:00:00'); // al día siguiente: no se repite
+        $this->assertSame(1, $recordatorios());
+
+        $correr('2026-11-06 15:00:00'); // 2 días después: otro
+        $this->assertSame(2, $recordatorios());
+
+        // Ya validado y cerrado: no se recuerda más
+        app(ValidacionDocumentoService::class)->validar($encargo->documentosSubidos()->first(), $this->admin);
+        $this->assertSame(EncargoGestor::TERMINADO, $encargo->fresh()->estado);
+        $correr('2026-11-10 15:00:00');
+        $this->assertSame(2, $recordatorios());
     }
 }

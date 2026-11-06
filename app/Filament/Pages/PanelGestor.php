@@ -37,7 +37,7 @@ class PanelGestor extends Page
     {
         return auth()->user()->encargosGestor()
             ->with(['expediente.tipoTramite', 'documentos', 'documentosSubidos'])
-            ->orderByRaw("CASE estado WHEN 'por_revisar' THEN 1 WHEN 'con_observaciones' THEN 2 WHEN 'en_tramite' THEN 3 WHEN 'terminado' THEN 4 ELSE 5 END")
+            ->orderByRaw("CASE estado WHEN 'por_revisar' THEN 1 WHEN 'con_observaciones' THEN 2 WHEN 'en_tramite' THEN 3 WHEN 'por_validar' THEN 4 WHEN 'terminado' THEN 5 ELSE 6 END")
             ->latest()
             ->get();
     }

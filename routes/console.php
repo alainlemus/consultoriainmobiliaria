@@ -25,6 +25,13 @@ Schedule::command('reportes:enviar --tipo=semanal')
 Schedule::command('reportes:enviar --tipo=mensual')
     ->lastDayOfMonth('20:00');
 
+// ── Encargos de gestor entregados y sin validar ───────────────────────────
+// Lunes a viernes a las 9 AM de México; cada encargo se recuerda cada 2 días.
+Schedule::command('encargos:recordar-validacion')
+    ->weekdays()
+    ->dailyAt('09:00')
+    ->timezone('America/Mexico_City');
+
 // ── Actualización automática de la UMA ────────────────────────────────────
 // La UMA se publica el 1 de febrero. Corremos el cron todos los martes
 // de enero y febrero para garantizar que capturamos la actualización
