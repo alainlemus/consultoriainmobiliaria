@@ -225,7 +225,13 @@
     .richtext code { @apply bg-gray-100 px-1 rounded text-xs; color: var(--color-gold-700) !important; }
 
     /* Variante oscura: para fondos dark (ej. blog) */
+    .richtext table { @apply w-full my-4 text-sm border-collapse; min-width: 34rem; }
+    .richtext th, .richtext td { @apply p-3 text-left align-top border-b; border-color: rgba(127, 127, 127, 0.35); color: #1a1a1a !important; }
+    .richtext th { @apply font-semibold; }
+
     .richtext--dark { color: #ffffff !important; }
+    .richtext--dark th { color: var(--color-gold-400) !important; }
+    .richtext--dark td { color: rgba(255, 255, 255, 0.85) !important; }
     .richtext--dark h1 { color: #ffffff !important; }
     .richtext--dark h2 { color: #ffffff !important; }
     .richtext--dark h3 { color: #f5f0e8 !important; }

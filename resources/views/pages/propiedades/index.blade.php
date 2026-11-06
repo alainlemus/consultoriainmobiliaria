@@ -3,6 +3,9 @@
 @section('seo_title', 'Casas y terrenos en venta en Hidalgo, Veracruz y San Luis Potosí')
 @section('seo_description', 'Encuentra propiedades en venta con crédito INFONAVIT y FOVISSSTE en Hidalgo, Veracruz y San Luis Potosí. Casas y terrenos con asesoría especializada.')
 @section('canonical', route('propiedades.index'))
+@unless($hayPropiedades)
+    @section('robots', 'noindex, follow')
+@endunless
 
 @section('content')
 <section class="bg-dark-900 min-h-screen" style="padding-top: 100px;">

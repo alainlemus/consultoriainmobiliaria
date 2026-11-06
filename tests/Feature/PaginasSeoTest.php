@@ -50,6 +50,21 @@ class PaginasSeoTest extends TestCase
         $this->assertStringContainsString('<title>Casas y terrenos en venta en Hidalgo, Veracruz y San Luis Potosí</title>', $html);
     }
 
+    public function test_propiedades_no_se_indexa_mientras_esta_vacia(): void
+    {
+        $this->get(route('propiedades.index'))->assertOk()
+            ->assertSee('<meta name="robots" content="noindex, follow">', false);
+
+        \App\Models\Propiedad::create([
+            'titulo' => 'Casa en Huejutla', 'slug' => 'casa-en-huejutla', 'tipo' => 'casa', 'precio' => 900000,
+            'estado' => 'Hidalgo', 'municipio' => 'Huejutla', 'estatus' => 'en_venta',
+        ]);
+        \Illuminate\Support\Facades\Cache::forget(\App\Models\Propiedad::CACHE_HAY_EN_VENTA);
+
+        $this->get(route('propiedades.index'))->assertOk()
+            ->assertDontSee('noindex', false);
+    }
+
     public function test_el_sitemap_incluye_las_paginas_nuevas(): void
     {
         $xml = $this->get('/sitemap.xml')->assertOk()->getContent();
