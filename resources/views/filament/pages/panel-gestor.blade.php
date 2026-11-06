@@ -3,7 +3,7 @@
     $encargos = $this->getEncargos();
     $color = [
         EncargoGestor::POR_REVISAR => 'warning', EncargoGestor::CON_OBSERVACIONES => 'danger',
-        EncargoGestor::EN_TRAMITE => 'info', EncargoGestor::TERMINADO => 'success', EncargoGestor::CANCELADO => 'gray',
+        EncargoGestor::EN_TRAMITE => 'info', EncargoGestor::POR_VALIDAR => 'warning', EncargoGestor::TERMINADO => 'success', EncargoGestor::CANCELADO => 'gray',
     ];
     $rev = ['pendiente' => 'Sin revisar', 'correcto' => 'Correcto', 'incorrecto' => 'Incorrecto'];
 @endphp
@@ -15,8 +15,9 @@
             <li>Si marcaste alguno mal, la administración lo cambia y te lo regresa. Solo revisas lo que cambió.</li>
             <li>Cuando todos estén correctos, <b>empieza el trámite</b>. Antes no puedes subir documentos.</li>
             <li><b>Sube lo que obtengas</b> desde la app: escaneo, foto, PDF o Word. Si te lo rechazan verás el motivo.</li>
+            <li>Cuando subas todo, toca <b>Ya terminé</b> en la app. Si olvidaste algo, puedes <b>reabrirlo</b> mientras la administración valida.</li>
         </ol>
-        <p style="margin-top:0.75rem; opacity:0.7;">Aquí en la web puedes ver tus expedientes y descargar sus documentos. La revisión y la subida se hacen en la app.</p>
+        <p style="margin-top:0.75rem; opacity:0.7;">Aquí en la web puedes ver tus expedientes y descargar sus documentos. La revisión, la subida y «Ya terminé» se hacen en la app.</p>
     </x-filament::section>
 
     @forelse ($encargos as $e)

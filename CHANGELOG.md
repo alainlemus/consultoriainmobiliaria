@@ -13,6 +13,19 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.11.0] - 2026-11-06
+
+### Agregado
+- Encargos de gestor: nuevo estado **Por validar**. El gestor avisa con «Ya terminé» que entregó todo (`POST /v1/gestor/encargos/{id}/entregar`) y puede reabrir el encargo si olvidó algo (`POST /v1/gestor/encargos/{id}/reabrir`). Los super_admin reciben aviso en ambos casos.
+- Recordatorio a los super_admin de los encargos entregados sin validar: comando `encargos:recordar-validacion`, de lunes a viernes a las 9 am de México, a los 2 días de la entrega y luego cada 2 días.
+
+### Cambiado
+- Un encargo ya no se cierra solo al validar lo subido: se termina únicamente si el gestor tocó «Ya terminé» y todo está validado. Antes, validar el primer documento podía cerrarlo y el gestor ya no podía subir los demás.
+- Rechazar un documento de un encargo por validar se lo regresa al gestor (En trámite) para que lo vuelva a subir.
+
+### Importante
+- Requiere la migración `add_por_validar_to_encargos_gestor` y la app con el botón «Ya terminé»: con una versión anterior de la app, los encargos no se pueden cerrar.
+
 ## [1.10.4] - 2026-11-04
 
 ### Corregido

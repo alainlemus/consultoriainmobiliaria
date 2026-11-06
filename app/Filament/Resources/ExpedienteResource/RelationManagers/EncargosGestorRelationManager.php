@@ -39,7 +39,7 @@ class EncargosGestorRelationManager extends RelationManager
             . '2) El gestor revisa cada documento; si marca alguno como incorrecto te llega una notificación con su nota. '
             . '3) Usa <b>Corregir y reenviar</b> para subir el archivo bueno y regresárselo. '
             . '4) Cuando sube lo que tramitó te avisamos: valídalo o recházalo en la pestaña Documentos. '
-            . 'El encargo se cierra solo cuando validas todo lo que subió. Un expediente puede tener varios gestores a la vez.'
+            . '5) Cuando el gestor toca <b>Ya terminé</b> te avisamos; el encargo se cierra al validar todo lo que subió (si rechazas algo, se le regresa). Si tardas, te lo recordamos cada 2 días. Un expediente puede tener varios gestores a la vez.'
         );
     }
 
@@ -59,6 +59,7 @@ class EncargosGestorRelationManager extends RelationManager
                         EncargoGestor::POR_REVISAR       => 'warning',
                         EncargoGestor::CON_OBSERVACIONES => 'danger',
                         EncargoGestor::EN_TRAMITE        => 'info',
+                        EncargoGestor::POR_VALIDAR       => 'warning',
                         EncargoGestor::TERMINADO         => 'success',
                         default                          => 'gray',
                     }),

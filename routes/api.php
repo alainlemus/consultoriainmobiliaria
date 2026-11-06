@@ -154,6 +154,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/encargos/{id}/documentos/{documentoId}/url', [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'urlDocumento']);
             Route::post('/encargos/{id}/revision',                    [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'revision']);
             Route::post('/encargos/{id}/documentos',                  [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'subir']);
+            Route::post('/encargos/{id}/entregar',                    [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'entregar']);
+            Route::post('/encargos/{id}/reabrir',                     [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'reabrir']);
         });
 
     });

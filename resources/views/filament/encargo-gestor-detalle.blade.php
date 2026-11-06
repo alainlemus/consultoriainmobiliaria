@@ -6,7 +6,7 @@
         'enviado' => 'Enviado al gestor', 'revision_con_observaciones' => 'El gestor marcó documentos como incorrectos',
         'reenviado' => 'Corregido y reenviado', 'tramite_iniciado' => 'Todo correcto: empezó el trámite',
         'documento_subido' => 'El gestor subió un documento', 'documento_validado' => 'Documento validado',
-        'documento_rechazado' => 'Documento rechazado', 'terminado' => 'Encargo terminado', 'cancelado' => 'Encargo cancelado',
+        'documento_rechazado' => 'Documento rechazado', 'entregado' => 'El gestor avisó que terminó', 'reabierto' => 'El gestor reabrió el encargo', 'terminado' => 'Encargo terminado', 'cancelado' => 'Encargo cancelado',
     ];
 @endphp
 <div style="display:flex; flex-direction:column; gap:1.25rem; font-size:0.875rem;">

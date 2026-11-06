@@ -128,6 +128,22 @@ class EncargoController extends Controller
         return response()->json(['data' => ['id' => $doc->id, 'validacion' => $doc->validacion]], 201);
     }
 
+    /** POST /gestor/encargos/{id}/entregar — «Ya terminé» */
+    public function entregar(Request $request, int $id): JsonResponse
+    {
+        $this->service->entregar($this->encargo($request, $id), $request->user());
+
+        return $this->show($request, $id);
+    }
+
+    /** POST /gestor/encargos/{id}/reabrir — olvidó algo: vuelve a en_tramite */
+    public function reabrir(Request $request, int $id): JsonResponse
+    {
+        $this->service->reabrir($this->encargo($request, $id), $request->user());
+
+        return $this->show($request, $id);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private function encargo(Request $request, int $id): EncargoGestor
