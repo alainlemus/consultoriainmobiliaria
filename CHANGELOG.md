@@ -13,6 +13,13 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.16.0] - 2026-11-09
+
+### Agregado
+- Citas de asesoría: el asesor (desde el prospecto o expediente) o el acreditado agendan en una oficina o a domicilio eligiendo un hueco libre; la cita nace «solicitada» y el super admin la confirma, reagenda o cancela desde el panel (CRM → Citas) o la app. Acreditado y asesor reciben aviso en cada cambio; recordatorios automáticos un día antes y dos horas antes.
+- Una sola agenda (la del super admin): un hueco ocupado en una oficina lo está en todas. Oficinas y horarios se configuran en Configuración del sitio → Cobertura (recibe citas, días, horario, duración en oficina y a domicilio).
+- API: `/citas/oficinas`, `/citas/disponibilidad`, `/citas` y acciones; y lo mismo bajo `/acreditado/citas`.
+
 ## [1.15.0] - 2026-11-09
 
 ### Agregado

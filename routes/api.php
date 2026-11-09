@@ -107,6 +107,17 @@ Route::prefix('v1')->group(function () {
         Route::post('/expedientes/{id}/seguimiento', [ExpedienteController::class, 'seguimiento']);   // super_admin: «En unidad de valuación» / «Firma»
         Route::post('/expedientes/{id}/cuv',         [ExpedienteController::class, 'cuv']);           // super_admin: CUV (16 dígitos) + foto/PDF opcional
 
+        // Citas: el asesor agenda para sus clientes; el super admin confirma, reagenda y cancela
+        Route::get('/citas/oficinas',           [\App\Http\Controllers\Api\V1\CitaController::class, 'oficinas']);
+        Route::get('/citas/disponibilidad',     [\App\Http\Controllers\Api\V1\CitaController::class, 'disponibilidad']);
+        Route::get('/citas',                    [\App\Http\Controllers\Api\V1\CitaController::class, 'index']);
+        Route::post('/citas',                   [\App\Http\Controllers\Api\V1\CitaController::class, 'store']);
+        Route::get('/citas/{id}',               [\App\Http\Controllers\Api\V1\CitaController::class, 'show']);
+        Route::put('/citas/{id}/confirmar',     [\App\Http\Controllers\Api\V1\CitaController::class, 'confirmar']);
+        Route::put('/citas/{id}/reagendar',     [\App\Http\Controllers\Api\V1\CitaController::class, 'reagendar']);
+        Route::put('/citas/{id}/cancelar',      [\App\Http\Controllers\Api\V1\CitaController::class, 'cancelar']);
+        Route::put('/citas/{id}/realizada',     [\App\Http\Controllers\Api\V1\CitaController::class, 'realizada']);
+
         // Bandeja de notificaciones (asesor, gestor, super_admin): solo lectura, nunca se borran
         Route::get('/notificaciones',                 [\App\Http\Controllers\Api\V1\NotificacionController::class, 'index']);
         Route::get('/notificaciones/no-leidas',       [\App\Http\Controllers\Api\V1\NotificacionController::class, 'noLeidas']);
@@ -215,6 +226,13 @@ Route::prefix('v1/acreditado')->group(function () {
         Route::get('/auth/me',                  [AcreditadoAuthController::class, 'me']);
         Route::put('/auth/perfil',              [AcreditadoAuthController::class, 'updatePerfil']);
         Route::put('/auth/codigo-asesor',       [AcreditadoAuthController::class, 'ligarCodigoAsesor']);
+
+        // Citas del acreditado con su asesor
+        Route::get('/citas/oficinas',         [\App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'oficinas']);
+        Route::get('/citas/disponibilidad',   [\App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'disponibilidad']);
+        Route::get('/citas',                  [\App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'index']);
+        Route::post('/citas',                 [\App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'store']);
+        Route::put('/citas/{id}/cancelar',    [\App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'cancelar']);
 
         // Bandeja de notificaciones del acreditado: solo lectura
         Route::get('/notificaciones',             [\App\Http\Controllers\Api\V1\NotificacionController::class, 'index']);
