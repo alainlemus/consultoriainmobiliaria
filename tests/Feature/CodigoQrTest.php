@@ -295,6 +295,19 @@ class CodigoQrTest extends TestCase
         $this->assertSame(['K7M2PX'], $codigos);
     }
 
+    public function test_el_medio_por_defecto_es_todos_y_se_puede_separar_por_medio(): void
+    {
+        $this->assertSame('todos', array_key_first(CodigoQr::MEDIOS));
+        $this->assertSame('Todos los medios', CodigoQr::MEDIOS['todos']);
+
+        $qr = CodigoQr::create(['asesor_id' => $this->asesor->id, 'codigo' => 'TODO01', 'medio' => 'todos']);
+        $this->assertSame('Todos los medios', $qr->medio_label);
+
+        // El mismo asesor puede tener otro QR para medir un medio aparte (queda abierto a propósito)
+        CodigoQr::create(['asesor_id' => $this->asesor->id, 'codigo' => 'LONA01', 'medio' => 'lona']);
+        $this->assertSame(3, CodigoQr::where('asesor_id', $this->asesor->id)->count());
+    }
+
     public function test_generar_codigo_es_legible_y_unico(): void
     {
         $codigo = CodigoQr::generarCodigo();
