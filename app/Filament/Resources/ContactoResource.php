@@ -467,6 +467,16 @@ class ContactoResource extends Resource
                     ->label('Fecha')->dateTime('d M Y H:i')->sortable(),
             ])
             ->filters([
+                Tables\Filters\TernaryFilter::make('conflicto')
+                    ->label('Conflicto de asesor')
+                    ->placeholder('Todos')
+                    ->trueLabel('Solo con conflicto')
+                    ->falseLabel('Sin conflicto')
+                    ->queries(
+                        true:  fn (Builder $q) => $q->whereNotNull('asesor_conflicto_id'),
+                        false: fn (Builder $q) => $q->whereNull('asesor_conflicto_id'),
+                    )
+                    ->visible(fn () => Auth::user()?->hasRole('super_admin')),
                 Tables\Filters\SelectFilter::make('estado_prospecto')
                     ->label('Estado')
                     ->options([
@@ -499,6 +509,28 @@ class ContactoResource extends Resource
                     ->visible(fn () => Auth::user()?->hasRole('super_admin')),
             ])
             ->actions([
+                // ── Conflicto: el acreditado llegó con el QR de otro asesor ──
+                \Filament\Actions\Action::make('resolver_conflicto')
+                    ->label('Resolver conflicto')
+                    ->icon('heroicon-o-exclamation-triangle')
+                    ->color('warning')
+                    ->visible(fn (Contacto $record) => Auth::user()?->hasRole('super_admin') && $record->asesor_conflicto_id)
+                    ->modalHeading('¿A quién corresponde este prospecto?')
+                    ->modalDescription(fn (Contacto $record) => "Está asignado a {$record->asesor?->name}, pero se registró en la app con el código QR de {$record->asesorConflicto?->name}.")
+                    ->form(fn (Contacto $record) => [
+                        Forms\Components\Radio::make('decision')
+                            ->label('Decisión')
+                            ->options([
+                                'mantener' => 'Mantener a ' . ($record->asesor?->name ?? 'el asesor actual'),
+                                'cambiar'  => 'Pasarlo a ' . ($record->asesorConflicto?->name ?? 'el asesor del QR'),
+                            ])
+                            ->default('mantener')
+                            ->required(),
+                    ])
+                    ->action(function (Contacto $record, array $data) {
+                        app(\App\Services\AsignacionAsesorQr::class)->resolverConflicto($record, $data['decision']);
+                        \Filament\Notifications\Notification::make()->title('Conflicto resuelto.')->success()->send();
+                    }),
                 // ── Acción principal del asesor: iniciar gestión ──────────
                 \Filament\Actions\Action::make('enviar_dueno')
                     ->label('Iniciar expediente')

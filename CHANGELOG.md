@@ -13,6 +13,17 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.13.0] - 2026-11-09
+
+### Agregado
+- El acreditado que se registró sin código puede ligar después su «código de asesor» desde la app (`PUT /api/v1/acreditado/auth/codigo-asesor`), solo si aún no tiene asesor.
+- El asesor recibe aviso (push y panel) cuando alguien crea su cuenta con su código QR, aunque todavía no pida asesoría. Nuevo `GET /api/v1/acreditados-qr` con sus registrados y en qué paso van (solo registrado, pidió asesoría, con expediente).
+- El payload del acreditado incluye el teléfono de su asesor para llamar o escribir por WhatsApp desde la app.
+- Conflicto de asesor (prospecto con asesor que se registra con el QR de otro): queda marcado en el prospecto, los super_admin reciben aviso y lo resuelven desde Prospectos → «Resolver conflicto», con filtro «Conflicto de asesor».
+- Tiempo de respuesta: se guarda cuándo el prospecto deja de estar en «nuevo». «Rendimiento de QR» muestra respuesta media en horas y prospectos sin atender por asesor y por medio.
+- Alerta diaria (9 AM) al asesor y a los super_admin por prospectos asignados que siguen en «nuevo» después de 24 h; se repite cada 2 días mientras sigan así.
+- Acreditados en el panel: columnas «Asesor (QR)» y «Seguimiento», filtros por asesor y por «solo registrado / pidió asesoría».
+
 ## [1.12.3] - 2026-11-09
 
 ### Cambiado

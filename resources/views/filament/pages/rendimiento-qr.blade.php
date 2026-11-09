@@ -11,13 +11,15 @@
     @endphp
 
     {{-- KPIs del rango --}}
-    <div style="display:grid; grid-template-columns: repeat(5,1fr); gap:16px;">
+    <div style="display:grid; grid-template-columns: repeat(7,1fr); gap:12px;">
         @foreach([
-            ['label'=>'Escaneos',    'value'=>$t['escaneos'],          'color'=>'#B8960C', 'icon'=>'🔳'],
-            ['label'=>'Registros',   'value'=>$t['registros'],         'color'=>'#0e7490', 'icon'=>'📱'],
-            ['label'=>'Solicitudes', 'value'=>$t['solicitudes'],       'color'=>'#7e22ce', 'icon'=>'👥'],
-            ['label'=>'Expedientes', 'value'=>$t['expedientes'],       'color'=>'#15803d', 'icon'=>'📁'],
-            ['label'=>'Conversión',  'value'=>$t['conversion'] . '%',  'color'=>'#1a1a1a', 'icon'=>'🎯'],
+            ['label'=>'Escaneos',        'value'=>$t['escaneos'],          'color'=>'#B8960C', 'icon'=>'🔳'],
+            ['label'=>'Registros',       'value'=>$t['registros'],         'color'=>'#0e7490', 'icon'=>'📱'],
+            ['label'=>'Solicitudes',     'value'=>$t['solicitudes'],       'color'=>'#7e22ce', 'icon'=>'👥'],
+            ['label'=>'Expedientes',     'value'=>$t['expedientes'],       'color'=>'#15803d', 'icon'=>'📁'],
+            ['label'=>'Conversión',      'value'=>$t['conversion'] . '%',  'color'=>'#1a1a1a', 'icon'=>'🎯'],
+            ['label'=>'Respuesta media', 'value'=>$t['respuesta_horas'] === null ? '—' : $t['respuesta_horas'] . ' h', 'color'=>'#0e7490', 'icon'=>'⏱'],
+            ['label'=>'Sin atender',     'value'=>$t['sin_atender'],       'color'=>$t['sin_atender'] > 0 ? '#b91c1c' : '#9ca3af', 'icon'=>'⏰'],
         ] as $kpi)
         <div style="background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:18px 16px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.06);">
             <div style="font-size:22px;">{{ $kpi['icon'] }}</div>
@@ -27,7 +29,7 @@
         @endforeach
     </div>
     <p style="font-size:12px; color:#6b7280; margin-top:-8px;">
-        Conversión = expedientes ÷ escaneos. Cada paso cuenta por su propia fecha: una lona pegada hace un mes sigue sumando expedientes hoy. {{ $t['qrs'] }} QR en el filtro.
+        Conversión = expedientes ÷ escaneos. Respuesta media = horas entre la solicitud y el primer contacto del asesor. Sin atender = prospectos en «nuevo» con más de 24 h. Cada paso cuenta por su propia fecha: una lona pegada hace un mes sigue sumando expedientes hoy. {{ $t['qrs'] }} QR en el filtro.
     </p>
 
     {{-- Gráfica semanal: la clave cambia con los filtros para que se vuelva a montar --}}
@@ -41,7 +43,7 @@
         };
     @endphp
 
-    <div style="display:grid; grid-template-columns: 3fr 2fr; gap:16px;">
+    <div style="display:grid; grid-template-columns: 1fr; gap:16px;">
         @foreach([['Por asesor', 'Asesor', $porAsesor], ['Por medio', 'Medio', $porMedio]] as [$titulo, $primera, $filas])
             @php $s = $tabla($filas, $primera); @endphp
             <div style="background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06);">
@@ -56,6 +58,8 @@
                             <th style="{{ $s['th'] }}">Solicitudes</th>
                             <th style="{{ $s['th'] }}">Expedientes</th>
                             <th style="{{ $s['th'] }}">Conv.</th>
+                            <th style="{{ $s['th'] }}">Respuesta</th>
+                            <th style="{{ $s['th'] }}">Sin atender</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -68,9 +72,11 @@
                                 <td style="{{ $s['td'] }}">{{ $f['solicitudes'] }}</td>
                                 <td style="{{ $s['td'] }} font-weight:700; color:{{ $f['expedientes'] > 0 ? '#15803d' : '#9ca3af' }};">{{ $f['expedientes'] }}</td>
                                 <td style="{{ $s['td'] }}">{{ $f['conversion'] }}%</td>
+                                <td style="{{ $s['td'] }}">{{ $f['respuesta_horas'] === null ? '—' : $f['respuesta_horas'] . ' h' }}</td>
+                                <td style="{{ $s['td'] }} font-weight:700; color:{{ $f['sin_atender'] > 0 ? '#b91c1c' : '#9ca3af' }};">{{ $f['sin_atender'] }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" style="padding:24px; text-align:center; color:#9ca3af;">Sin QR en este filtro.</td></tr>
+                            <tr><td colspan="9" style="padding:24px; text-align:center; color:#9ca3af;">Sin QR en este filtro.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

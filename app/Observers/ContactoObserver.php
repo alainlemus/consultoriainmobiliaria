@@ -19,6 +19,10 @@ class ContactoObserver
         if (empty($contacto->fecha_primer_contacto)) {
             $contacto->fecha_primer_contacto = now()->toDateString();
         }
+        // Nace ya contactado (el asesor lo capturó en campo): la respuesta fue inmediata.
+        if (($contacto->estado_prospecto ?? 'nuevo') !== 'nuevo' && empty($contacto->contactado_at)) {
+            $contacto->contactado_at = now();
+        }
     }
 
     /**
@@ -64,7 +68,12 @@ class ContactoObserver
                 'descartado'        => 'atendido',
             ];
             $nuevoEstado = $map[$contacto->estado_prospecto] ?? 'en_proceso';
-            Contacto::withoutEvents(fn () => $contacto->updateQuietly(['estado' => $nuevoEstado]));
+            $cambios     = ['estado' => $nuevoEstado];
+            // Primera vez que sale de «nuevo»: queda el tiempo de respuesta del asesor.
+            if ($contacto->estado_prospecto !== 'nuevo' && ! $contacto->contactado_at) {
+                $cambios['contactado_at'] = now();
+            }
+            Contacto::withoutEvents(fn () => $contacto->updateQuietly($cambios));
         }
 
         // Notificar al asesor si cambia la asignación

@@ -155,8 +155,9 @@ class Acreditado extends Authenticatable
             'tiene_expediente'  => $this->expedientes()->exists(),
             // Asesor ligado por código QR al registrarse (null si llegó sin código)
             'asesor'            => $this->asesor_id ? [
-                'id'     => $this->asesor_id,
-                'nombre' => $this->asesor?->name,
+                'id'       => $this->asesor_id,
+                'nombre'   => $this->asesor?->name,
+                'telefono' => $this->asesor?->telefono,
             ] : null,
             // Ya pidió asesoría desde la app: está registrado como prospecto y un asesor lo contactará.
             'solicitud_enviada' => $this->solicitudes()->exists(),

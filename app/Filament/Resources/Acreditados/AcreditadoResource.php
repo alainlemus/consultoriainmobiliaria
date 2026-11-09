@@ -171,6 +171,29 @@ class AcreditadoResource extends Resource
                     )
                     ->alignCenter(),
 
+                Tables\Columns\TextColumn::make('asesor.name')
+                    ->label('Asesor (QR)')
+                    ->placeholder('Sin asesor')
+                    ->sortable()
+                    ->toggleable()
+                    ->description(fn ($record) => $record->codigoQr?->codigo),
+
+                Tables\Columns\TextColumn::make('seguimiento')
+                    ->label('Seguimiento')
+                    ->badge()
+                    ->getStateUsing(fn ($record) => $record->expedientes_count > 0 ? 'expediente' : ($record->contacto_id ? 'solicitud' : 'sin_solicitud'))
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'expediente'    => 'Con expediente',
+                        'solicitud'     => 'Pidió asesoría',
+                        default         => 'Solo registrado',
+                    })
+                    ->color(fn ($state) => match ($state) {
+                        'expediente' => 'success',
+                        'solicitud'  => 'info',
+                        default      => 'warning',
+                    })
+                    ->tooltip('«Solo registrado»: creó su cuenta pero aún no pide asesoría; conviene contactarlo.'),
+
                 Tables\Columns\TextColumn::make('expedientes_count')
                     ->label('Expediente')
                     ->counts('expedientes')
@@ -201,6 +224,20 @@ class AcreditadoResource extends Resource
                     ->label('Estado')
                     ->trueLabel('Solo activos')
                     ->falseLabel('Solo desactivados'),
+
+                Tables\Filters\TernaryFilter::make('solicitud')
+                    ->label('Seguimiento')
+                    ->placeholder('Todos')
+                    ->trueLabel('Ya pidió asesoría')
+                    ->falseLabel('Solo registrado (sin solicitud)')
+                    ->queries(
+                        true:  fn (Builder $q) => $q->whereNotNull('contacto_id'),
+                        false: fn (Builder $q) => $q->whereNull('contacto_id'),
+                    ),
+
+                Tables\Filters\SelectFilter::make('asesor_id')
+                    ->label('Asesor (QR)')
+                    ->relationship('asesor', 'name'),
 
                 Tables\Filters\TernaryFilter::make('curp_verified_at')
                     ->label('Vinculación')
