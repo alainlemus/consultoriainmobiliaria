@@ -63,6 +63,9 @@ class AuthController extends Controller
         // Ligar al asesor del QR y avisarle (aún no pide asesoría; que lo contacte)
         if ($codigoQr) {
             app(AsignacionAsesorQr::class)->ligarAcreditado($acreditado, $codigoQr, $data['asesor_origen'] ?? 'codigo_manual');
+        } else {
+            // Sin código: si llenó el formulario del QR con este teléfono, ya tiene asesor
+            app(AsignacionAsesorQr::class)->ligarPorContactoExistente($acreditado);
         }
 
         // Install Referrer (Android): el escaneo ya no se puede cruzar por huella

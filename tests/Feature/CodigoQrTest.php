@@ -55,35 +55,26 @@ class CodigoQrTest extends TestCase
         Configuracion::set('play_store_url', 'https://play.google.com/store/apps/details?id=com.consultoriainmobiliaria.app');
     }
 
-    // ── Redirección ───────────────────────────────────────────────────────────
+    // ── Redirección: la liga cuenta el escaneo y manda al formulario ──────────
 
-    public function test_android_va_a_play_store_con_referrer_y_cuenta_el_escaneo(): void
+    public function test_android_cuenta_el_escaneo_y_va_al_formulario(): void
     {
-        $res = $this->withHeader('User-Agent', self::UA_ANDROID)->get('/a/K7M2PX');
-
-        $res->assertRedirect();
-        $destino = $res->headers->get('Location');
-        $this->assertStringStartsWith('https://play.google.com/store/apps/details?id=com.consultoriainmobiliaria.app&referrer=', $destino);
-        $this->assertStringContainsString(urlencode('codigo_asesor=K7M2PX'), $destino);
+        $this->withHeader('User-Agent', self::UA_ANDROID)->get('/a/K7M2PX')
+            ->assertRedirect(route('qr.formulario', ['codigo' => 'K7M2PX']));
 
         $this->assertDatabaseCount('escaneos_qr', 1);
         $this->assertDatabaseHas('escaneos_qr', ['codigo_qr_id' => $this->qr->id, 'plataforma' => 'android']);
     }
 
-    public function test_iphone_va_a_app_store(): void
+    public function test_iphone_y_computadora_tambien_van_al_formulario(): void
     {
-        $this->withHeader('User-Agent', self::UA_IPHONE)
-            ->get('/a/k7m2px')   // minúsculas: debe tolerarlas
-            ->assertRedirect('https://apps.apple.com/mx/app/ci/id123');
+        $this->withHeader('User-Agent', self::UA_IPHONE)->get('/a/k7m2px')   // minúsculas: debe tolerarlas
+            ->assertRedirect(route('qr.formulario', ['codigo' => 'K7M2PX']));
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (Macintosh) Chrome/120')->get('/a/K7M2PX')
+            ->assertRedirect(route('qr.formulario', ['codigo' => 'K7M2PX']));
 
         $this->assertDatabaseHas('escaneos_qr', ['plataforma' => 'ios']);
-    }
-
-    public function test_computadora_va_a_descargar_app_con_el_codigo(): void
-    {
-        $this->withHeader('User-Agent', 'Mozilla/5.0 (Macintosh) Chrome/120')
-            ->get('/a/K7M2PX')
-            ->assertRedirect(route('descargar.app', ['codigo' => 'K7M2PX']));
+        $this->assertDatabaseHas('escaneos_qr', ['plataforma' => 'otro']);
     }
 
     public function test_codigo_pausado_o_inexistente_no_cuenta_y_va_a_descargar_app(): void
@@ -93,18 +84,20 @@ class CodigoQrTest extends TestCase
         $this->withHeader('User-Agent', self::UA_ANDROID)->get('/a/K7M2PX')
             ->assertRedirect(route('descargar.app'));
         $this->get('/a/NOEXISTE')->assertRedirect(route('descargar.app'));
+        $this->get('/qr/K7M2PX')->assertNotFound();
 
         $this->assertDatabaseCount('escaneos_qr', 0);
     }
 
-    public function test_sin_tienda_configurada_va_a_descargar_app(): void
+    public function test_la_tienda_de_play_lleva_el_referrer_del_codigo(): void
     {
+        $url = $this->qr->urlPlayStore();
+        $this->assertStringStartsWith('https://play.google.com/store/apps/details?id=com.consultoriainmobiliaria.app&referrer=', $url);
+        $this->assertStringContainsString(urlencode('codigo_asesor=K7M2PX'), $url);
+        $this->assertSame('https://apps.apple.com/mx/app/ci/id123', CodigoQr::urlAppStore());
+
         Configuracion::set('play_store_url', 'https://google.com.mx');
-
-        $this->withHeader('User-Agent', self::UA_ANDROID)->get('/a/K7M2PX')
-            ->assertRedirect(route('descargar.app', ['codigo' => 'K7M2PX']));
-
-        $this->assertDatabaseCount('escaneos_qr', 1);
+        $this->assertNull($this->qr->fresh()->urlPlayStore());
     }
 
     // ── API pública: validar código ───────────────────────────────────────────

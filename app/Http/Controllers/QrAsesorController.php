@@ -12,16 +12,14 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 /**
  * QR por asesor para publicidad impresa.
  *
- *  - GET /a/{codigo}: registra el escaneo y manda a la tienda del celular
- *    (Play Store con `referrer` para la fase 2; App Store en iPhone). Si el
- *    código no existe o está pausado, va a la página pública de descarga.
+ *  - GET /a/{codigo}: registra el escaneo y manda al formulario de prospecto
+ *    (/qr/{codigo}) con el asesor ya puesto. Si el código no existe o está
+ *    pausado, va a la página pública de descarga.
  *  - Descargas (panel, autenticado): PNG y SVG listos para imprenta y un PDF
  *    con el código en texto grande por si no pueden escanear.
  */
 class QrAsesorController extends Controller
 {
-    private const URL_PLACEHOLDER = 'https://google.com.mx';
-
     public function redirigir(Request $request, string $codigo): RedirectResponse
     {
         $qr = CodigoQr::buscarActivo($codigo);
@@ -30,40 +28,17 @@ class QrAsesorController extends Controller
             return redirect()->route('descargar.app');
         }
 
-        $plataforma = EscaneoQr::plataformaDesde($request->userAgent());
-
         EscaneoQr::create([
             'codigo_qr_id' => $qr->id,
-            'plataforma'   => $plataforma,
+            'plataforma'   => EscaneoQr::plataformaDesde($request->userAgent()),
             'ip'           => $request->ip(),
             'user_agent'   => mb_substr((string) $request->userAgent(), 0, 500),
         ]);
 
-        $appStore  = (string) setting('app_store_url', self::URL_PLACEHOLDER);
-        $playStore = (string) setting('play_store_url', self::URL_PLACEHOLDER);
-
-        if ($plataforma === 'android' && $this->tiendaConfigurada($playStore)) {
-            // El Play Install Referrer entrega este `referrer` a la app en el
-            // primer arranque (fase 2): ahí se lee codigo_asesor sin que la
-            // persona teclee nada.
-            $referrer = http_build_query([
-                'utm_source'    => 'qr',
-                'utm_medium'    => $qr->medio,
-                'utm_campaign'  => $qr->codigo,
-                'codigo_asesor' => $qr->codigo,
-            ]);
-            $separador = str_contains($playStore, '?') ? '&' : '?';
-
-            return redirect()->away($playStore . $separador . 'referrer=' . urlencode($referrer));
-        }
-
-        if ($plataforma === 'ios' && $this->tiendaConfigurada($appStore)) {
-            return redirect()->away($appStore);
-        }
-
-        // Computadora, tienda sin configurar o navegador raro: la página de
-        // descarga muestra el código para que lo anoten.
-        return redirect()->route('descargar.app', ['codigo' => $qr->codigo]);
+        // El prospecto se captura en el navegador, en el momento del escaneo,
+        // con el código del asesor ya puesto: funciona igual en iPhone, Android
+        // y computadora, y no depende de que instale la app.
+        return redirect()->route('qr.formulario', ['codigo' => $qr->codigo]);
     }
 
     public function png(CodigoQr $codigoQr)
@@ -112,11 +87,6 @@ class QrAsesorController extends Controller
         ])->setPaper('letter', 'portrait');
 
         return $pdf->download($this->nombreArchivo($codigoQr, 'pdf'));
-    }
-
-    private function tiendaConfigurada(string $url): bool
-    {
-        return $url !== '' && $url !== self::URL_PLACEHOLDER;
     }
 
     private function nombreArchivo(CodigoQr $qr, string $ext): string

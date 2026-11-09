@@ -13,6 +13,7 @@ use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\FovisssteController;
 use App\Http\Controllers\PaginaSeoController;
 use App\Http\Controllers\QrAsesorController;
+use App\Http\Controllers\QrProspectoController;
 use App\Http\Controllers\EnlacesAppController;
 use App\Models\UbicacionFoto;
 use Illuminate\Support\Facades\Storage;
@@ -85,6 +86,12 @@ Route::get('/a/{codigo}', [QrAsesorController::class, 'redirigir'])->name('qr.as
 // Para que la liga del QR abra la app ya instalada (iOS universal links / Android app links)
 Route::get('/.well-known/apple-app-site-association', [EnlacesAppController::class, 'apple'])->name('enlaces.apple');
 Route::get('/.well-known/assetlinks.json',            [EnlacesAppController::class, 'android'])->name('enlaces.android');
+
+// Formulario del prospecto al que manda el QR (sin instalar nada) y su página de gracias
+Route::get('/qr/{codigo}',          [QrProspectoController::class, 'formulario'])->name('qr.formulario');
+Route::post('/qr/{codigo}',         [QrProspectoController::class, 'store'])->middleware('throttle:5,1')->name('qr.formulario.store');
+Route::get('/qr/{codigo}/gracias',  [QrProspectoController::class, 'gracias'])->name('qr.gracias');
+Route::post('/qr/{codigo}/cuenta',  [QrProspectoController::class, 'cuenta'])->middleware('throttle:5,1')->name('qr.cuenta');
 
 // Descargas del QR para imprenta (panel, autenticado)
 Route::middleware(['web', 'auth'])->prefix('admin/qr-asesor')->name('qr.asesor.')->group(function () {

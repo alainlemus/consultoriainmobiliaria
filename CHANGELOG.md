@@ -13,6 +13,17 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.14.0] - 2026-11-09
+
+### Cambiado
+- La liga del QR impreso ya no manda a la tienda: cuenta el escaneo y abre un formulario corto en el navegador (`/qr/{codigo}`) con el asesor ya puesto. Funciona igual en iPhone, Android y computadora, y captura al prospecto en el momento del escaneo aunque nunca instale la app. Atribución exacta sin adivinar.
+- Etiqueta «Solicitudes» pasa a «Prospectos» en Códigos QR y Rendimiento de QR (incluye los del formulario y los de la app).
+
+### Agregado
+- Formulario del QR: nombre, teléfono, crédito de interés, municipio y correo opcionales, aviso de privacidad, honeypot y límite de envíos. Crea el prospecto asignado al asesor con origen «QR impreso» (o lo reutiliza si el teléfono ya existía; con otro asesor marca conflicto).
+- Página de gracias con WhatsApp y llamada al asesor, botones de descarga (Play con `referrer`) y opción de crear la contraseña para entrar a la app ya ligado al asesor y a su prospecto.
+- Al registrarse en la app sin código, si ya existe un prospecto con el mismo teléfono o CURP con asesor, la cuenta se liga sola a él.
+
 ## [1.13.0] - 2026-11-09
 
 ### Agregado

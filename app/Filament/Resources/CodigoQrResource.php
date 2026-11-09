@@ -172,10 +172,10 @@ class CodigoQrResource extends Resource
                     ->tooltip('Cuentas creadas en la app con este código. "Detectados solos": el código llegó sin teclearlo (Play Store o cruce por huella).'),
 
                 Tables\Columns\TextColumn::make('contactos_count')
-                    ->label('Solicitudes')
+                    ->label('Prospectos')
                     ->sortable()
                     ->alignCenter()
-                    ->tooltip('Prospectos que pidieron asesoría'),
+                    ->tooltip('Prospectos que llegaron por este QR (formulario web o solicitud desde la app)'),
 
                 Tables\Columns\TextColumn::make('expedientes_count')
                     ->label('Expedientes')

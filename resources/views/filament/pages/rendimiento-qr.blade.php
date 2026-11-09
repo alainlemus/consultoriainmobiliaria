@@ -15,7 +15,7 @@
         @foreach([
             ['label'=>'Escaneos',        'value'=>$t['escaneos'],          'color'=>'#B8960C', 'icon'=>'🔳'],
             ['label'=>'Registros',       'value'=>$t['registros'],         'color'=>'#0e7490', 'icon'=>'📱'],
-            ['label'=>'Solicitudes',     'value'=>$t['solicitudes'],       'color'=>'#7e22ce', 'icon'=>'👥'],
+            ['label'=>'Prospectos',      'value'=>$t['solicitudes'],       'color'=>'#7e22ce', 'icon'=>'👥'],
             ['label'=>'Expedientes',     'value'=>$t['expedientes'],       'color'=>'#15803d', 'icon'=>'📁'],
             ['label'=>'Conversión',      'value'=>$t['conversion'] . '%',  'color'=>'#1a1a1a', 'icon'=>'🎯'],
             ['label'=>'Respuesta media', 'value'=>$t['respuesta_horas'] === null ? '—' : $t['respuesta_horas'] . ' h', 'color'=>'#0e7490', 'icon'=>'⏱'],
@@ -55,7 +55,7 @@
                             <th style="{{ $s['th'] }}">QR</th>
                             <th style="{{ $s['th'] }}">Escaneos</th>
                             <th style="{{ $s['th'] }}">Registros</th>
-                            <th style="{{ $s['th'] }}">Solicitudes</th>
+                            <th style="{{ $s['th'] }}">Prospectos</th>
                             <th style="{{ $s['th'] }}">Expedientes</th>
                             <th style="{{ $s['th'] }}">Conv.</th>
                             <th style="{{ $s['th'] }}">Respuesta</th>

@@ -101,6 +101,28 @@ class CodigoQr extends Model
         return $codigo;
     }
 
+    private const URL_TIENDA_PLACEHOLDER = 'https://google.com.mx';
+
+    /** Play Store con `referrer` del código (lo lee la app al instalar), o null si la tienda no está configurada. */
+    public function urlPlayStore(): ?string
+    {
+        $base = (string) setting('play_store_url', self::URL_TIENDA_PLACEHOLDER);
+        if ($base === '' || $base === self::URL_TIENDA_PLACEHOLDER) return null;
+
+        $referrer = http_build_query([
+            'utm_source' => 'qr', 'utm_medium' => $this->medio, 'utm_campaign' => $this->codigo, 'codigo_asesor' => $this->codigo,
+        ]);
+
+        return $base . (str_contains($base, '?') ? '&' : '?') . 'referrer=' . urlencode($referrer);
+    }
+
+    /** App Store, o null si la tienda no está configurada. */
+    public static function urlAppStore(): ?string
+    {
+        $url = (string) setting('app_store_url', self::URL_TIENDA_PLACEHOLDER);
+        return ($url === '' || $url === self::URL_TIENDA_PLACEHOLDER) ? null : $url;
+    }
+
     /** Liga corta que va dentro del QR. */
     public function getUrlAttribute(): string
     {

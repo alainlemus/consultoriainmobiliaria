@@ -87,6 +87,75 @@ class AsignacionAsesorQr
     }
 
     /**
+     * Prospecto capturado en el formulario web del QR (antes de instalar la app).
+     * Si el teléfono ya existe, se reutiliza el prospecto (sin asesor: se asigna;
+     * con otro: conflicto). Devuelve el prospecto resultante.
+     *
+     * @param array{nombre:string, telefono:string, email?:?string, municipio?:?string, servicio?:?string} $datos
+     */
+    public function prospectoDesdeFormulario(CodigoQr $qr, array $datos): Contacto
+    {
+        $existente = Contacto::buscarDuplicado($datos['telefono'], null)
+            ?? (! empty($datos['email']) ? Contacto::where('email', $datos['email'])->first() : null);
+
+        if ($existente) {
+            $existente->update(array_filter([
+                'email'                 => $datos['email'] ?? null,
+                'municipio_uso_credito' => $datos['municipio'] ?? null,
+            ]));
+            if (! $existente->asesor_id) {
+                $existente->update(['asesor_id' => $qr->asesor_id, 'codigo_qr_id' => $qr->id]);
+            } elseif ((int) $existente->asesor_id !== (int) $qr->asesor_id && (int) $existente->asesor_conflicto_id !== (int) $qr->asesor_id) {
+                $nota = "⚠ Llenó el formulario del QR {$qr->codigo} de {$qr->asesor?->name}, pero ya tenía asesor asignado. Revisar a quién corresponde.";
+                $existente->update([
+                    'asesor_conflicto_id'    => $qr->asesor_id,
+                    'conflicto_detectado_at' => now(),
+                    'notas'                  => trim(($existente->notas ? $existente->notas . "\n\n" : '') . $nota),
+                ]);
+                User::role('super_admin')->get()
+                    ->each(fn (User $admin) => $admin->notify(new ConflictoAsesorProspecto($existente->fresh(['asesor', 'asesorConflicto']))));
+            }
+            return $existente;
+        }
+
+        // El ContactoObserver avisa al asesor (ProspectoAsignado) y a los admins.
+        return Contacto::create([
+            'nombre'                => $datos['nombre'],
+            'telefono'              => $datos['telefono'],
+            'email'                 => $datos['email'] ?? null,
+            'servicio'              => $datos['servicio'] ?? 'FOVISSSTE',
+            'mensaje'               => 'Formulario del QR impreso.',
+            'municipio_uso_credito' => $datos['municipio'] ?? null,
+            'origen'                => 'qr',
+            'estado_prospecto'      => 'nuevo',
+            'asesor_id'             => $qr->asesor_id,
+            'codigo_qr_id'          => $qr->id,
+        ]);
+    }
+
+    /**
+     * Al registrarse en la app sin código: si ya existe un prospecto con el
+     * mismo teléfono (o CURP) y tiene asesor, la cuenta se liga a él.
+     * Cubre a quien llenó el formulario del QR y luego instaló la app.
+     */
+    public function ligarPorContactoExistente(Acreditado $acreditado): ?Contacto
+    {
+        if ($acreditado->asesor_id) return null;
+
+        $contacto = Contacto::buscarDuplicado($acreditado->telefono ?: null, $acreditado->curp ?: null);
+        if (! $contacto || ! $contacto->asesor_id) return null;
+
+        $acreditado->forceFill([
+            'asesor_id'     => $contacto->asesor_id,
+            'codigo_qr_id'  => $contacto->codigo_qr_id,
+            'asesor_origen' => 'telefono',
+            'contacto_id'   => $acreditado->contacto_id ?: $contacto->id,
+        ])->save();
+
+        return $contacto;
+    }
+
+    /**
      * Resuelve el conflicto desde el panel: 'mantener' deja al asesor actual,
      * 'cambiar' pasa el prospecto (y la cuenta del acreditado) al asesor del QR.
      */

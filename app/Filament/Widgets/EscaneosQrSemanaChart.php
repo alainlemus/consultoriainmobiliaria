@@ -33,7 +33,7 @@ class EscaneosQrSemanaChart extends ChartWidget
             'datasets' => [
                 ['label' => 'Escaneos',    'data' => $s['series']['escaneos'],    'backgroundColor' => '#B8960C'],
                 ['label' => 'Registros',   'data' => $s['series']['registros'],   'backgroundColor' => '#0e7490'],
-                ['label' => 'Solicitudes', 'data' => $s['series']['solicitudes'], 'backgroundColor' => '#7e22ce'],
+                ['label' => 'Prospectos',  'data' => $s['series']['solicitudes'], 'backgroundColor' => '#7e22ce'],
                 ['label' => 'Expedientes', 'data' => $s['series']['expedientes'], 'backgroundColor' => '#15803d'],
             ],
         ];
