@@ -13,6 +13,14 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.16.1] - 2026-11-09
+
+### Agregado
+- CRM → Citas: calendario mensual arriba de la lista, con las citas por día coloreadas por estado y acceso directo a cada una. El asesor ve solo las suyas.
+
+### Cambiado
+- Expediente en el panel: los botones del super admin aparecen según el paso del seguimiento. «Enviar a gestor» se deshabilita hasta validar todos los documentos; «Enviado a unidad de valuación» sale en «Trámites gestionados» (o en «Trámites en gestión» si no hay gestor); «Registrar CUV» en «En unidad de valuación»; «Marcar firma» en «Recurso en gestión». Junto al folio se muestra el paso actual.
+
 ## [1.16.0] - 2026-11-09
 
 ### Agregado
