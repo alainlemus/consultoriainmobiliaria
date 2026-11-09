@@ -177,6 +177,31 @@ class CitasTest extends TestCase
         $this->assertSame(2, $recordatorios());
     }
 
+    public function test_el_formulario_de_cobertura_muestra_dias_con_nombre_y_horario_por_defecto(): void
+    {
+        foreach (['ViewAny:Cobertura', 'View:Cobertura', 'Update:Cobertura'] as $p) {
+            $this->admin->givePermissionTo(\Spatie\Permission\Models\Permission::findOrCreate($p, 'web'));
+        }
+        $this->actingAs($this->admin);
+
+        // Oficina sin horario configurado (creada antes de las citas)
+        \Livewire\Livewire::test(\App\Filament\Resources\CoberturaResource\Pages\EditCobertura::class, ['record' => $this->pachuca->id])
+            ->assertFormSet(['horario_citas.inicio' => '09:00', 'horario_citas.fin' => '17:00', 'horario_citas.duracion_min' => 60, 'horario_citas.dias' => ['lun', 'mar', 'mie', 'jue', 'vie']])
+            ->assertSee('Miércoles')
+            ->fillForm(['horario_citas.dias' => ['lun', 'sab'], 'horario_citas.inicio' => '10:00'])
+            ->call('save')->assertHasNoFormErrors();
+
+        $h = $this->pachuca->fresh()->horario();
+        $this->assertSame([1, 6], $h['dias'], 'se guardan como claves y se leen en ISO');
+        $this->assertSame('10:00', substr($h['inicio'], 0, 5));
+
+        // La app recibe los días en ISO y la disponibilidad respeta el sábado
+        $of = collect($this->actingAs($this->asesor, 'sanctum')->getJson('/api/v1/citas/oficinas')->json('data'))->firstWhere('id', $this->pachuca->id);
+        $this->assertSame([1, 6], $of['dias']);
+        $this->assertNotEmpty($this->actingAs($this->asesor, 'sanctum')->getJson('/api/v1/citas/disponibilidad?cobertura_id=' . $this->pachuca->id . '&fecha=2026-11-14')->json('data'), 'sábado atiende');
+        $this->assertSame([], $this->actingAs($this->asesor, 'sanctum')->getJson('/api/v1/citas/disponibilidad?cobertura_id=' . $this->pachuca->id . '&fecha=2026-11-11')->json('data'), 'miércoles no');
+    }
+
     public function test_el_panel_lista_las_citas_para_el_admin(): void
     {
         foreach (['ViewAny:Cita', 'View:Cita', 'Update:Cita'] as $p) {

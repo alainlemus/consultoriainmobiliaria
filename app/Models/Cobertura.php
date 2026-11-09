@@ -38,9 +38,31 @@ class Cobertura extends Model
         return $query->where('activo', true)->where('citas_activas', true)->orderBy('orden');
     }
 
+    /** Días como los guarda el formulario del panel (claves de texto) → día ISO. */
+    public const DIAS = ['lun' => 1, 'mar' => 2, 'mie' => 3, 'jue' => 4, 'vie' => 5, 'sab' => 6, 'dom' => 7];
+
+    /** Horario efectivo: lo configurado completado con los valores por defecto; `dias` siempre en ISO (1 = lunes). */
     public function horario(): array
     {
-        return array_merge(self::HORARIO_DEFAULT, array_filter((array) $this->horario_citas, fn ($v) => $v !== null && $v !== ''));
+        $h = array_merge(self::HORARIO_DEFAULT, array_filter((array) $this->horario_citas, fn ($v) => $v !== null && $v !== '' && $v !== []));
+        $h['dias'] = self::diasIso($h['dias']);
+
+        return $h;
+    }
+
+    /** Acepta ['lun','mar'] o [1,2] y devuelve [1,2]. */
+    public static function diasIso(array $dias): array
+    {
+        return collect($dias)
+            ->map(fn ($d) => is_numeric($d) ? (int) $d : (self::DIAS[$d] ?? null))
+            ->filter()->unique()->sort()->values()->all();
+    }
+
+    /** Inverso: [1,2] → ['lun','mar'], para pintar las casillas del panel. */
+    public static function diasClave(array $dias): array
+    {
+        $inv = array_flip(self::DIAS);
+        return collect($dias)->map(fn ($d) => is_numeric($d) ? ($inv[(int) $d] ?? null) : $d)->filter()->values()->all();
     }
 
     public function citas()
