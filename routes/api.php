@@ -88,6 +88,9 @@ Route::prefix('v1')->group(function () {
         Route::delete('/auth/biometric-token',     [AuthController::class, 'revokeBiometricToken']);
         Route::post('/auth/session-from-biometric', [AuthController::class, 'sessionFromBiometric']);
 
+        // Cuentas de la app ligadas a mi QR (registrados, con o sin solicitud)
+        Route::get('/acreditados-qr', [\App\Http\Controllers\Api\V1\AcreditadoQrController::class, 'index']);
+
         // Prospectos / Contactos
         Route::get('/contactos',                              [ContactoController::class, 'index']);
         Route::post('/contactos',                             [ContactoController::class, 'store']);
@@ -202,6 +205,7 @@ Route::prefix('v1/acreditado')->group(function () {
         Route::post('/auth/logout',             [AcreditadoAuthController::class, 'logout']);
         Route::get('/auth/me',                  [AcreditadoAuthController::class, 'me']);
         Route::put('/auth/perfil',              [AcreditadoAuthController::class, 'updatePerfil']);
+        Route::put('/auth/codigo-asesor',       [AcreditadoAuthController::class, 'ligarCodigoAsesor']);
         Route::post('/auth/perfil/foto',        [AcreditadoAuthController::class, 'subirFoto']);
         Route::put('/auth/password',            [AcreditadoAuthController::class, 'cambiarPassword']);
         Route::post('/auth/biometric-token',    [AcreditadoAuthController::class, 'biometricToken']);

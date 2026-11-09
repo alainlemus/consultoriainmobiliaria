@@ -12,7 +12,8 @@ class Contacto extends Model
     protected $fillable = [
         'nombre', 'telefono', 'email', 'servicio', 'mensaje', 'estado', 'notas',
         // CRM
-        'asesor_id', 'codigo_qr_id', 'origen', 'curp', 'nss', 'foto',
+        'asesor_id', 'codigo_qr_id', 'asesor_conflicto_id', 'conflicto_detectado_at', 'contactado_at', 'alerta_sin_atender_at',
+        'origen', 'curp', 'nss', 'foto',
         // Escuela vinculada (maestros FOVISSSTE)
         'escuela_id',
         // Precalificación (FOVISSSTE / INFONAVIT)
@@ -32,6 +33,9 @@ class Contacto extends Model
     protected $casts = [
         'fecha_nacimiento'      => 'date',
         'fecha_primer_contacto' => 'date',
+        'contactado_at'          => 'datetime',
+        'alerta_sin_atender_at'  => 'datetime',
+        'conflicto_detectado_at' => 'datetime',
         'fecha_envio_dueno'     => 'datetime',
         'tiene_discapacidad'    => 'boolean',
     ];
@@ -57,6 +61,12 @@ class Contacto extends Model
     public function asesor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'asesor_id');
+    }
+
+    /** Asesor del QR con el que el acreditado se registró cuando el prospecto ya tenía otro (conflicto por resolver) */
+    public function asesorConflicto(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'asesor_conflicto_id');
     }
 
     /** QR impreso por el que llegó (cuando origen = 'qr') */

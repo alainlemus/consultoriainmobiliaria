@@ -13,6 +13,28 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.14.0] - 2026-11-09
+
+### Cambiado
+- La liga del QR impreso ya no manda a la tienda: cuenta el escaneo y abre un formulario corto en el navegador (`/qr/{codigo}`) con el asesor ya puesto. Funciona igual en iPhone, Android y computadora, y captura al prospecto en el momento del escaneo aunque nunca instale la app. Atribución exacta sin adivinar.
+- Etiqueta «Solicitudes» pasa a «Prospectos» en Códigos QR y Rendimiento de QR (incluye los del formulario y los de la app).
+
+### Agregado
+- Formulario del QR: nombre, teléfono, crédito de interés, municipio y correo opcionales, aviso de privacidad, honeypot y límite de envíos. Crea el prospecto asignado al asesor con origen «QR impreso» (o lo reutiliza si el teléfono ya existía; con otro asesor marca conflicto).
+- Página de gracias con WhatsApp y llamada al asesor, botones de descarga (Play con `referrer`) y opción de crear la contraseña para entrar a la app ya ligado al asesor y a su prospecto.
+- Al registrarse en la app sin código, si ya existe un prospecto con el mismo teléfono o CURP con asesor, la cuenta se liga sola a él.
+
+## [1.13.0] - 2026-11-09
+
+### Agregado
+- El acreditado que se registró sin código puede ligar después su «código de asesor» desde la app (`PUT /api/v1/acreditado/auth/codigo-asesor`), solo si aún no tiene asesor.
+- El asesor recibe aviso (push y panel) cuando alguien crea su cuenta con su código QR, aunque todavía no pida asesoría. Nuevo `GET /api/v1/acreditados-qr` con sus registrados y en qué paso van (solo registrado, pidió asesoría, con expediente).
+- El payload del acreditado incluye el teléfono de su asesor para llamar o escribir por WhatsApp desde la app.
+- Conflicto de asesor (prospecto con asesor que se registra con el QR de otro): queda marcado en el prospecto, los super_admin reciben aviso y lo resuelven desde Prospectos → «Resolver conflicto», con filtro «Conflicto de asesor».
+- Tiempo de respuesta: se guarda cuándo el prospecto deja de estar en «nuevo». «Rendimiento de QR» muestra respuesta media en horas y prospectos sin atender por asesor y por medio.
+- Alerta diaria (9 AM) al asesor y a los super_admin por prospectos asignados que siguen en «nuevo» después de 24 h; se repite cada 2 días mientras sigan así.
+- Acreditados en el panel: columnas «Asesor (QR)» y «Seguimiento», filtros por asesor y por «solo registrado / pidió asesoría».
+
 ## [1.12.3] - 2026-11-09
 
 ### Cambiado

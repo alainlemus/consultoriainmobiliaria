@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Acreditado;
 use App\Http\Controllers\Controller;
 use App\Models\Acreditado;
 use App\Models\CodigoQr;
+use App\Services\AsignacionAsesorQr;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -57,10 +58,15 @@ class AuthController extends Controller
             'curp'     => ! empty($data['curp']) ? strtoupper($data['curp']) : null,
             'telefono' => $data['telefono'] ?? null,
             'nss'      => $data['nss'] ?? null,
-            'asesor_id'     => $codigoQr?->asesor_id,
-            'codigo_qr_id'  => $codigoQr?->id,
-            'asesor_origen' => $codigoQr ? ($data['asesor_origen'] ?? 'codigo_manual') : null,
         ]);
+
+        // Ligar al asesor del QR y avisarle (aún no pide asesoría; que lo contacte)
+        if ($codigoQr) {
+            app(AsignacionAsesorQr::class)->ligarAcreditado($acreditado, $codigoQr, $data['asesor_origen'] ?? 'codigo_manual');
+        } else {
+            // Sin código: si llenó el formulario del QR con este teléfono, ya tiene asesor
+            app(AsignacionAsesorQr::class)->ligarPorContactoExistente($acreditado);
+        }
 
         // Install Referrer (Android): el escaneo ya no se puede cruzar por huella
         // con otro celular. Se marca el más reciente sin atribuir de ese QR.
@@ -106,6 +112,36 @@ class AuthController extends Controller
                 'id'     => $codigoQr->asesor_id,
                 'nombre' => $codigoQr->asesor?->name,
             ],
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PUT /v1/acreditado/auth/codigo-asesor  (con token)
+    // Quien se registró sin código y después recibe una tarjeta lo liga aquí.
+    // Solo si aún no tiene asesor: el asesor no se cambia desde la app.
+    // ─────────────────────────────────────────────────────────────────────────
+    public function ligarCodigoAsesor(Request $request): JsonResponse
+    {
+        $data = $request->validate(['codigo_asesor' => ['required', 'string', 'max:20']]);
+        $acreditado = $request->user();
+
+        if ($acreditado->asesor_id) {
+            $nombre = $acreditado->asesor?->name ?? 'un asesor';
+            return response()->json(['message' => "Ya tienes asesor asignado ({$nombre}). Si necesitas cambiarlo, pídeselo a tu asesor."], 422);
+        }
+
+        $codigoQr = CodigoQr::buscarActivo($data['codigo_asesor']);
+        if (! $codigoQr) {
+            throw ValidationException::withMessages([
+                'codigo_asesor' => 'Ese código de asesor no existe o ya no está activo. Revísalo.',
+            ]);
+        }
+
+        app(AsignacionAsesorQr::class)->ligarAcreditado($acreditado, $codigoQr, 'codigo_manual');
+
+        return response()->json([
+            'message'    => "Listo. Tu asesor será {$codigoQr->asesor?->name}.",
+            'acreditado' => $acreditado->fresh()->toApiArray(),
         ]);
     }
 

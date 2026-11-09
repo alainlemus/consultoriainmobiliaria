@@ -32,6 +32,12 @@ Schedule::command('encargos:recordar-validacion')
     ->dailyAt('09:00')
     ->timezone('America/Mexico_City');
 
+// ── Prospectos asignados que siguen en «nuevo» después de 24 h ────────────
+// Todos los días a las 9 AM de México; cada prospecto se recuerda cada 2 días.
+Schedule::command('prospectos:alertar-sin-atender')
+    ->dailyAt('09:00')
+    ->timezone('America/Mexico_City');
+
 // ── Actualización automática de la UMA ────────────────────────────────────
 // La UMA se publica el 1 de febrero. Corremos el cron todos los martes
 // de enero y febrero para garantizar que capturamos la actualización

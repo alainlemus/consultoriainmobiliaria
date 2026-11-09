@@ -23,6 +23,38 @@ class MetricasQr
 {
     public const PASOS = ['escaneos', 'registros', 'solicitudes', 'expedientes'];
 
+    /** Prospectos del rango con sus tiempos (se llena en eventos()). */
+    private ?Collection $solicitudesCrudas = null;
+
+    /**
+     * Seguimiento del asesor sobre los prospectos del rango, por QR:
+     * ['sin_atender' => [qr_id => n], 'horas' => [qr_id => [horas…]]]
+     */
+    private function seguimiento(): array
+    {
+        if ($this->solicitudesCrudas === null) $this->eventos();
+
+        $sinAtender = [];
+        $horas      = [];
+        foreach ($this->solicitudesCrudas as $c) {
+            $qr = $c->codigo_qr_id;
+            if ($c->estado_prospecto === 'nuevo' && ! $c->contactado_at && Carbon::parse($c->created_at)->lte(now()->subHours(24))) {
+                $sinAtender[$qr] = ($sinAtender[$qr] ?? 0) + 1;
+            }
+            if ($c->contactado_at) {
+                $horas[$qr][] = round(Carbon::parse($c->created_at)->floatDiffInHours(Carbon::parse($c->contactado_at)), 1);
+            }
+        }
+
+        return ['sin_atender' => $sinAtender, 'horas' => $horas];
+    }
+
+    /** Promedio de horas (1 decimal) o null si no hay datos. */
+    public static function promedio(array $valores): ?float
+    {
+        return $valores ? round(array_sum($valores) / count($valores), 1) : null;
+    }
+
     public function __construct(
         private readonly CarbonInterface $desde,
         private readonly CarbonInterface $hasta,
@@ -58,10 +90,13 @@ class MetricasQr
             ->map(fn ($g) => $g->pluck('created_at')->map(fn ($f) => Carbon::parse($f))->values()->all())
             ->all();
 
+        $solicitudes = $rango(Contacto::whereIn('codigo_qr_id', $ids))->get(['id', 'codigo_qr_id', 'created_at', 'contactado_at', 'estado_prospecto']);
+        $this->solicitudesCrudas = $solicitudes;
+
         return [
             'escaneos'    => $agrupar($rango(EscaneoQr::whereIn('codigo_qr_id', $ids))->get(['codigo_qr_id', 'created_at'])),
             'registros'   => $agrupar($rango(Acreditado::whereIn('codigo_qr_id', $ids))->get(['codigo_qr_id', 'created_at'])),
-            'solicitudes' => $agrupar($rango(Contacto::whereIn('codigo_qr_id', $ids))->get(['codigo_qr_id', 'created_at'])),
+            'solicitudes' => $agrupar($solicitudes),
             'expedientes' => $agrupar(
                 $rango(Expediente::query()->join('contactos', 'contactos.id', '=', 'expedientes.contacto_id'), 'expedientes.created_at')
                     ->whereIn('contactos.codigo_qr_id', $ids)
@@ -80,6 +115,10 @@ class MetricasQr
         }
         $t['conversion'] = $t['escaneos'] > 0 ? round($t['expedientes'] / $t['escaneos'] * 100, 1) : 0.0;
         $t['qrs']        = $this->codigos()->count();
+
+        $seg = $this->seguimiento();
+        $t['sin_atender']     = array_sum($seg['sin_atender']);
+        $t['respuesta_horas'] = self::promedio(array_merge([], ...array_values($seg['horas'])));
 
         return $t;
     }
@@ -131,20 +170,25 @@ class MetricasQr
     private function agruparPor(callable $clave, callable $etiqueta): Collection
     {
         $ev    = $this->eventos();
+        $seg   = $this->seguimiento();
         $filas = [];
 
         foreach ($this->codigos() as $qr) {
             $k = $clave($qr);
-            $filas[$k] ??= ['clave' => $k, 'nombre' => $etiqueta($qr), 'qrs' => 0] + array_fill_keys(self::PASOS, 0);
+            $filas[$k] ??= ['clave' => $k, 'nombre' => $etiqueta($qr), 'qrs' => 0, 'sin_atender' => 0, 'horas' => []] + array_fill_keys(self::PASOS, 0);
             $filas[$k]['qrs']++;
             foreach (self::PASOS as $paso) {
                 $filas[$k][$paso] += count($ev[$paso][$qr->id] ?? []);
             }
+            $filas[$k]['sin_atender'] += $seg['sin_atender'][$qr->id] ?? 0;
+            $filas[$k]['horas']        = array_merge($filas[$k]['horas'], $seg['horas'][$qr->id] ?? []);
         }
 
         return collect($filas)
             ->map(function ($f) {
-                $f['conversion'] = $f['escaneos'] > 0 ? round($f['expedientes'] / $f['escaneos'] * 100, 1) : 0.0;
+                $f['conversion']      = $f['escaneos'] > 0 ? round($f['expedientes'] / $f['escaneos'] * 100, 1) : 0.0;
+                $f['respuesta_horas'] = self::promedio($f['horas']);
+                unset($f['horas']);
                 return $f;
             })
             ->sortByDesc('escaneos')
