@@ -56,6 +56,20 @@ class CoberturaResource extends Resource
                     ]),
             ])->columns(2),
 
+            \Filament\Schemas\Components\Section::make('Citas en esta oficina')
+                ->description('Si está activo, los asesores y acreditados pueden agendar cita aquí desde la app. El super admin confirma cada cita. La dirección que ve el cliente es el campo «Detalle».')
+                ->schema([
+                    Forms\Components\Toggle::make('citas_activas')->label('Recibe citas')->default(false)->live(),
+                    Forms\Components\CheckboxList::make('horario_citas.dias')->label('Días de atención')
+                        ->options([1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'])
+                        ->default([1, 2, 3, 4, 5])->columns(4)->visible(fn ($get) => $get('citas_activas')),
+                    Forms\Components\TimePicker::make('horario_citas.inicio')->label('Desde')->seconds(false)->default('09:00')->visible(fn ($get) => $get('citas_activas')),
+                    Forms\Components\TimePicker::make('horario_citas.fin')->label('Hasta')->seconds(false)->default('17:00')->visible(fn ($get) => $get('citas_activas')),
+                    Forms\Components\TextInput::make('horario_citas.duracion_min')->label('Duración cita en oficina (min)')->numeric()->default(60)->minValue(15)->maxValue(240)->visible(fn ($get) => $get('citas_activas')),
+                    Forms\Components\TextInput::make('horario_citas.duracion_domicilio_min')->label('Duración visita a domicilio (min)')->numeric()->default(120)->minValue(30)->maxValue(480)->visible(fn ($get) => $get('citas_activas')),
+                    Forms\Components\Toggle::make('horario_citas.permite_domicilio')->label('Ofrece visitas a domicilio')->default(true)->visible(fn ($get) => $get('citas_activas')),
+                ])->columns(3),
+
             \Filament\Schemas\Components\Section::make('Visibilidad')->schema([
                 Forms\Components\Toggle::make('activo')
                     ->label('Visible en el sitio')
@@ -96,6 +110,11 @@ class CoberturaResource extends Resource
                 Tables\Columns\IconColumn::make('activo')
                     ->label('Activo')
                     ->boolean(),
+
+                Tables\Columns\IconColumn::make('citas_activas')
+                    ->label('Citas')
+                    ->boolean()
+                    ->tooltip('Recibe citas desde la app'),
             ])
             ->actions([
                 \Filament\Actions\EditAction::make()->label('Editar'),

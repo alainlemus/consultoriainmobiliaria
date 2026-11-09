@@ -16,6 +16,7 @@ class Expediente extends Model
         'folio',
         'tipo_tramite_id', 'etapa_tramite_id', 'asesor_id', 'contacto_id', 'revisor_id',
         'estado',
+        'seguimiento', 'seguimiento_at', 'cuv_registrado_at', 'cuv_registrado_por',
         // Acreditado
         'acreditado_nombre', 'acreditado_curp', 'acreditado_rfc', 'obligado_solidario_nombre', 'acreditado_fecha_nacimiento',
         'acreditado_telefono', 'acreditado_email', 'acreditado_domicilio', 'acreditado_colonia',
@@ -58,6 +59,8 @@ class Expediente extends Model
     ];
 
     protected $casts = [
+        'seguimiento_at'                     => 'datetime',
+        'cuv_registrado_at'                  => 'datetime',
         'acreditado_personas_autorizadas'    => 'array',
         'acreditado_referencias'             => 'array',
         'acreditado_fecha_nacimiento'        => 'date',

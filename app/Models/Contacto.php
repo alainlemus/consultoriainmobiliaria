@@ -69,6 +69,12 @@ class Contacto extends Model
         return $this->belongsTo(User::class, 'asesor_conflicto_id');
     }
 
+    /** Cuenta de la app ligada a este prospecto (si la creó) */
+    public function acreditado()
+    {
+        return $this->hasOne(Acreditado::class, 'contacto_id');
+    }
+
     /** QR impreso por el que llegó (cuando origen = 'qr') */
     public function codigoQr(): BelongsTo
     {

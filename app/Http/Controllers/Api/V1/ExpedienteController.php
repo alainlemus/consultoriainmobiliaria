@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\CuvService;
+use App\Services\SeguimientoExpedienteService;
 use App\Models\DocumentoRequerido;
 use App\Models\EtapaTramite;
 use App\Models\Expediente;
@@ -124,8 +126,50 @@ class ExpedienteController extends Controller
         // Todos los documentos validados por un administrador (y ninguno solicitado pendiente): ya se puede enviar la carpeta
         $data['completo']                      = $exp->estaCompleto();
         $data['acreditado_en_app']             = (bool) $exp->acreditado_id;
+        $data['seguimiento']                   = SeguimientoExpedienteService::payload($exp);
+        $data['cuv_info']                      = CuvService::payload($exp);
 
         return response()->json(['data' => $data]);
+    }
+
+    /**
+     * POST /api/v1/expedientes/{id}/seguimiento  {paso}
+     * Los dos pasos sin evento en el sistema los marca el super admin con un botón.
+     */
+    public function seguimiento(Request $request, int $id): JsonResponse
+    {
+        abort_unless($request->user()->hasRole('super_admin'), 403, 'Solo un administrador cambia el seguimiento.');
+        $exp  = Expediente::findOrFail($id);
+        $data = $request->validate(['paso' => ['required', 'in:' . implode(',', \App\Support\SeguimientoExpediente::MANUALES)]]);
+
+        $movio = app(SeguimientoExpedienteService::class)->avanzar($exp, $data['paso'], $request->user());
+
+        return response()->json([
+            'message'     => $movio ? 'Seguimiento actualizado.' : 'El expediente ya estaba en ese paso o más adelante.',
+            'seguimiento' => SeguimientoExpedienteService::payload($exp->fresh()),
+        ]);
+    }
+
+    /**
+     * POST /api/v1/expedientes/{id}/cuv  {cuv, archivo?}
+     * CUV (Clave Única de Vivienda, 16 dígitos). Solo super admin desde aquí; el gestor por su API.
+     */
+    public function cuv(Request $request, int $id): JsonResponse
+    {
+        abort_unless($request->user()->hasRole('super_admin'), 403, 'Solo un administrador registra la CUV.');
+        $exp  = Expediente::findOrFail($id);
+        $data = $request->validate([
+            'cuv'     => ['required', 'regex:/^\d{16}$/'],
+            'archivo' => ['nullable', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,heic,webp'],
+        ], ['cuv.regex' => 'La CUV son 16 dígitos.']);
+
+        $exp = app(CuvService::class)->registrar($exp, $data['cuv'], $request->file('archivo'), $request->user());
+
+        return response()->json([
+            'message'     => 'CUV registrada. El acreditado y el asesor ya fueron avisados.',
+            'cuv_info'    => CuvService::payload($exp),
+            'seguimiento' => SeguimientoExpedienteService::payload($exp),
+        ]);
     }
 
     /** Valores válidos del enum estado — sincronizados con la BD */

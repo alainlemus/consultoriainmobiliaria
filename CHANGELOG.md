@@ -13,6 +13,25 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.16.0] - 2026-11-09
+
+### Agregado
+- Citas de asesoría: el asesor (desde el prospecto o expediente) o el acreditado agendan en una oficina o a domicilio eligiendo un hueco libre; la cita nace «solicitada» y el super admin la confirma, reagenda o cancela desde el panel (CRM → Citas) o la app. Acreditado y asesor reciben aviso en cada cambio; recordatorios automáticos un día antes y dos horas antes.
+- Una sola agenda (la del super admin): un hueco ocupado en una oficina lo está en todas. Oficinas y horarios se configuran en Configuración del sitio → Cobertura (recibe citas, días, horario, duración en oficina y a domicilio).
+- API: `/citas/oficinas`, `/citas/disponibilidad`, `/citas` y acciones; y lo mismo bajo `/acreditado/citas`.
+
+## [1.15.0] - 2026-11-09
+
+### Agregado
+- Seguimiento del trámite en 7 pasos fijos, iguales para todos, que avanzan solos: Validación de documentos → Trámites en gestión (todos los documentos validados) → Trámites gestionados (todos los encargos a gestores terminados) → En unidad de valuación (botón del super admin) → Recurso en gestión (al registrar la CUV) → Firma (botón) → Crédito entregado (al cerrar). Si se rechaza un documento ya validado, regresa a Validación.
+- Cada paso tiene un mensaje para el acreditado editable en Panel → App móvil; al avanzar, el acreditado recibe push y el asesor su aviso. Antes el aviso por cambio de etapa no se enviaba nunca.
+- CUV (Clave Única de Vivienda, 16 dígitos): la registra el super admin (panel o app) o el gestor con encargo, a mano y con foto o PDF opcional. Avisa al acreditado, al asesor y a los super admin.
+- Avisos nuevos al acreditado: documento aprobado, expediente enviado al gestor, gestor terminó.
+- Bandeja de notificaciones en la app para asesor, gestor, super admin y acreditado (`/notificaciones`): historial, leídas y no leídas, texto completo. Solo lectura, no se borran. Los avisos del acreditado ahora también se guardan.
+
+### Cambiado
+- Documentos validados: el asesor ya no los reemplaza ni los borra, solo los ve. Los documentos subidos por gestores y la CUV también son de solo lectura para el asesor.
+
 ## [1.14.0] - 2026-11-09
 
 ### Cambiado

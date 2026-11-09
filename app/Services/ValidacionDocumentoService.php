@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\DocumentoExpediente;
 use App\Models\User;
 use App\Notifications\DocumentoRechazado;
+use App\Notifications\AvisoTramiteAcreditado;
 use App\Notifications\DocumentoValidado;
 use App\Notifications\ExpedienteCompleto;
 
@@ -39,16 +40,24 @@ class ValidacionDocumentoService
         $exp    = $doc->expediente;
         $asesor = $exp?->asesor;
 
-        if (! $asesor) {
+        if (! $exp) {
             return;
         }
 
-        $asesor->notify(new DocumentoValidado($doc, $exp));
+        // El acreditado también se entera de que su documento quedó bien
+        $exp->acreditadoRegistrado?->notify(new AvisoTramiteAcreditado($exp, '✅ Documento aprobado', "Tu documento «{$doc->nombre}» fue revisado y aprobado.", 'documentos'));
 
-        // Si este era el último por validar, el expediente queda completo
-        if ($exp->estaCompleto()) {
-            $asesor->notify(new ExpedienteCompleto($exp));
+        if ($asesor) {
+            $asesor->notify(new DocumentoValidado($doc, $exp));
+
+            // Si este era el último por validar, el expediente queda completo
+            if ($exp->estaCompleto()) {
+                $asesor->notify(new ExpedienteCompleto($exp));
+            }
         }
+
+        // Todo validado → «Trámites en gestión» (avisa al acreditado y al asesor)
+        app(SeguimientoExpedienteService::class)->recalcularTrasValidacion($exp, $admin);
     }
 
     public function rechazar(DocumentoExpediente $doc, string $motivo): void
@@ -59,6 +68,11 @@ class ValidacionDocumentoService
             'validado_at'    => null,
             'validado_por'   => null,
         ]);
+
+        // Un rechazo después de haber validado todo regresa el seguimiento a «Validación de documentos»
+        if (! $doc->encargo_gestor_id && $doc->expediente) {
+            app(SeguimientoExpedienteService::class)->regresarAValidacion($doc->expediente);
+        }
 
         // Lo subió un gestor: el motivo le llega a él (no al acreditado)
         if ($doc->encargo_gestor_id) {

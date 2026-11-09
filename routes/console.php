@@ -38,6 +38,9 @@ Schedule::command('prospectos:alertar-sin-atender')
     ->dailyAt('09:00')
     ->timezone('America/Mexico_City');
 
+// ── Recordatorios de citas (24 h y 2 h antes) ────────────────────────────
+Schedule::command('citas:recordar')->hourly();
+
 // ── Actualización automática de la UMA ────────────────────────────────────
 // La UMA se publica el 1 de febrero. Corremos el cron todos los martes
 // de enero y febrero para garantizar que capturamos la actualización
