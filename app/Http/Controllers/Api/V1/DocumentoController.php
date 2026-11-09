@@ -42,7 +42,20 @@ class DocumentoController extends Controller
             'tipo_documento' => $arr['tipo'],
             'url'            => null,   // se obtiene via /ver
             'tiene_archivo'  => (bool) $doc->ruta_archivo,
+            'validado'       => (bool) $doc->validado_at,
+            'de_gestor'      => (bool) $doc->encargo_gestor_id,
+            // Un asesor solo puede borrar/reemplazar lo pendiente o rechazado que no sea de gestor;
+            // lo validado y lo del gestor solo se ve. El super admin no tiene límite.
+            'puede_modificar' => $this->puedeModificar($doc),
         ];
+    }
+
+    private function puedeModificar(DocumentoExpediente $doc): bool
+    {
+        $user = request()->user();
+        if ($user?->hasRole('super_admin')) return true;
+
+        return ! $doc->validado_at && ! $doc->encargo_gestor_id && $doc->categoria !== 'cuv';
     }
 
     /**
@@ -294,9 +307,11 @@ class DocumentoController extends Controller
         $doc = DocumentoExpediente::where('expediente_id', $expedienteId)
             ->findOrFail($documentoId);
 
-        // Asesor solo puede borrar si el doc sigue pendiente; super_admin sin restricción
-        if (! $user->hasRole('super_admin') && $doc->estado !== 'pendiente') {
-            abort(422, 'Solo puedes eliminar documentos en estado pendiente.');
+        // Asesor: no borra validados, ni lo que subió un gestor, ni la CUV; super_admin sin restricción
+        if (! $user->hasRole('super_admin')) {
+            abort_if($doc->encargo_gestor_id || $doc->categoria === 'cuv', 422, 'Este documento lo gestionó la administración; solo puedes verlo.');
+            abort_if($doc->validado_at, 422, 'Este documento ya fue validado; solo puedes verlo.');
+            abort_if($doc->estado !== 'pendiente' && $doc->estado !== 'rechazado', 422, 'Solo puedes eliminar documentos pendientes o rechazados.');
         }
 
         if ($doc->ruta_archivo) {
@@ -318,6 +333,11 @@ class DocumentoController extends Controller
 
         $doc = DocumentoExpediente::where('expediente_id', $expedienteId)
             ->findOrFail($documentoId);
+
+        // Validado o de gestor: el asesor solo lo ve
+        abort_unless($this->puedeModificar($doc), 422, $doc->validado_at
+            ? 'Este documento ya fue validado; solo puedes verlo.'
+            : 'Este documento lo gestionó la administración; solo puedes verlo.');
 
         $request->validate([
             'archivo' => ['required', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,heic,webp'],

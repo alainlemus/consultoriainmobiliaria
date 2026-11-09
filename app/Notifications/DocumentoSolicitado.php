@@ -27,7 +27,18 @@ class DocumentoSolicitado extends Notification
 
     public function via(object $notifiable): array
     {
-        return $this->viaPush() ? [PushChannel::class] : [];
+        $canales = $notifiable instanceof Acreditado ? ['database'] : [];
+        return array_filter([...$canales, $this->viaPush() ? PushChannel::class : null]);
+    }
+
+    public function toDatabase(object $notifiable): array
+    {
+        return \Filament\Notifications\Notification::make()
+            ->title($this->pushTitle())
+            ->body($this->pushBody())
+            ->warning()
+            ->icon('heroicon-o-document-plus')
+            ->getDatabaseMessage() + ['app' => ['screen' => 'tramite', 'expediente_id' => (string) $this->expediente->id]];
     }
 
     public function toPush(object $notifiable): void

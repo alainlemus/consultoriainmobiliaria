@@ -6,6 +6,7 @@ use App\Models\DocumentoExpediente;
 use App\Models\EncargoGestor;
 use App\Models\Expediente;
 use App\Models\User;
+use App\Notifications\AvisoTramiteAcreditado;
 use App\Notifications\EncargoGestorNotificacion;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -78,6 +79,12 @@ class EncargoGestorService
         $gestor->notify(new EncargoGestorNotificacion(
             $encargo, 'enviado', "📂 Nuevo expediente para tramitar — {$folio}",
             Str::limit($instrucciones, 140) . ' Revisa los documentos antes de empezar.', true,
+        ));
+
+        // El acreditado sabe que su expediente ya está con un gestor
+        $expediente->acreditadoRegistrado?->notify(new AvisoTramiteAcreditado(
+            $expediente, '📂 Tu expediente pasó al gestor',
+            'Un gestor ya tiene tu expediente para tramitarlo en las dependencias. Te avisaremos cuando termine.', 'tramite',
         ));
 
         return $encargo;
@@ -345,6 +352,16 @@ class EncargoGestorService
             $encargo, 'terminado', "🏁 Encargo terminado — {$this->folio($encargo)}",
             'La administración validó todo lo que subiste. ¡Gracias!', true, 'success',
         ));
+
+        $expediente = $encargo->expediente;
+        if ($expediente) {
+            $expediente->acreditadoRegistrado?->notify(new AvisoTramiteAcreditado(
+                $expediente, '🏁 El gestor terminó su parte',
+                'El gestor terminó los trámites de tu expediente y la administración ya los validó.', 'tramite',
+            ));
+            // Si ya no queda ningún encargo abierto → «Trámites gestionados»
+            app(SeguimientoExpedienteService::class)->recalcularTrasEncargos($expediente, $por);
+        }
     }
 
     /** Documentos subidos por el gestor que aún no están validados. */

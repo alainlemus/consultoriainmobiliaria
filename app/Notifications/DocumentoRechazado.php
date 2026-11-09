@@ -29,8 +29,20 @@ class DocumentoRechazado extends Notification
 
     public function via(object $notifiable): array
     {
-        // Push al acreditado (si usa la app) y al asesor del expediente.
-        return ($notifiable instanceof Acreditado || $notifiable instanceof User) && $this->viaPush() ? [PushChannel::class] : [];
+        // Push al acreditado (si usa la app) y al asesor del expediente; el
+        // acreditado además lo conserva en su bandeja de la app.
+        $canales = $notifiable instanceof Acreditado ? ['database'] : [];
+        return array_filter([...$canales, ($notifiable instanceof Acreditado || $notifiable instanceof User) && $this->viaPush() ? PushChannel::class : null]);
+    }
+
+    public function toDatabase(object $notifiable): array
+    {
+        return \Filament\Notifications\Notification::make()
+            ->title($this->pushTitle())
+            ->body($this->pushBody())
+            ->danger()
+            ->icon('heroicon-o-x-circle')
+            ->getDatabaseMessage() + ['app' => $this->pushData()];
     }
 
     protected function pushTitle(): string

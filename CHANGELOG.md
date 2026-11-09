@@ -13,6 +13,18 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.15.0] - 2026-11-09
+
+### Agregado
+- Seguimiento del trámite en 7 pasos fijos, iguales para todos, que avanzan solos: Validación de documentos → Trámites en gestión (todos los documentos validados) → Trámites gestionados (todos los encargos a gestores terminados) → En unidad de valuación (botón del super admin) → Recurso en gestión (al registrar la CUV) → Firma (botón) → Crédito entregado (al cerrar). Si se rechaza un documento ya validado, regresa a Validación.
+- Cada paso tiene un mensaje para el acreditado editable en Panel → App móvil; al avanzar, el acreditado recibe push y el asesor su aviso. Antes el aviso por cambio de etapa no se enviaba nunca.
+- CUV (Clave Única de Vivienda, 16 dígitos): la registra el super admin (panel o app) o el gestor con encargo, a mano y con foto o PDF opcional. Avisa al acreditado, al asesor y a los super admin.
+- Avisos nuevos al acreditado: documento aprobado, expediente enviado al gestor, gestor terminó.
+- Bandeja de notificaciones en la app para asesor, gestor, super admin y acreditado (`/notificaciones`): historial, leídas y no leídas, texto completo. Solo lectura, no se borran. Los avisos del acreditado ahora también se guardan.
+
+### Cambiado
+- Documentos validados: el asesor ya no los reemplaza ni los borra, solo los ve. Los documentos subidos por gestores y la CUV también son de solo lectura para el asesor.
+
 ## [1.14.0] - 2026-11-09
 
 ### Cambiado

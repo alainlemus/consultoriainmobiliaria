@@ -109,6 +109,59 @@ class EditExpediente extends EditRecord
             \App\Filament\Resources\ExpedienteResource\RelationManagers\EncargosGestorRelationManager::accionEnviar(fn () => $this->record, 'enviar_a_gestor_header')
                 ->color(fn () => $this->record->estaCompleto() ? 'primary' : 'gray'),
 
+            // ── Seguimiento: los dos pasos sin evento los marca el super admin ──
+            Action::make('en_unidad_valuacion')
+                ->label('Enviado a unidad de valuación')
+                ->icon('heroicon-o-building-office-2')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalDescription('El acreditado y el asesor recibirán el aviso «En unidad de valuación».')
+                ->visible(fn () => auth()->user()?->hasRole('super_admin')
+                    && \App\Support\SeguimientoExpediente::orden((string) $this->record->seguimiento) < \App\Support\SeguimientoExpediente::orden(\App\Support\SeguimientoExpediente::EN_UNIDAD_VALUACION))
+                ->action(function () {
+                    app(\App\Services\SeguimientoExpedienteService::class)->avanzar($this->record, \App\Support\SeguimientoExpediente::EN_UNIDAD_VALUACION, auth()->user());
+                    \Filament\Notifications\Notification::make()->title('Seguimiento: En unidad de valuación')->success()->send();
+                    $this->refreshFormData(['seguimiento']);
+                }),
+            Action::make('registrar_cuv')
+                ->label(fn () => $this->record->cuv ? "CUV {$this->record->cuv}" : 'Registrar CUV')
+                ->icon('heroicon-o-home-modern')
+                ->color(fn () => $this->record->cuv ? 'gray' : 'primary')
+                ->visible(fn () => auth()->user()?->hasRole('super_admin'))
+                ->form([
+                    \Filament\Forms\Components\TextInput::make('cuv')
+                        ->label('CUV (Clave Única de Vivienda)')
+                        ->default(fn () => $this->record->cuv)
+                        ->required()
+                        ->rule('regex:/^\d{16}$/')
+                        ->validationMessages(['regex' => 'La CUV son 16 dígitos.'])
+                        ->helperText('16 dígitos, tal como la entrega la unidad de valuación.'),
+                    \Filament\Forms\Components\FileUpload::make('archivo')
+                        ->label('Foto o PDF de la CUV (opcional)')
+                        ->disk('local')->directory('tmp-cuv')
+                        ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+                        ->storeFiles(false),
+                ])
+                ->action(function (array $data) {
+                    $archivo = $data['archivo'] ?? null;
+                    app(\App\Services\CuvService::class)->registrar($this->record, $data['cuv'], $archivo instanceof \Illuminate\Http\UploadedFile ? $archivo : null, auth()->user());
+                    \Filament\Notifications\Notification::make()->title('CUV registrada. Acreditado y asesor avisados.')->success()->send();
+                    $this->refreshFormData(['cuv', 'seguimiento']);
+                }),
+            Action::make('marcar_firma')
+                ->label('Marcar firma')
+                ->icon('heroicon-o-pencil-square')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalDescription('El acreditado y el asesor recibirán el aviso «Firma».')
+                ->visible(fn () => auth()->user()?->hasRole('super_admin')
+                    && \App\Support\SeguimientoExpediente::orden((string) $this->record->seguimiento) < \App\Support\SeguimientoExpediente::orden(\App\Support\SeguimientoExpediente::FIRMA))
+                ->action(function () {
+                    app(\App\Services\SeguimientoExpedienteService::class)->avanzar($this->record, \App\Support\SeguimientoExpediente::FIRMA, auth()->user());
+                    \Filament\Notifications\Notification::make()->title('Seguimiento: Firma')->success()->send();
+                    $this->refreshFormData(['seguimiento']);
+                }),
+
             // ── Descargar carpeta completa como ZIP ───────────────────────
             Action::make('descargar_zip')
                 ->label('Descargar carpeta')

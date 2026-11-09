@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class BloquearGestorEnApiAsesor
 {
-    private const PERMITIDAS = ['api/v1/auth/*', 'api/v1/dispositivos', 'api/v1/gestor', 'api/v1/gestor/*'];
+    private const PERMITIDAS = ['api/v1/auth/*', 'api/v1/dispositivos', 'api/v1/gestor', 'api/v1/gestor/*', 'api/v1/notificaciones', 'api/v1/notificaciones/*'];
 
     public function handle(Request $request, Closure $next): Response
     {

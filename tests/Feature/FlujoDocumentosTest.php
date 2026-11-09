@@ -96,8 +96,14 @@ class FlujoDocumentosTest extends TestCase
         }
         $this->assertTrue($exp->fresh()->estaCompleto());
 
-        // 5. Reemplazar un documento validado lo regresa a revisión y el expediente deja de estar completo
+        // 5. Un documento validado ya no lo reemplaza el asesor (solo lo ve); el admin sí,
+        //    y al reemplazarlo regresa a revisión y el expediente deja de estar completo
         $this->actingAs($this->asesor, 'sanctum')
+            ->post("/api/v1/expedientes/{$expId}/documentos/{$docs[0]->id}/reemplazar", ['archivo' => $this->pdf('nuevo.pdf')], ['Accept' => 'application/json'])
+            ->assertStatus(422);
+        $this->assertSame('validado', $docs[0]->fresh()->validacion);
+
+        $this->actingAs($this->admin, 'sanctum')
             ->post("/api/v1/expedientes/{$expId}/documentos/{$docs[0]->id}/reemplazar", ['archivo' => $this->pdf('nuevo.pdf')], ['Accept' => 'application/json'])
             ->assertOk();
         $this->assertSame('en_revision', $docs[0]->fresh()->validacion);

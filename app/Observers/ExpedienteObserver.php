@@ -47,6 +47,11 @@ class ExpedienteObserver
     public function updated(Expediente $exp): void
     {
         $this->notificarPagoRecibido($exp);
+
+        // Expediente cerrado → último paso del seguimiento (avisa al acreditado y al asesor)
+        if ($exp->wasChanged('estado') && $exp->estado === 'cerrado') {
+            app(\App\Services\SeguimientoExpedienteService::class)->avanzar($exp, \App\Support\SeguimientoExpediente::CREDITO_ENTREGADO);
+        }
     }
 
     public function saved(Expediente $exp): void

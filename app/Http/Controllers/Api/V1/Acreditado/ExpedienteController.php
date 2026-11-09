@@ -100,11 +100,13 @@ class ExpedienteController extends Controller
                 'nota'          => $d->solicitud_nota,
                 'solicitado_at' => $d->solicitado_at?->toIso8601String(),
             ])->values(),
+            // La guía es el mensaje del paso actual del seguimiento (editable en el panel),
+            // salvo que haya un documento pedido pendiente: eso va primero.
             'guia_paso_actual'   => $solicitados->isNotEmpty()
                 ? 'Necesitamos un documento adicional para continuar. Revisa la nota y súbelo desde Documentos.'
-                : ($enProceso
-                ? 'Tus documentos fueron validados y tu trámite está en proceso. No necesitas hacer nada más: solo espera, tu asesor te contactará cuando haya novedades.'
-                : 'Tu expediente está en revisión. Tu asesor se pondrá en contacto contigo si necesita algo más.'),
+                : \App\Support\SeguimientoExpediente::mensaje(\App\Services\SeguimientoExpedienteService::pasoEfectivo($expediente)),
+            'seguimiento'        => \App\Services\SeguimientoExpedienteService::payload($expediente),
+            'cuv'                => $expediente->cuv,
             'asesor' => $expediente->asesor ? [
                 'name'     => $expediente->asesor->name,
                 'telefono' => $expediente->asesor->telefono,

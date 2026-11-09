@@ -173,7 +173,7 @@ class AcreditadoTest extends TestCase
         $this->assertSame('en_proceso', $estado());    // todos validados
         $this->actingAs($acreditado, 'sanctum')->getJson('/api/v1/acreditado/expediente')
             ->assertJsonPath('data.documentos_pendientes', 0)
-            ->assertJsonPath('data.guia_paso_actual', fn ($t) => str_contains($t, 'solo espera'));
+            ->assertJsonPath('data.guia_paso_actual', fn ($t) => str_contains($t, 'validados'));   // mensaje del paso «Trámites en gestión»
 
         $b->update(['validado_at' => null, 'estado' => 'rechazado']);
         $this->assertSame('en_revision', $estado());   // uno rechazado: vuelve a revisión

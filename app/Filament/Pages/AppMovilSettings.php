@@ -36,6 +36,9 @@ class AppMovilSettings extends Page
             'screenshot_cliente_android' => setting('screenshot_cliente_android'),
             'apple_team_id'   => setting('apple_team_id', '7CKS7PY2UG'),
             'android_sha256'  => setting('android_sha256', \App\Http\Controllers\EnlacesAppController::ANDROID_SHA256),
+            ...collect(\App\Support\SeguimientoExpediente::PASOS)
+                ->mapWithKeys(fn ($p, $k) => ["seguimiento_msg_{$k}" => setting("seguimiento_msg_{$k}", $p['mensaje'])])
+                ->all(),
         ]);
     }
 
@@ -108,6 +111,18 @@ class AppMovilSettings extends Page
                             ->placeholder('A1:B2:C3:… (32 pares separados por dos puntos)')
                             ->helperText('Play Console → Probar y lanzar → Configuración → Integridad de la app → Firma de apps → «Certificado de la clave de firma de la app». Si hay más de una, una por línea. Vacío: la liga abre el navegador en Android.'),
                     ])->columns(2),
+
+                \Filament\Schemas\Components\Section::make('Mensajes al acreditado por paso del trámite')
+                    ->description('El seguimiento del trámite tiene 7 pasos fijos que avanzan solos. Al llegar a cada paso, el acreditado recibe este texto como notificación y lo ve como guía en su app. Edítalo con tus palabras.')
+                    ->schema(
+                        collect(\App\Support\SeguimientoExpediente::PASOS)->map(fn ($p, $k) =>
+                            Forms\Components\Textarea::make("seguimiento_msg_{$k}")
+                                ->label(\App\Support\SeguimientoExpediente::orden($k) . '. ' . $p['nombre'])
+                                ->rows(2)
+                                ->maxLength(500)
+                                ->required()
+                        )->values()->all()
+                    )->columns(1),
             ])
             ->statePath('data');
     }

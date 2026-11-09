@@ -146,6 +146,28 @@ class EncargoController extends Controller
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
+    /**
+     * POST /v1/gestor/encargos/{id}/cuv  {cuv, archivo?}
+     * El gestor que tiene el encargo en trámite registra la CUV que le entregó la unidad de valuación.
+     */
+    public function cuv(Request $request, int $id): JsonResponse
+    {
+        $encargo = $this->encargo($request, $id);
+        abort_unless(in_array($encargo->estado, [EncargoGestor::EN_TRAMITE, EncargoGestor::POR_VALIDAR, EncargoGestor::TERMINADO], true), 422, 'Este encargo no está en trámite.');
+
+        $data = $request->validate([
+            'cuv'     => ['required', 'regex:/^\d{16}$/'],
+            'archivo' => ['nullable', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,heic,webp'],
+        ], ['cuv.regex' => 'La CUV son 16 dígitos.']);
+
+        $exp = app(\App\Services\CuvService::class)->registrar($encargo->expediente, $data['cuv'], $request->file('archivo'), $request->user());
+
+        return response()->json([
+            'message'  => 'CUV registrada. Avisamos al acreditado, al asesor y a la administración.',
+            'cuv_info' => \App\Services\CuvService::payload($exp),
+        ]);
+    }
+
     private function encargo(Request $request, int $id): EncargoGestor
     {
         return $request->user()->encargosGestor()->findOrFail($id);

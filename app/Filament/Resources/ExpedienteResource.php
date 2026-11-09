@@ -205,6 +205,17 @@ class ExpedienteResource extends Resource
                                 ->default('individual')
                                 ->live()
                                 ->hint('Mancomunado suma la capacidad de crédito de ambos cónyuges'),
+                            Forms\Components\Placeholder::make('seguimiento_actual')
+                                ->label('Seguimiento del trámite (lo que ve el acreditado)')
+                                ->content(fn ($record) => $record
+                                    ? \App\Support\SeguimientoExpediente::orden((string) $record->seguimiento) . ' de ' . \App\Support\SeguimientoExpediente::total() . ' · ' . \App\Support\SeguimientoExpediente::nombre((string) ($record->seguimiento ?: 'validacion_documentos'))
+                                    : 'Se crea en «Validación de documentos»')
+                                ->helperText('Avanza solo: documentos validados → trámites en gestión → gestionados → (botón) unidad de valuación → CUV → (botón) firma → cerrado.'),
+                            Forms\Components\TextInput::make('cuv')
+                                ->label('CUV (Clave Única de Vivienda)')
+                                ->disabled()
+                                ->dehydrated(false)
+                                ->placeholder('Se registra con el botón «Registrar CUV»'),
                             Forms\Components\Select::make('banco_participante')
                                 ->label('Banco participante')
                                 ->options([
