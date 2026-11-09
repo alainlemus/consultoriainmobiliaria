@@ -69,7 +69,7 @@ class CodigoQrResource extends Resource
     {
         return $schema->schema([
             \Filament\Schemas\Components\Section::make('QR para publicidad impresa')
-                ->description('Crea un QR por asesor y por medio (lona, tarjeta, panfleto…). Así se sabe qué medio trae gente. El código corto se imprime junto al QR: quien no pueda escanear lo escribe al crear su cuenta en la app y queda ligado al asesor.')
+                ->description('Lo normal es un QR por asesor con medio «Todos los medios», que se imprime en lona, tarjeta, volante… Si quieres medir un medio por separado, crea otro QR del mismo asesor con ese medio. El código corto se imprime junto al QR: quien no pueda escanear lo escribe al crear su cuenta en la app y queda ligado al asesor.')
                 ->schema([
                     Forms\Components\Select::make('asesor_id')
                         ->label('Asesor')
@@ -81,8 +81,9 @@ class CodigoQrResource extends Resource
                     Forms\Components\Select::make('medio')
                         ->label('Medio donde se imprime')
                         ->options(CodigoQr::MEDIOS)
-                        ->default('lona')
-                        ->required(),
+                        ->default('todos')
+                        ->required()
+                        ->hint('Déjalo en «Todos los medios» salvo que quieras medir un medio aparte.'),
 
                     Forms\Components\TextInput::make('descripcion')
                         ->label('Descripción / ubicación')
@@ -142,6 +143,7 @@ class CodigoQrResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn ($state) => CodigoQr::MEDIOS[$state] ?? $state)
                     ->color(fn ($state) => match ($state) {
+                        'todos'    => 'gray',
                         'lona'     => 'warning',
                         'tarjeta'  => 'info',
                         'panfleto' => 'success',

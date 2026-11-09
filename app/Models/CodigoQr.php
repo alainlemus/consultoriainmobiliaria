@@ -25,6 +25,7 @@ class CodigoQr extends Model
     }
 
     public const MEDIOS = [
+        'todos'    => 'Todos los medios',   // un solo QR por asesor para lona, tarjeta, volante…
         'lona'     => 'Lona',
         'tarjeta'  => 'Tarjeta de presentación',
         'panfleto' => 'Panfleto / volante',

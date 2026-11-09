@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.12.2] - 2026-11-09
+
+### Cambiado
+- Códigos QR: el medio por defecto ahora es «Todos los medios», para que cada asesor tenga un solo QR que se imprime en lona, tarjeta o volante. Sigue siendo posible crear otro QR del mismo asesor con un medio específico cuando se quiera medir por separado.
+
 ## [1.12.1] - 2026-11-09
 
 ### Agregado
