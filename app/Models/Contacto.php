@@ -12,7 +12,7 @@ class Contacto extends Model
     protected $fillable = [
         'nombre', 'telefono', 'email', 'servicio', 'mensaje', 'estado', 'notas',
         // CRM
-        'asesor_id', 'origen', 'curp', 'nss', 'foto',
+        'asesor_id', 'codigo_qr_id', 'origen', 'curp', 'nss', 'foto',
         // Escuela vinculada (maestros FOVISSSTE)
         'escuela_id',
         // Precalificación (FOVISSSTE / INFONAVIT)
@@ -57,6 +57,12 @@ class Contacto extends Model
     public function asesor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'asesor_id');
+    }
+
+    /** QR impreso por el que llegó (cuando origen = 'qr') */
+    public function codigoQr(): BelongsTo
+    {
+        return $this->belongsTo(CodigoQr::class, 'codigo_qr_id');
     }
 
     /** Escuela a la que pertenece este prospecto (solo maestros) */

@@ -187,6 +187,14 @@ Route::prefix('v1/acreditado')->group(function () {
     // ── Servicios disponibles (público, para mostrar en onboarding) ───────
     Route::get('/servicios', [AcreditadoSolicitudController::class, 'servicios']);
 
+    // ── Código de asesor (QR impreso): valida y devuelve el nombre del asesor ──
+    Route::get('/codigo-asesor/{codigo}', [AcreditadoAuthController::class, 'codigoAsesor'])
+        ->middleware('throttle:30,1');
+
+    // ── Atribución de la instalación al QR (primer arranque, sin cuenta) ──────
+    Route::post('/atribucion', [\App\Http\Controllers\Api\V1\Acreditado\AtribucionController::class, 'store'])
+        ->middleware('throttle:10,1');
+
     // ── Rutas protegidas con Sanctum (token del acreditado) ───────────────
     Route::middleware('auth:sanctum')->group(function () {
 

@@ -25,6 +25,9 @@ class Acreditado extends Authenticatable
         'rfc',
         'foto_perfil',
         'contacto_id',
+        'asesor_id',
+        'codigo_qr_id',
+        'asesor_origen',
         'activo',
         'curp_verified_at',
     ];
@@ -50,6 +53,18 @@ class Acreditado extends Authenticatable
     public function contacto(): BelongsTo
     {
         return $this->belongsTo(Contacto::class);
+    }
+
+    /** Asesor que lo trajo (QR impreso en lona, tarjeta, panfleto…) */
+    public function asesor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'asesor_id');
+    }
+
+    /** QR con el que se registró */
+    public function codigoQr(): BelongsTo
+    {
+        return $this->belongsTo(CodigoQr::class, 'codigo_qr_id');
     }
 
     /** Expedientes donde este acreditado está registrado */
@@ -138,6 +153,11 @@ class Acreditado extends Authenticatable
             'foto_perfil_url'   => $this->foto_perfil_url,
             'curp_verificado'   => (bool) $this->curp_verified_at,
             'tiene_expediente'  => $this->expedientes()->exists(),
+            // Asesor ligado por código QR al registrarse (null si llegó sin código)
+            'asesor'            => $this->asesor_id ? [
+                'id'     => $this->asesor_id,
+                'nombre' => $this->asesor?->name,
+            ] : null,
             // Ya pidió asesoría desde la app: está registrado como prospecto y un asesor lo contactará.
             'solicitud_enviada' => $this->solicitudes()->exists(),
         ];

@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api\V1\Acreditado;
 
 use App\Http\Controllers\Controller;
 use App\Models\Acreditado;
+use App\Models\CodigoQr;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
@@ -26,19 +28,47 @@ class AuthController extends Controller
             'curp'     => ['nullable', 'string', 'size:18', 'regex:/^[A-Z]{4}\d{6}[HM][A-Z]{2}[A-Z]{3}[A-Z0-9]\d$/i', 'unique:acreditados,curp'],
             'telefono' => ['nullable', 'string', 'max:20'],
             'nss'      => ['nullable', 'string', 'max:15'],
+            // Código impreso junto al QR del asesor (lona, tarjeta, panfleto)
+            'codigo_asesor' => ['nullable', 'string', 'max:20'],
+            // Cómo llegó el código a la app: lo tecleó la persona (default), lo
+            // entregó Play Store (referrer) o lo adivinó el cruce por huella (huella).
+            'asesor_origen' => ['nullable', 'in:codigo_manual,referrer,huella'],
         ], [
             'email.unique' => 'Ya existe una cuenta con este correo. Inicia sesión o recupera tu contraseña.',
             'curp.unique'  => 'Ya existe una cuenta con esta CURP. Inicia sesión con el correo que usaste al registrarte.',
         ]);
 
+        // Si mandan código, tiene que existir y estar activo: mejor avisar que
+        // dejar la cuenta sin asesor cuando la persona sí lo escribió.
+        $codigoQr = null;
+        if (! empty($data['codigo_asesor'])) {
+            $codigoQr = CodigoQr::buscarActivo($data['codigo_asesor']);
+            if (! $codigoQr) {
+                throw ValidationException::withMessages([
+                    'codigo_asesor' => 'Ese código de asesor no existe o ya no está activo. Revísalo o déjalo vacío.',
+                ]);
+            }
+        }
+
         $acreditado = Acreditado::create([
             'name'     => $data['name'],
             'email'    => $data['email'],
             'password' => $data['password'],
-            'curp'     => $data['curp'] ? strtoupper($data['curp']) : null,
+            'curp'     => ! empty($data['curp']) ? strtoupper($data['curp']) : null,
             'telefono' => $data['telefono'] ?? null,
             'nss'      => $data['nss'] ?? null,
+            'asesor_id'     => $codigoQr?->asesor_id,
+            'codigo_qr_id'  => $codigoQr?->id,
+            'asesor_origen' => $codigoQr ? ($data['asesor_origen'] ?? 'codigo_manual') : null,
         ]);
+
+        // Install Referrer (Android): el escaneo ya no se puede cruzar por huella
+        // con otro celular. Se marca el más reciente sin atribuir de ese QR.
+        if ($codigoQr && ($data['asesor_origen'] ?? null) === 'referrer') {
+            $codigoQr->escaneos()->whereNull('atribuido_at')->where('plataforma', 'android')
+                ->latest('created_at')->first()
+                ?->update(['atribuido_at' => now(), 'atribucion_tipo' => 'referrer']);
+        }
 
         // Intentar vincular automáticamente con expediente por CURP
         $expediente = $acreditado->vincularExpedientePorCurp();
@@ -55,6 +85,28 @@ class AuthController extends Controller
                 'etapa'  => $expediente->etapa?->nombre,
             ] : null,
         ], 201);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET /v1/acreditado/codigo-asesor/{codigo}  (público)
+    // La app lo llama mientras la persona teclea el código del QR para
+    // confirmarle "Tu asesor será X" antes de crear la cuenta.
+    // ─────────────────────────────────────────────────────────────────────────
+    public function codigoAsesor(string $codigo): JsonResponse
+    {
+        $codigoQr = CodigoQr::buscarActivo($codigo);
+
+        if (! $codigoQr) {
+            return response()->json(['message' => 'Código de asesor no válido.'], 404);
+        }
+
+        return response()->json([
+            'codigo' => $codigoQr->codigo,
+            'asesor' => [
+                'id'     => $codigoQr->asesor_id,
+                'nombre' => $codigoQr->asesor?->name,
+            ],
+        ]);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

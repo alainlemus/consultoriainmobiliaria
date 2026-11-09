@@ -34,6 +34,8 @@ class AppMovilSettings extends Page
             'play_store_url' => setting('play_store_url', 'https://google.com.mx'),
             'screenshot_login_ios'      => setting('screenshot_login_ios'),
             'screenshot_cliente_android' => setting('screenshot_cliente_android'),
+            'apple_team_id'   => setting('apple_team_id', '7CKS7PY2UG'),
+            'android_sha256'  => setting('android_sha256', \App\Http\Controllers\EnlacesAppController::ANDROID_SHA256),
         ]);
     }
 
@@ -87,6 +89,24 @@ class AppMovilSettings extends Page
                             ->disk('public')
                             ->directory('site/app-screenshots')
                             ->helperText('Formato PNG o JPG. Se recorta desde arriba dentro del marco del teléfono.'),
+                    ])->columns(2),
+
+                \Filament\Schemas\Components\Section::make('Abrir la app desde la liga del QR')
+                    ->description('Con estos datos, quien ya tiene la app instalada y escanea un QR de asesor abre la app directo en vez del navegador. Se publican en /.well-known/ del dominio; iOS y Android los leen al instalar la app.')
+                    ->schema([
+                        Forms\Components\TextInput::make('apple_team_id')
+                            ->label('Team ID de Apple')
+                            ->placeholder('7CKS7PY2UG')
+                            ->maxLength(10)
+                            ->rule('regex:/^[A-Z0-9]{10}$/')
+                            ->validationMessages(['regex' => 'Son 10 letras o números en mayúsculas, como aparece en developer.apple.com → Membership.'])
+                            ->helperText('developer.apple.com → Account → Membership details → Team ID.'),
+
+                        Forms\Components\Textarea::make('android_sha256')
+                            ->label('Huella SHA-256 de la clave de firma (Google Play)')
+                            ->rows(3)
+                            ->placeholder('A1:B2:C3:… (32 pares separados por dos puntos)')
+                            ->helperText('Play Console → Probar y lanzar → Configuración → Integridad de la app → Firma de apps → «Certificado de la clave de firma de la app». Si hay más de una, una por línea. Vacío: la liga abre el navegador en Android.'),
                     ])->columns(2),
             ])
             ->statePath('data');

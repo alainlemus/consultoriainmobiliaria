@@ -13,6 +13,21 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.12.0] - 2026-11-09
+
+### Agregado
+- CRM → «Códigos QR»: un QR por asesor y por medio (lona, tarjeta, panfleto, anuncio) para la publicidad impresa. Se descarga en PNG, SVG (imprenta, lonas) y PDF con el código en texto grande. Cada fila muestra el embudo: escaneos, registros en la app, solicitudes y expedientes.
+- Liga corta `/a/{codigo}`: cuenta el escaneo y manda a Play Store (con `referrer` del asesor) o App Store según el celular; desde computadora o con la tienda sin configurar va a «Descargar app» mostrando el código.
+- El acreditado puede escribir su «código de asesor» al crear la cuenta en la app (requiere app 2.10.0). Queda ligado al asesor y su solicitud de asesoría nace asignada a él con origen «QR impreso». Si el prospecto ya tenía otro asesor, no se pisa: se agrega una nota para que admin decida.
+- API pública `GET /api/v1/acreditado/codigo-asesor/{codigo}` para que la app confirme el nombre del asesor mientras se teclea el código.
+- El asesor ve en el panel solo sus QR y puede descargarlos; crear, editar y borrar es de super_admin.
+- Atribución automática de la instalación (fase 2): `POST /api/v1/acreditado/atribucion` cruza la instalación nueva con los escaneos de las últimas 48 h (misma IP, plataforma, versión del sistema y modelo). Si es ambiguo no adivina. Cada escaneo se atribuye una sola vez. El registro guarda cómo llegó el código (tecleado, Play Store o huella) y la columna «Registros» del panel muestra cuántos se detectaron solos.
+
+- La liga del QR abre la app directo si ya está instalada: el dominio publica `/.well-known/apple-app-site-association` y `/.well-known/assetlinks.json`. El Team ID de Apple y la huella SHA-256 de Google Play se capturan en Panel → App móvil.
+
+### Corregido
+- Crear cuenta de acreditado sin CURP ya no falla con error 500.
+
 ## [1.11.1] - 2026-11-06
 
 ### Cambiado
