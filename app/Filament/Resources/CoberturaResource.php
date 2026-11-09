@@ -61,8 +61,8 @@ class CoberturaResource extends Resource
                 ->schema([
                     Forms\Components\Toggle::make('citas_activas')->label('Recibe citas')->default(false)->live(),
                     Forms\Components\CheckboxList::make('horario_citas.dias')->label('Días de atención')
-                        ->options([1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'])
-                        ->default([1, 2, 3, 4, 5])->columns(4)->visible(fn ($get) => $get('citas_activas')),
+                        ->options(['lun' => 'Lunes', 'mar' => 'Martes', 'mie' => 'Miércoles', 'jue' => 'Jueves', 'vie' => 'Viernes', 'sab' => 'Sábado', 'dom' => 'Domingo'])
+                        ->default(['lun', 'mar', 'mie', 'jue', 'vie'])->columns(2)->columnSpanFull()->visible(fn ($get) => $get('citas_activas')),
                     Forms\Components\TimePicker::make('horario_citas.inicio')->label('Desde')->seconds(false)->default('09:00')->visible(fn ($get) => $get('citas_activas')),
                     Forms\Components\TimePicker::make('horario_citas.fin')->label('Hasta')->seconds(false)->default('17:00')->visible(fn ($get) => $get('citas_activas')),
                     Forms\Components\TextInput::make('horario_citas.duracion_min')->label('Duración cita en oficina (min)')->numeric()->default(60)->minValue(15)->maxValue(240)->visible(fn ($get) => $get('citas_activas')),

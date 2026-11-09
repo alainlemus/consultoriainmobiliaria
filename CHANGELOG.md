@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.16.3] - 2026-11-09
+
+### Corregido
+- Cobertura → «Citas en esta oficina»: las casillas de los días salían sin nombre y, en oficinas ya existentes, el horario aparecía vacío. Ahora se muestran los días con su nombre y el horario por defecto (lunes a viernes, 9 a 17, 60 y 120 minutos).
+
 ## [1.16.2] - 2026-11-09
 
 ### Corregido
