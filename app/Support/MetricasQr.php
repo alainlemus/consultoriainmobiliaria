@@ -36,13 +36,13 @@ class MetricasQr
 
         $sinAtender = [];
         $horas      = [];
-        foreach ($this->solicitudesCrudas as $c) {
+        foreach ($this->solicitudesCrudas ?? collect() as $c) {
             $qr = $c->codigo_qr_id;
             if ($c->estado_prospecto === 'nuevo' && ! $c->contactado_at && Carbon::parse($c->created_at)->lte(now()->subHours(24))) {
                 $sinAtender[$qr] = ($sinAtender[$qr] ?? 0) + 1;
             }
             if ($c->contactado_at) {
-                $horas[$qr][] = round(Carbon::parse($c->created_at)->floatDiffInHours(Carbon::parse($c->contactado_at)), 1);
+                $horas[$qr][] = round(abs(Carbon::parse($c->created_at)->diffInHours(Carbon::parse($c->contactado_at))), 1);
             }
         }
 
@@ -80,6 +80,8 @@ class MetricasQr
     {
         $ids = $this->codigos()->pluck('id');
         if ($ids->isEmpty()) {
+            // Sin QR en el filtro: todo en cero (y la lista de prospectos vacía, no nula)
+            $this->solicitudesCrudas = collect();
             return array_fill_keys(self::PASOS, []);
         }
 
