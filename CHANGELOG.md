@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.16.2] - 2026-11-09
+
+### Corregido
+- «Rendimiento de QR» daba error 500 cuando aún no existía ningún código QR.
+
 ## [1.16.1] - 2026-11-09
 
 ### Agregado

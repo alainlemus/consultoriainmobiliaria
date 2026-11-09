@@ -131,6 +131,19 @@ class RendimientoQrTest extends TestCase
         $this->assertCount(count($s['labels']), $s['series']['registros']);
     }
 
+    public function test_sin_ningun_qr_la_pagina_y_las_metricas_salen_en_cero(): void
+    {
+        \App\Models\CodigoQr::query()->delete();
+
+        $t = (new MetricasQr(now()->subDays(29), now()))->totales();
+        $this->assertSame(0, $t['escaneos']);
+        $this->assertSame(0, $t['sin_atender']);
+        $this->assertNull($t['respuesta_horas']);
+        $this->assertSame([], (new MetricasQr(now()->subDays(29), now()))->porAsesor()->all());
+
+        $this->actingAs($this->admin)->get('/admin/rendimiento-qr')->assertOk()->assertSee('Sin QR en este filtro');
+    }
+
     public function test_la_pagina_carga_para_admin_con_las_dos_tablas(): void
     {
         $html = $this->actingAs($this->admin)->get('/admin/rendimiento-qr')->assertOk()->getContent();
