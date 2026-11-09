@@ -82,17 +82,36 @@ class SolicitudController extends Controller
             'municipio_uso_credito' => $data['municipio'] ?? null,
         ];
 
+        // Si el acreditado llegó por el QR de un asesor, el prospecto nace
+        // asignado a él (primer toque gana). Un prospecto que ya tenía otro
+        // asesor no se pisa: se deja nota para que admin decida.
+        $vieneDeQr = (bool) $acreditado->asesor_id;
+
         if ($duplicado) {
             // No se pisa 'origen' ni 'estado_prospecto': preserva el avance
             // que ya llevaba el prospecto en el pipeline del asesor.
+            if ($vieneDeQr) {
+                if (! $duplicado->asesor_id) {
+                    $datosContacto['asesor_id']    = $acreditado->asesor_id;
+                    $datosContacto['codigo_qr_id'] = $acreditado->codigo_qr_id;
+                } elseif ((int) $duplicado->asesor_id !== (int) $acreditado->asesor_id) {
+                    $nombreAsesorQr = $acreditado->asesor?->name ?? 'otro asesor';
+                    $codigo         = $acreditado->codigoQr?->codigo ?? '—';
+                    $nota           = "⚠ Se registró en la app con el código QR {$codigo} de {$nombreAsesorQr}, pero ya tenía asesor asignado. Revisar a quién corresponde.";
+                    $datosContacto['notas'] = trim(($duplicado->notas ? $duplicado->notas . "\n\n" : '') . $nota);
+                }
+            }
             $duplicado->update($datosContacto);
             $contacto = $duplicado;
         } else {
             // El ContactoObserver dispara: WhatsApp en cola + NuevoProspectoCreado a admins
+            // (y, con asesor_id, ProspectoAsignado al asesor del QR)
             $contacto = Contacto::create([
                 ...$datosContacto,
-                'origen'           => 'app_acreditado',
+                'origen'           => $vieneDeQr ? 'qr' : 'app_acreditado',
                 'estado_prospecto' => 'nuevo',
+                'asesor_id'        => $vieneDeQr ? $acreditado->asesor_id : null,
+                'codigo_qr_id'     => $vieneDeQr ? $acreditado->codigo_qr_id : null,
             ]);
         }
 

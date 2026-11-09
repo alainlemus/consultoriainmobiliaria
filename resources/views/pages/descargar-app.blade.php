@@ -42,6 +42,15 @@
                         tener que llamar o ir a la oficina.
                     </p>
 
+                    @php $codigoAsesor = \App\Models\CodigoQr::buscarActivo(request('codigo')); @endphp
+                    @if($codigoAsesor)
+                        <div class="mb-8 inline-flex flex-col gap-1 rounded-2xl border border-gold-400/40 bg-gold-400/10 px-6 py-4">
+                            <span class="text-[11px] uppercase tracking-wider text-gold-400">Tu código de asesor</span>
+                            <span class="font-mono text-3xl font-bold tracking-[0.3em] text-white">{{ $codigoAsesor->codigo }}</span>
+                            <span class="text-sm text-cream-200">Escríbelo al crear tu cuenta en la app y {{ $codigoAsesor->asesor?->name ?? 'tu asesor' }} te acompañará en el trámite.</span>
+                        </div>
+                    @endif
+
                     <div class="flex flex-col sm:flex-row gap-4">
                         {{-- App Store --}}
                         @if($appStoreListo)

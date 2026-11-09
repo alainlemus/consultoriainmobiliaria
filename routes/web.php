@@ -12,6 +12,8 @@ use App\Http\Controllers\TestimonioPublicoController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\FovisssteController;
 use App\Http\Controllers\PaginaSeoController;
+use App\Http\Controllers\QrAsesorController;
+use App\Http\Controllers\EnlacesAppController;
 use App\Models\UbicacionFoto;
 use Illuminate\Support\Facades\Storage;
 
@@ -76,6 +78,20 @@ Route::view('/eliminacion-de-datos', 'pages.eliminacion-datos')->name('datos.eli
 
 // Descarga de la app móvil (asesores y clientes)
 Route::view('/descargar-app', 'pages.descargar-app')->name('descargar.app');
+
+// QR de asesor impreso en publicidad: cuenta el escaneo y manda a la tienda
+Route::get('/a/{codigo}', [QrAsesorController::class, 'redirigir'])->name('qr.asesor');
+
+// Para que la liga del QR abra la app ya instalada (iOS universal links / Android app links)
+Route::get('/.well-known/apple-app-site-association', [EnlacesAppController::class, 'apple'])->name('enlaces.apple');
+Route::get('/.well-known/assetlinks.json',            [EnlacesAppController::class, 'android'])->name('enlaces.android');
+
+// Descargas del QR para imprenta (panel, autenticado)
+Route::middleware(['web', 'auth'])->prefix('admin/qr-asesor')->name('qr.asesor.')->group(function () {
+    Route::get('/{codigoQr}/png', [QrAsesorController::class, 'png'])->name('png');
+    Route::get('/{codigoQr}/svg', [QrAsesorController::class, 'svg'])->name('svg');
+    Route::get('/{codigoQr}/pdf', [QrAsesorController::class, 'pdf'])->name('pdf');
+});
 
 // Reportes KPIs (solo super_admin — protegido en el controller)
 

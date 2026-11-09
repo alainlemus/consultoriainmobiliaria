@@ -221,6 +221,8 @@ class ContactoResource extends Resource
                             'whatsapp'          => 'WhatsApp',
                             'app_movil'         => 'App móvil — Asesor',
                             'app_acreditado'    => 'App móvil — Acreditado',
+                        'qr'                => 'QR impreso',
+                            'qr'                => 'QR impreso (lona, tarjeta…)',
                             'otro'              => 'Otro',
                         ])
                         ->default(function () {
@@ -411,6 +413,7 @@ class ContactoResource extends Resource
                         'info'    => 'asesor',
                         'primary' => 'app_movil',
                         'success' => 'app_acreditado',
+                        'warning' => 'qr',
                     ])
                     ->formatStateUsing(fn ($state, $record) => match($state) {
                         'sitio_web'         => 'Sitio web',
@@ -420,6 +423,7 @@ class ContactoResource extends Resource
                         'whatsapp'          => 'WhatsApp',
                         'app_movil'         => '📱 App — ' . ($record->asesor?->name ?? 'Asesor'),
                         'app_acreditado'    => '👤 App — Acreditado',
+                        'qr'                => '🔳 QR ' . ($record->codigoQr?->codigo ?? '') . ' — ' . ($record->asesor?->name ?? 'Asesor'),
                         'admin'             => 'CRM — ' . ($record->asesor?->name ?? 'Admin'),
                         'asesor'            => 'CRM — ' . ($record->asesor?->name ?? 'Asesor'),
                         default             => 'Otro',
@@ -484,6 +488,7 @@ class ContactoResource extends Resource
                         'whatsapp'          => 'WhatsApp',
                         'app_movil'         => 'App móvil — Asesor',
                         'app_acreditado'    => 'App móvil — Acreditado',
+                        'qr'                => 'QR impreso',
                         'admin'             => 'CRM — Admin',
                         'asesor'            => 'CRM — Asesor',
                         'otro'              => 'Otro',
