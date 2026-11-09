@@ -58,6 +58,15 @@ class EditExpediente extends EditRecord
             )
             : '';
 
+        // Paso del seguimiento: explica por qué se ven (o no) ciertos botones
+        $pasoActual = \App\Services\SeguimientoExpedienteService::pasoEfectivo($this->record);
+        $badgeTipo .= sprintf(
+            ' <span title="Seguimiento del trámite (lo que ve el acreditado)" style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;background:#B8960C;color:#1a1a1a;white-space:nowrap;">Paso %d de %d · %s</span>',
+            \App\Support\SeguimientoExpediente::orden($pasoActual),
+            \App\Support\SeguimientoExpediente::total(),
+            e(\App\Support\SeguimientoExpediente::nombre($pasoActual)),
+        );
+
         $nombre = $this->record->acreditado_nombre;
         $nombreHtml = $nombre
             ? sprintf(
@@ -102,12 +111,24 @@ class EditExpediente extends EditRecord
         return ContentTabPosition::After;
     }
 
+    /** Paso 3 «Trámites gestionados», o paso 2 cuando el expediente no pasa por gestor. */
+    private function listoParaValuacion(): bool
+    {
+        $paso = \App\Services\SeguimientoExpedienteService::pasoEfectivo($this->record);
+        if ($paso === \App\Support\SeguimientoExpediente::TRAMITES_GESTIONADOS) return true;
+
+        return $paso === \App\Support\SeguimientoExpediente::TRAMITES_EN_GESTION
+            && ! $this->record->encargosGestor()->whereNotIn('estado', ['terminado', 'cancelado'])->exists();
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             // ── Enviar a gestor (super_admin) — sobre todo cuando ya validaste los documentos ──
             \App\Filament\Resources\ExpedienteResource\RelationManagers\EncargosGestorRelationManager::accionEnviar(fn () => $this->record, 'enviar_a_gestor_header')
-                ->color(fn () => $this->record->estaCompleto() ? 'primary' : 'gray'),
+                ->color(fn () => $this->record->estaCompleto() ? 'primary' : 'gray')
+                ->disabled(fn () => ! $this->record->estaCompleto())
+                ->tooltip(fn () => $this->record->estaCompleto() ? null : 'Valida todos los documentos primero'),
 
             // ── Seguimiento: los dos pasos sin evento los marca el super admin ──
             Action::make('en_unidad_valuacion')
@@ -116,8 +137,7 @@ class EditExpediente extends EditRecord
                 ->color('warning')
                 ->requiresConfirmation()
                 ->modalDescription('El acreditado y el asesor recibirán el aviso «En unidad de valuación».')
-                ->visible(fn () => auth()->user()?->hasRole('super_admin')
-                    && \App\Support\SeguimientoExpediente::orden((string) $this->record->seguimiento) < \App\Support\SeguimientoExpediente::orden(\App\Support\SeguimientoExpediente::EN_UNIDAD_VALUACION))
+                ->visible(fn () => auth()->user()?->hasRole('super_admin') && $this->listoParaValuacion())
                 ->action(function () {
                     app(\App\Services\SeguimientoExpedienteService::class)->avanzar($this->record, \App\Support\SeguimientoExpediente::EN_UNIDAD_VALUACION, auth()->user());
                     \Filament\Notifications\Notification::make()->title('Seguimiento: En unidad de valuación')->success()->send();
@@ -127,7 +147,8 @@ class EditExpediente extends EditRecord
                 ->label(fn () => $this->record->cuv ? "CUV {$this->record->cuv}" : 'Registrar CUV')
                 ->icon('heroicon-o-home-modern')
                 ->color(fn () => $this->record->cuv ? 'gray' : 'primary')
-                ->visible(fn () => auth()->user()?->hasRole('super_admin'))
+                ->visible(fn () => auth()->user()?->hasRole('super_admin')
+                    && ($this->record->cuv || \App\Services\SeguimientoExpedienteService::pasoEfectivo($this->record) === \App\Support\SeguimientoExpediente::EN_UNIDAD_VALUACION))
                 ->form([
                     \Filament\Forms\Components\TextInput::make('cuv')
                         ->label('CUV (Clave Única de Vivienda)')
@@ -155,7 +176,7 @@ class EditExpediente extends EditRecord
                 ->requiresConfirmation()
                 ->modalDescription('El acreditado y el asesor recibirán el aviso «Firma».')
                 ->visible(fn () => auth()->user()?->hasRole('super_admin')
-                    && \App\Support\SeguimientoExpediente::orden((string) $this->record->seguimiento) < \App\Support\SeguimientoExpediente::orden(\App\Support\SeguimientoExpediente::FIRMA))
+                    && \App\Services\SeguimientoExpedienteService::pasoEfectivo($this->record) === \App\Support\SeguimientoExpediente::RECURSO_EN_GESTION)
                 ->action(function () {
                     app(\App\Services\SeguimientoExpedienteService::class)->avanzar($this->record, \App\Support\SeguimientoExpediente::FIRMA, auth()->user());
                     \Filament\Notifications\Notification::make()->title('Seguimiento: Firma')->success()->send();

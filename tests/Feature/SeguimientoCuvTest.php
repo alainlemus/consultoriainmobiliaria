@@ -221,6 +221,33 @@ class SeguimientoCuvTest extends TestCase
         $this->actingAs($this->admin, 'sanctum')->deleteJson("/api/v1/expedientes/{$this->exp->id}/documentos/{$this->docA->id}")->assertOk();
     }
 
+    // ── Panel: botones según el paso ─────────────────────────────────────────
+
+    public function test_en_el_panel_los_botones_salen_segun_el_paso(): void
+    {
+        foreach (['ViewAny:Expediente', 'View:Expediente', 'Update:Expediente'] as $p) {
+            $this->admin->givePermissionTo(\Spatie\Permission\Models\Permission::findOrCreate($p, 'web'));
+        }
+        $this->actingAs($this->admin);
+        $page = fn () => \Livewire\Livewire::test(\App\Filament\Resources\ExpedienteResource\Pages\EditExpediente::class, ['record' => $this->exp->id]);
+
+        // Paso 1: sin validar → gestor deshabilitado, nada de valuación / CUV / firma
+        $page()->assertActionDisabled('enviar_a_gestor_header')
+            ->assertActionHidden('en_unidad_valuacion')->assertActionHidden('registrar_cuv')->assertActionHidden('marcar_firma')
+            ->assertSee('Paso 1 de 7');
+
+        // Paso 2 sin encargos → puede ir a valuación; aún sin CUV ni firma
+        $this->validar($this->docA); $this->validar($this->docB);
+        $page()->assertActionEnabled('enviar_a_gestor_header')->assertActionVisible('en_unidad_valuacion')
+            ->assertActionHidden('registrar_cuv')->assertActionHidden('marcar_firma')->assertSee('Paso 2 de 7');
+
+        // Paso 4 → CUV; paso 5 → firma
+        app(\App\Services\SeguimientoExpedienteService::class)->avanzar($this->exp->fresh(), S::EN_UNIDAD_VALUACION, $this->admin);
+        $page()->assertActionHidden('en_unidad_valuacion')->assertActionVisible('registrar_cuv')->assertActionHidden('marcar_firma');
+        app(\App\Services\CuvService::class)->registrar($this->exp->fresh(), '1234567890123456', null, $this->admin);
+        $page()->assertActionVisible('registrar_cuv')->assertActionVisible('marcar_firma')->assertSee('Paso 5 de 7');
+    }
+
     // ── Bandeja de notificaciones ────────────────────────────────────────────
 
     public function test_la_bandeja_lista_marca_leidas_y_nunca_borra(): void

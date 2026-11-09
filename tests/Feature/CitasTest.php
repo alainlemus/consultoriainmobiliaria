@@ -184,6 +184,8 @@ class CitasTest extends TestCase
         }
         app(CitaService::class)->solicitar(['cobertura_id' => $this->huejutla->id, 'tipo' => 'oficina', 'inicia_at' => $this->hora('10:00'), 'nombre' => 'María Cita', 'contacto_id' => $this->contacto->id], $this->asesor);
 
-        $this->actingAs($this->admin)->get('/admin/citas')->assertOk()->assertSee('María Cita')->assertSee('Confirmar');
+        $this->actingAs($this->admin)->get('/admin/citas')->assertOk()->assertSee('María Cita')->assertSee('Confirmar')
+            ->assertSee('Noviembre 2026')   // calendario del mes actual
+            ->assertSee('10:00 am');
     }
 }
