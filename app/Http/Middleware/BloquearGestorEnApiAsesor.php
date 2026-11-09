@@ -12,6 +12,9 @@ use Symfony\Component\HttpFoundation\Response;
  * debe usar la API del asesor (crear prospectos, expedientes, contratos…).
  * Solo se le permiten su sesión/perfil, el registro de su dispositivo para
  * notificaciones y sus propias rutas bajo /v1/gestor.
+ *
+ * Aplica solo a quien es ÚNICAMENTE gestor: un usuario que además es asesor
+ * (o super_admin) usa las dos interfaces de la app y necesita ambas APIs.
  */
 class BloquearGestorEnApiAsesor
 {
@@ -21,7 +24,7 @@ class BloquearGestorEnApiAsesor
     {
         $user = $request->user();
 
-        if ($user instanceof User && $user->hasRole('gestor') && ! $request->is(...self::PERMITIDAS)) {
+        if ($user instanceof User && $user->hasRole('gestor') && ! $user->hasAnyRole(['asesor', 'super_admin']) && ! $request->is(...self::PERMITIDAS)) {
             return response()->json(['message' => 'Esta sección no está disponible para gestores.'], 403);
         }
 
