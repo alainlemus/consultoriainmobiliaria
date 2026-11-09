@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.12.1] - 2026-11-09
+
+### Agregado
+- CRM → «Rendimiento de QR»: embudo de los QR impresos (escaneos, registros, solicitudes, expedientes y conversión) por asesor y por medio, con gráfica semanal y filtros de fechas, asesor y medio. El asesor solo ve lo suyo.
+
 ## [1.12.0] - 2026-11-09
 
 ### Agregado
