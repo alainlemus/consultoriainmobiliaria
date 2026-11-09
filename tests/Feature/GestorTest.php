@@ -83,6 +83,19 @@ class GestorTest extends TestCase
         $this->getJson('/api/v1/expedientes')->assertForbidden();
     }
 
+    public function test_quien_es_gestor_y_asesor_usa_las_dos_apis(): void
+    {
+        Role::firstOrCreate(['name' => 'asesor', 'guard_name' => 'web']);
+        $dual = $this->crearGestor();
+        $dual->assignRole('asesor');
+        \Laravel\Sanctum\Sanctum::actingAs($dual);
+
+        $roles = $this->getJson('/api/v1/auth/me')->assertOk()->json('data.roles');
+        $this->assertEqualsCanonicalizing(['gestor', 'asesor'], $roles);
+        $this->getJson('/api/v1/contactos')->assertOk();          // API del asesor
+        $this->getJson('/api/v1/gestor/encargos')->assertOk();    // API del gestor
+    }
+
     public function test_el_asesor_sigue_usando_su_api(): void
     {
         Role::firstOrCreate(['name' => 'asesor', 'guard_name' => 'web']);

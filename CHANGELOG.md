@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.12.3] - 2026-11-09
+
+### Cambiado
+- API móvil: un usuario que es gestor y también asesor (o super_admin) ya puede usar las dos APIs desde la app; el bloqueo de la API del asesor aplica solo a quien es únicamente gestor. Necesario para cambiar de interfaz en la app 2.10.0 sin cerrar sesión.
+
 ## [1.12.2] - 2026-11-09
 
 ### Cambiado
