@@ -13,6 +13,11 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.18.1] - 2026-11-18
+
+### Corregido
+- El número de versión al pie del menú lateral del panel ya se ve completo; antes quedaba cortado cuando el menú era largo.
+
 ## [1.18.0] - 2026-11-18
 
 ### Agregado
