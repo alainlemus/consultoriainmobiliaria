@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\EncargoGestorResource;
+use App\Filament\Resources\ExpedienteResource\Pages\EditExpediente;
+use App\Filament\Resources\ExpedienteResource\RelationManagers\EncargosGestorRelationManager;
 use App\Models\DocumentoExpediente;
 use App\Models\EncargoGestor;
 use App\Models\EtapaTramite;
@@ -17,6 +20,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
+use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -30,10 +34,15 @@ class EncargoGestorTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $gestor;
+
     private Expediente $exp;
+
     private DocumentoExpediente $escritura;
+
     private DocumentoExpediente $ine;
+
     private DocumentoExpediente $acta; // no se comparte
 
     protected function setUp(): void
@@ -45,14 +54,14 @@ class EncargoGestorTest extends TestCase
         Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'asesor', 'guard_name' => 'web']);
 
-        $this->admin  = User::factory()->create(['activo' => true]);
+        $this->admin = User::factory()->create(['activo' => true]);
         $this->admin->assignRole('super_admin');
         $this->gestor = User::factory()->create(['activo' => true, 'name' => 'Juan Gestor']);
         $this->gestor->assignRole('gestor');
 
         $asesor = User::factory()->create(['activo' => true]);
         $asesor->assignRole('asesor');
-        $tipo  = TipoTramite::create(['nombre' => 'FOVISSSTE Tradicional', 'slug' => 'fov-trad-gestor-test', 'porcentaje_honorarios' => 8.0]);
+        $tipo = TipoTramite::create(['nombre' => 'FOVISSSTE Tradicional', 'slug' => 'fov-trad-gestor-test', 'porcentaje_honorarios' => 8.0]);
         $etapa = EtapaTramite::create(['tipo_tramite_id' => $tipo->id, 'nombre' => 'Documentación', 'orden' => 1]);
         $this->exp = Expediente::create([
             'asesor_id' => $asesor->id, 'tipo_tramite_id' => $tipo->id, 'etapa_tramite_id' => $etapa->id,
@@ -61,11 +70,11 @@ class EncargoGestorTest extends TestCase
 
         $doc = fn ($n) => DocumentoExpediente::create([
             'expediente_id' => $this->exp->id, 'tipo' => $n, 'nombre' => $n, 'seccion' => 'otros',
-            'estado' => 'recibido', 'ruta_archivo' => "expedientes/{$this->exp->id}/docs/" . str($n)->slug() . '.pdf',
+            'estado' => 'recibido', 'ruta_archivo' => "expedientes/{$this->exp->id}/docs/".str($n)->slug().'.pdf',
         ]);
         $this->escritura = $doc('Escritura');
-        $this->ine       = $doc('INE del vendedor');
-        $this->acta      = $doc('Acta de nacimiento');
+        $this->ine = $doc('INE del vendedor');
+        $this->acta = $doc('Acta de nacimiento');
     }
 
     private function enviar(): EncargoGestor
@@ -96,6 +105,55 @@ class EncargoGestorTest extends TestCase
         // Descarga: lo compartido sí, lo demás no
         $this->getJson("/api/v1/gestor/encargos/{$encargo->id}/documentos/{$this->ine->id}/url")->assertOk()->assertJsonStructure(['url']);
         $this->getJson("/api/v1/gestor/encargos/{$encargo->id}/documentos/{$this->acta->id}/url")->assertNotFound();
+    }
+
+    public function test_el_super_admin_ve_todos_los_encargos_en_crm_gestores(): void
+    {
+        $this->travelTo('2026-11-18 10:00:00');
+        $encargo = $this->enviar();   // entrega 2026-11-08: ya vencido
+
+        $this->actingAs($this->admin, 'web')->get('/admin/encargos-gestor')->assertOk()
+            ->assertSee('Juan Gestor')->assertSee('María Hernández')->assertSee('Vencido');
+        $this->assertSame('1', EncargoGestorResource::getNavigationBadge());
+
+        $encargo->update(['estado' => EncargoGestor::TERMINADO]);
+        $this->assertNull(EncargoGestorResource::getNavigationBadge());
+
+        // El gestor y el asesor no la ven
+        $this->actingAs($this->gestor, 'web')->get('/admin/encargos-gestor')->assertForbidden();
+        $asesor = User::role('asesor')->first();
+        $this->actingAs($asesor, 'web')->get('/admin/encargos-gestor')->assertForbidden();
+    }
+
+    public function test_el_super_admin_ve_los_encargos_desde_la_app_solo_lectura(): void
+    {
+        $this->travelTo('2026-11-18 10:00:00');
+        $encargo = $this->enviar();   // entrega 2026-11-08: vencido
+
+        Sanctum::actingAs($this->admin);
+        $this->getJson('/api/v1/admin/encargos-gestor')->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.gestor.nombre', 'Juan Gestor')
+            ->assertJsonPath('data.0.vencido', true)
+            ->assertJsonPath('data.0.expediente.acreditado', 'María Hernández')
+            ->assertJsonPath('meta.vencidos', 1)
+            ->assertJsonPath('meta.gestores.0.nombre', 'Juan Gestor');
+        $this->getJson('/api/v1/admin/encargos-gestor?filtro=terminados')->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson("/api/v1/admin/encargos-gestor?expediente_id={$this->exp->id}")->assertOk()->assertJsonCount(1, 'data');
+
+        $show = $this->getJson("/api/v1/admin/encargos-gestor/{$encargo->id}")->assertOk()
+            ->assertJsonPath('data.gestor.nombre', 'Juan Gestor');
+        $this->assertCount(2, $show->json('data.documentos'));
+        $this->assertNotEmpty($show->json('data.historial'));
+
+        $this->getJson("/api/v1/admin/encargos-gestor/{$encargo->id}/documentos/{$this->ine->id}/url")->assertOk()->assertJsonStructure(['url']);
+        $this->getJson("/api/v1/admin/encargos-gestor/{$encargo->id}/documentos/{$this->acta->id}/url")->assertNotFound();
+
+        // Ni el gestor ni el asesor
+        Sanctum::actingAs($this->gestor);
+        $this->getJson('/api/v1/admin/encargos-gestor')->assertForbidden();
+        Sanctum::actingAs(User::role('asesor')->first());
+        $this->getJson('/api/v1/admin/encargos-gestor')->assertForbidden();
     }
 
     public function test_otro_gestor_no_ve_el_encargo(): void
@@ -238,16 +296,16 @@ class EncargoGestorTest extends TestCase
     public function test_el_super_admin_envia_y_reenvia_desde_el_panel(): void
     {
         $this->actingAs($this->admin);
-        $rm = \Livewire\Livewire::test(\App\Filament\Resources\ExpedienteResource\RelationManagers\EncargosGestorRelationManager::class, [
+        $rm = Livewire::test(EncargosGestorRelationManager::class, [
             'ownerRecord' => $this->exp,
-            'pageClass'   => \App\Filament\Resources\ExpedienteResource\Pages\EditExpediente::class,
+            'pageClass' => EditExpediente::class,
         ])->assertOk();
 
         $rm->callTableAction('enviar_a_gestor', data: [
-            'gestor_id'     => $this->gestor->id,
+            'gestor_id' => $this->gestor->id,
             'instrucciones' => 'Tramitar CLG',
-            'documentos'    => [$this->escritura->id, $this->ine->id],
-            'datos'         => ['acreditado', 'inmueble'],
+            'documentos' => [$this->escritura->id, $this->ine->id],
+            'datos' => ['acreditado', 'inmueble'],
         ])->assertHasNoTableActionErrors();
 
         $encargo = EncargoGestor::firstOrFail();
@@ -277,8 +335,8 @@ class EncargoGestorTest extends TestCase
         $asesor->assignRole('asesor');
         $this->actingAs($asesor);
 
-        $this->assertFalse(\App\Filament\Resources\ExpedienteResource\RelationManagers\EncargosGestorRelationManager::canViewForRecord(
-            $this->exp, \App\Filament\Resources\ExpedienteResource\Pages\EditExpediente::class,
+        $this->assertFalse(EncargosGestorRelationManager::canViewForRecord(
+            $this->exp, EditExpediente::class,
         ));
     }
 

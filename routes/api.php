@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Acreditado\DocumentoController as AcreditadoDocu
 use App\Http\Controllers\Api\V1\Acreditado\ExpedienteController as AcreditadoExpedienteController;
 use App\Http\Controllers\Api\V1\Acreditado\SolicitudController as AcreditadoSolicitudController;
 use App\Http\Controllers\Api\V1\AcreditadoQrController;
+use App\Http\Controllers\Api\V1\Admin\EncargoGestorController as AdminEncargoGestorController;
 use App\Http\Controllers\Api\V1\AnuncioController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CitaController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Api\V1\ContratoGeneradoController;
 use App\Http\Controllers\Api\V1\ContratosController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\DocumentoController;
+use App\Http\Controllers\Api\V1\EntrarController;
 use App\Http\Controllers\Api\V1\ExpedienteController;
 use App\Http\Controllers\Api\V1\Gestor\EncargoController;
 use App\Http\Controllers\Api\V1\NotificacionController;
@@ -86,6 +88,7 @@ Route::prefix('v1')->group(function () {
 
     // ── Públicas (sin token) ──────────────────────────────────────────────
     Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/entrar', EntrarController::class)->middleware('throttle:20,1');   // login único (staff o acreditado)
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
 
     // ── Protegidas (requieren Bearer token Sanctum) ───────────────────────
@@ -203,6 +206,11 @@ Route::prefix('v1')->group(function () {
 
         // Dispositivos FCM
         Route::post('/dispositivos', [DeviceTokenController::class, 'store']);
+
+        // Super admin: lo que hacen todos los gestores (solo lectura)
+        Route::get('/admin/encargos-gestor', [AdminEncargoGestorController::class, 'index']);
+        Route::get('/admin/encargos-gestor/{id}', [AdminEncargoGestorController::class, 'show'])->whereNumber('id');
+        Route::get('/admin/encargos-gestor/{id}/documentos/{documentoId}/url', [AdminEncargoGestorController::class, 'urlDocumento'])->whereNumber(['id', 'documentoId']);
 
         // Gestor: encargos que le envía la administración
         Route::prefix('gestor')->middleware(SoloGestor::class)->group(function () {

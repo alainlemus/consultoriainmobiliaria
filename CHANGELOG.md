@@ -13,6 +13,16 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.18.0] - 2026-11-18
+
+### Agregado
+- CRM → Gestores: todos los encargos a gestores en una sola lista, solo para el super admin. Muestra el expediente, el gestor, qué tramita, la fecha de entrega (en rojo si ya venció), el estado, los documentos compartidos y subidos, y el último movimiento. Tiene filtros por gestor, estado, solo abiertos y vencidos, y un contador en el menú de los encargos vencidos. Cada fila abre su revisión e historial o el expediente.
+- App: el super admin ve desde la app lo que hacen todos los gestores, solo lectura (requiere app 2.12.0).
+- App: login único. Una sola pantalla de correo y contraseña para asesores, gestores, super admin y acreditados; el sistema reconoce el tipo de cuenta. Los logins anteriores siguen funcionando para las versiones de la app que ya están instaladas.
+
+### Cambiado
+- Los avisos de un gestor en la bandeja de la app abren directo el encargo correspondiente.
+
 ## [1.17.0] - 2026-11-18
 
 ### Agregado
