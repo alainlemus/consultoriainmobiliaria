@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\V1\Gestor;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentoExpediente;
 use App\Models\EncargoGestor;
+use App\Services\CuvService;
 use App\Services\EncargoGestorService;
+use App\Support\EncargoGestorPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -28,49 +30,19 @@ class EncargoController extends Controller
 
         match ($request->input('estado')) {
             'terminados' => $q->whereIn('estado', [EncargoGestor::TERMINADO, EncargoGestor::CANCELADO]),
-            'todos'      => null,
-            default      => $q->activos(),
+            'todos' => null,
+            default => $q->activos(),
         };
 
-        return response()->json(['data' => $q->get()->map(fn (EncargoGestor $e) => $this->resumen($e))]);
+        return response()->json(['data' => $q->get()->map(fn (EncargoGestor $e) => EncargoGestorPayload::resumen($e))]);
     }
 
     /** GET /gestor/encargos/{id} */
     public function show(Request $request, int $id): JsonResponse
     {
         $e = $this->encargo($request, $id);
-        $e->load(['expediente.tipoTramite:id,nombre', 'documentos', 'documentosSubidos', 'eventos.user:id,name', 'enviadoPor:id,name']);
-        return response()->json(['data' => $this->resumen($e) + [
-            'enviado_por' => $e->enviadoPor?->name,
-            // Solo las secciones que la administración compartió (acreditado, vendedor, inmueble, crédito)
-            'datos'       => $e->datosExpediente(),
-            'documentos' => $e->documentos->map(fn (DocumentoExpediente $d) => [
-                'id'          => $d->id,
-                'nombre'      => $d->nombre,
-                'extension'   => strtolower(pathinfo((string) $d->ruta_archivo, PATHINFO_EXTENSION)),
-                'revision'    => $d->pivot->revision,
-                'nota'        => $d->pivot->nota,
-                'vuelta'      => (int) $d->pivot->vuelta,
-                // Lo cambió la administración en esta vuelta (para marcarlo "Nuevo")
-                'nuevo'       => $e->vuelta > 1 && (int) $d->pivot->vuelta === $e->vuelta,
-                'revisado_at' => $d->pivot->revisado_at,
-            ])->values(),
-            'subidos' => $e->documentosSubidos->sortByDesc('updated_at')->map(fn (DocumentoExpediente $d) => [
-                'id'             => $d->id,
-                'nombre'         => $d->nombre,
-                'notas'          => $d->notas,
-                'extension'      => strtolower(pathinfo((string) $d->ruta_archivo, PATHINFO_EXTENSION)),
-                'validacion'     => $d->validacion,
-                'motivo_rechazo' => $d->motivo_rechazo,
-                'subido_at'      => $d->updated_at?->toIso8601String(),
-            ])->values(),
-            'historial' => $e->eventos->map(fn ($ev) => [
-                'tipo'    => $ev->tipo,
-                'detalle' => $ev->detalle,
-                'por'     => $ev->user?->name,
-                'fecha'   => $ev->created_at?->toIso8601String(),
-            ])->values(),
-        ]]);
+
+        return response()->json(['data' => EncargoGestorPayload::detalle($e)]);
     }
 
     /** GET /gestor/encargos/{id}/documentos/{documentoId}/url — URL firmada (5 min) para descargar */
@@ -87,7 +59,7 @@ class EncargoController extends Controller
 
         $url = URL::temporarySignedRoute('api.documentos.descargar', now()->addMinutes(5), [
             'expedienteId' => $e->expediente_id,
-            'documentoId'  => $doc->id,
+            'documentoId' => $doc->id,
         ]);
 
         return response()->json(['url' => $url, 'expira_en' => 300]);
@@ -98,10 +70,10 @@ class EncargoController extends Controller
     {
         $e = $this->encargo($request, $id);
         $data = $request->validate([
-            'revisiones'                => ['required', 'array', 'min:1'],
+            'revisiones' => ['required', 'array', 'min:1'],
             'revisiones.*.documento_id' => ['required', 'integer'],
-            'revisiones.*.revision'     => ['required', 'in:correcto,incorrecto'],
-            'revisiones.*.nota'         => ['nullable', 'string', 'max:500'],
+            'revisiones.*.revision' => ['required', 'in:correcto,incorrecto'],
+            'revisiones.*.nota' => ['nullable', 'string', 'max:500'],
         ]);
 
         $this->service->enviarRevision($e, $request->user(), $data['revisiones']);
@@ -114,13 +86,13 @@ class EncargoController extends Controller
     {
         $e = $this->encargo($request, $id);
         $data = $request->validate([
-            'archivo'                => ['required', 'file', 'max:20480', 'mimes:' . EncargoGestorService::MIMES],
-            'tipo'                   => ['required', 'string', 'max:120'],
-            'notas'                  => ['nullable', 'string', 'max:500'],
+            'archivo' => ['required', 'file', 'max:20480', 'mimes:'.EncargoGestorService::MIMES],
+            'tipo' => ['required', 'string', 'max:120'],
+            'notas' => ['nullable', 'string', 'max:500'],
             'reemplaza_documento_id' => ['nullable', 'integer'],
         ], [
             'archivo.mimes' => 'Sube un PDF, un Word (.doc/.docx) o una imagen.',
-            'archivo.max'   => 'El archivo no puede pesar más de 20 MB.',
+            'archivo.max' => 'El archivo no puede pesar más de 20 MB.',
         ]);
 
         $doc = $this->service->subirDocumento($e, $request->user(), $request->file('archivo'), $data['tipo'], $data['notas'] ?? null, $data['reemplaza_documento_id'] ?? null);
@@ -156,44 +128,20 @@ class EncargoController extends Controller
         abort_unless(in_array($encargo->estado, [EncargoGestor::EN_TRAMITE, EncargoGestor::POR_VALIDAR, EncargoGestor::TERMINADO], true), 422, 'Este encargo no está en trámite.');
 
         $data = $request->validate([
-            'cuv'     => ['required', 'regex:/^\d{16}$/'],
+            'cuv' => ['required', 'regex:/^\d{16}$/'],
             'archivo' => ['nullable', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,heic,webp'],
         ], ['cuv.regex' => 'La CUV son 16 dígitos.']);
 
-        $exp = app(\App\Services\CuvService::class)->registrar($encargo->expediente, $data['cuv'], $request->file('archivo'), $request->user());
+        $exp = app(CuvService::class)->registrar($encargo->expediente, $data['cuv'], $request->file('archivo'), $request->user());
 
         return response()->json([
-            'message'  => 'CUV registrada. Avisamos al acreditado, al asesor y a la administración.',
-            'cuv_info' => \App\Services\CuvService::payload($exp),
+            'message' => 'CUV registrada. Avisamos al acreditado, al asesor y a la administración.',
+            'cuv_info' => CuvService::payload($exp),
         ]);
     }
 
     private function encargo(Request $request, int $id): EncargoGestor
     {
         return $request->user()->encargosGestor()->findOrFail($id);
-    }
-
-    private function resumen(EncargoGestor $e): array
-    {
-        $x = $e->expediente;
-
-        return [
-            'id'                => $e->id,
-            'estado'            => $e->estado,
-            'estado_label'      => $e->estadoLabel(),
-            'vuelta'            => $e->vuelta,
-            'instrucciones'     => $e->instrucciones,
-            'fecha_entrega'     => $e->fecha_entrega?->toDateString(),
-            'enviado_at'        => $e->created_at?->toIso8601String(),
-            'documentos_count'  => $e->documentos_count ?? $e->documentos()->count(),
-            'subidos_count'     => $e->documentos_subidos_count ?? $e->documentosSubidos()->count(),
-            'expediente'        => [
-                'id'          => $x->id,
-                'folio'       => $x->folio,
-                'acreditado'  => $x->acreditado_nombre,
-                'tipo_tramite'=> $x->tipoTramite?->nombre,
-                'municipio'   => trim(implode(', ', array_filter([$x->acreditado_municipio, $x->acreditado_estado]))),
-            ],
-        ];
     }
 }

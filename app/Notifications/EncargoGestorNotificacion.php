@@ -53,7 +53,7 @@ class EncargoGestorNotificacion extends Notification
                     ->url($url)
                     ->markAsRead(),
             ])
-            ->getDatabaseMessage();
+            ->getDatabaseMessage() + ['app' => $this->pushData()];
     }
 
     protected function pushTitle(): string
@@ -69,9 +69,9 @@ class EncargoGestorNotificacion extends Notification
     protected function pushData(): array
     {
         return [
-            'screen'        => $this->paraGestor ? 'gestor_encargo' : 'expedientes',
-            'tipo'          => $this->tipo,
-            'encargo_id'    => (string) $this->encargo->id,
+            'screen' => $this->paraGestor ? 'gestor_encargo' : 'expedientes',
+            'tipo' => $this->tipo,
+            'encargo_id' => (string) $this->encargo->id,
             'expediente_id' => (string) $this->encargo->expediente_id,
         ];
     }
