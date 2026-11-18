@@ -41,6 +41,9 @@ Schedule::command('prospectos:alertar-sin-atender')
 // ── Recordatorios de citas (24 h y 2 h antes) ────────────────────────────
 Schedule::command('citas:recordar')->hourly();
 
+// ── Préstamo de vehículos: recordatorios, «no se presentó» y retrasos ─────
+Schedule::command('vehiculos:revisar')->everyFiveMinutes();
+
 // ── Actualización automática de la UMA ────────────────────────────────────
 // La UMA se publica el 1 de febrero. Corremos el cron todos los martes
 // de enero y febrero para garantizar que capturamos la actualización
@@ -50,4 +53,3 @@ Schedule::command('uma:actualizar --forzar')
     ->mondays()
     ->at('06:00')
     ->when(fn () => in_array(now()->month, [1, 2]));
-

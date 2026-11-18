@@ -1,22 +1,30 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\ContactoController;
-use App\Http\Controllers\Api\V1\ExpedienteController;
-use App\Http\Controllers\Api\V1\DocumentoController;
-use App\Http\Controllers\Api\V1\UbicacionController;
+use App\Http\Controllers\Api\V1\Acreditado\AtribucionController;
+use App\Http\Controllers\Api\V1\Acreditado\AuthController as AcreditadoAuthController;
+use App\Http\Controllers\Api\V1\Acreditado\DocumentoController as AcreditadoDocumentoController;
+use App\Http\Controllers\Api\V1\Acreditado\ExpedienteController as AcreditadoExpedienteController;
+use App\Http\Controllers\Api\V1\Acreditado\SolicitudController as AcreditadoSolicitudController;
+use App\Http\Controllers\Api\V1\AcreditadoQrController;
 use App\Http\Controllers\Api\V1\AnuncioController;
+use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CitaController;
+use App\Http\Controllers\Api\V1\ContactoController;
+use App\Http\Controllers\Api\V1\ContratoGeneradoController;
+use App\Http\Controllers\Api\V1\ContratosController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
+use App\Http\Controllers\Api\V1\DocumentoController;
+use App\Http\Controllers\Api\V1\ExpedienteController;
+use App\Http\Controllers\Api\V1\Gestor\EncargoController;
+use App\Http\Controllers\Api\V1\NotificacionController;
 use App\Http\Controllers\Api\V1\RouteController;
 use App\Http\Controllers\Api\V1\SyncController;
-use App\Http\Controllers\Api\V1\DeviceTokenController;
-use App\Http\Controllers\Api\V1\ContratosController;
-use App\Http\Controllers\Api\V1\ContratoGeneradoController;
+use App\Http\Controllers\Api\V1\UbicacionController;
+use App\Http\Controllers\Api\V1\VehiculoController;
 use App\Http\Controllers\Api\WhatsAppWebhookController;
-use App\Http\Controllers\Api\V1\Acreditado\AuthController as AcreditadoAuthController;
-use App\Http\Controllers\Api\V1\Acreditado\ExpedienteController as AcreditadoExpedienteController;
-use App\Http\Controllers\Api\V1\Acreditado\DocumentoController as AcreditadoDocumentoController;
-use App\Http\Controllers\Api\V1\Acreditado\SolicitudController as AcreditadoSolicitudController;
+use App\Http\Middleware\BloquearGestorEnApiAsesor;
+use App\Http\Middleware\SoloGestor;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,6 +62,12 @@ Route::get(
     [AuthController::class, 'verFotoPerfil']
 )->middleware('signed')->name('api.user.foto');
 
+// ── Préstamo de vehículos: fotos de checklists y licencia (URL firmada) ────
+Route::get('/vehiculos/fotos/{fotoId}', [VehiculoController::class, 'verFoto'])
+    ->middleware('signed')->name('api.vehiculo.foto');
+Route::get('/users/{userId}/licencia', [VehiculoController::class, 'verLicenciaFoto'])
+    ->middleware('signed')->name('api.user.licencia');
+
 // ── Archivo de un contrato generado (pdf / ine_acreditado / ine_solidario) ──
 Route::get(
     '/contratos-generados/{id}/{campo}/descargar',
@@ -71,114 +85,135 @@ Route::get(
 Route::prefix('v1')->group(function () {
 
     // ── Públicas (sin token) ──────────────────────────────────────────────
-    Route::post('/auth/login',           [AuthController::class, 'login']);
+    Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
 
     // ── Protegidas (requieren Bearer token Sanctum) ───────────────────────
-    Route::middleware(['auth:sanctum', \App\Http\Middleware\BloquearGestorEnApiAsesor::class])->group(function () {
+    Route::middleware(['auth:sanctum', BloquearGestorEnApiAsesor::class])->group(function () {
 
         // Auth
-        Route::post('/auth/logout',                [AuthController::class, 'logout']);
-        Route::get('/auth/me',                     [AuthController::class, 'me']);
-        Route::put('/auth/perfil',                 [AuthController::class, 'updatePerfil']);
-        Route::post('/auth/perfil/foto',           [AuthController::class, 'subirFotoPerfil']);
-        Route::get('/auth/asesores',               [AuthController::class, 'asesores']);
+        Route::post('/auth/logout', [AuthController::class, 'logout']);
+        Route::get('/auth/me', [AuthController::class, 'me']);
+        Route::put('/auth/perfil', [AuthController::class, 'updatePerfil']);
+        Route::post('/auth/perfil/foto', [AuthController::class, 'subirFotoPerfil']);
+        Route::get('/auth/asesores', [AuthController::class, 'asesores']);
         Route::post('/auth/solicitar-cancelacion', [AuthController::class, 'solicitarCancelacion']);
-        Route::post('/auth/biometric-token',       [AuthController::class, 'biometricToken']);
-        Route::delete('/auth/biometric-token',     [AuthController::class, 'revokeBiometricToken']);
+        Route::post('/auth/biometric-token', [AuthController::class, 'biometricToken']);
+        Route::delete('/auth/biometric-token', [AuthController::class, 'revokeBiometricToken']);
         Route::post('/auth/session-from-biometric', [AuthController::class, 'sessionFromBiometric']);
 
         // Cuentas de la app ligadas a mi QR (registrados, con o sin solicitud)
-        Route::get('/acreditados-qr', [\App\Http\Controllers\Api\V1\AcreditadoQrController::class, 'index']);
+        Route::get('/acreditados-qr', [AcreditadoQrController::class, 'index']);
 
         // Prospectos / Contactos
-        Route::get('/contactos',                              [ContactoController::class, 'index']);
-        Route::post('/contactos',                             [ContactoController::class, 'store']);
-        Route::get('/contactos/{id}',                        [ContactoController::class, 'show']);
-        Route::put('/contactos/{id}',                        [ContactoController::class, 'update']);
-        Route::post('/contactos/{id}/foto',                  [ContactoController::class, 'uploadFoto']);
-        Route::post('/contactos/{id}/simulador-screenshot',  [ContactoController::class, 'uploadSimuladorScreenshot']);
+        Route::get('/contactos', [ContactoController::class, 'index']);
+        Route::post('/contactos', [ContactoController::class, 'store']);
+        Route::get('/contactos/{id}', [ContactoController::class, 'show']);
+        Route::put('/contactos/{id}', [ContactoController::class, 'update']);
+        Route::post('/contactos/{id}/foto', [ContactoController::class, 'uploadFoto']);
+        Route::post('/contactos/{id}/simulador-screenshot', [ContactoController::class, 'uploadSimuladorScreenshot']);
 
         // Expedientes
-        Route::get('/expedientes',        [ExpedienteController::class, 'index']);
-        Route::post('/expedientes',       [ExpedienteController::class, 'store']);
-        Route::get('/expedientes/{id}',   [ExpedienteController::class, 'show']);
-        Route::put('/expedientes/{id}',   [ExpedienteController::class, 'update']);
+        Route::get('/expedientes', [ExpedienteController::class, 'index']);
+        Route::post('/expedientes', [ExpedienteController::class, 'store']);
+        Route::get('/expedientes/{id}', [ExpedienteController::class, 'show']);
+        Route::put('/expedientes/{id}', [ExpedienteController::class, 'update']);
         Route::post('/expedientes/{id}/seguimiento', [ExpedienteController::class, 'seguimiento']);   // super_admin: «En unidad de valuación» / «Firma»
-        Route::post('/expedientes/{id}/cuv',         [ExpedienteController::class, 'cuv']);           // super_admin: CUV (16 dígitos) + foto/PDF opcional
+        Route::post('/expedientes/{id}/cuv', [ExpedienteController::class, 'cuv']);           // super_admin: CUV (16 dígitos) + foto/PDF opcional
 
         // Citas: el asesor agenda para sus clientes; el super admin confirma, reagenda y cancela
-        Route::get('/citas/oficinas',           [\App\Http\Controllers\Api\V1\CitaController::class, 'oficinas']);
-        Route::get('/citas/disponibilidad',     [\App\Http\Controllers\Api\V1\CitaController::class, 'disponibilidad']);
-        Route::get('/citas',                    [\App\Http\Controllers\Api\V1\CitaController::class, 'index']);
-        Route::post('/citas',                   [\App\Http\Controllers\Api\V1\CitaController::class, 'store']);
-        Route::get('/citas/{id}',               [\App\Http\Controllers\Api\V1\CitaController::class, 'show']);
-        Route::put('/citas/{id}/confirmar',     [\App\Http\Controllers\Api\V1\CitaController::class, 'confirmar']);
-        Route::put('/citas/{id}/reagendar',     [\App\Http\Controllers\Api\V1\CitaController::class, 'reagendar']);
-        Route::put('/citas/{id}/cancelar',      [\App\Http\Controllers\Api\V1\CitaController::class, 'cancelar']);
-        Route::put('/citas/{id}/realizada',     [\App\Http\Controllers\Api\V1\CitaController::class, 'realizada']);
+        Route::get('/citas/oficinas', [CitaController::class, 'oficinas']);
+        Route::get('/citas/disponibilidad', [CitaController::class, 'disponibilidad']);
+        Route::get('/citas', [CitaController::class, 'index']);
+        Route::post('/citas', [CitaController::class, 'store']);
+        Route::get('/citas/{id}', [CitaController::class, 'show']);
+        Route::put('/citas/{id}/confirmar', [CitaController::class, 'confirmar']);
+        Route::put('/citas/{id}/reagendar', [CitaController::class, 'reagendar']);
+        Route::put('/citas/{id}/cancelar', [CitaController::class, 'cancelar']);
+        Route::put('/citas/{id}/realizada', [CitaController::class, 'realizada']);
+
+        // Préstamo de vehículos: el asesor solicita y hace los checklists; el super admin autoriza en el panel
+        Route::get('/vehiculos', [VehiculoController::class, 'index']);
+        Route::get('/vehiculos/reservas', [VehiculoController::class, 'reservas']);
+        Route::post('/vehiculos/reservas', [VehiculoController::class, 'solicitar']);
+        Route::get('/vehiculos/reservas/{id}', [VehiculoController::class, 'reserva']);
+        Route::put('/vehiculos/reservas/{id}/cancelar', [VehiculoController::class, 'cancelar']);
+        Route::post('/vehiculos/reservas/{id}/salida', [VehiculoController::class, 'salida']);
+        Route::post('/vehiculos/reservas/{id}/entrega', [VehiculoController::class, 'entrega']);
+        Route::put('/vehiculos/reservas/{id}/cambiar-vehiculo', [VehiculoController::class, 'cambiarVehiculo']);
+        Route::post('/vehiculos/reservas/{id}/resguardo', [VehiculoController::class, 'resguardo']);
+        Route::post('/vehiculos/reservas/{id}/retomar', [VehiculoController::class, 'retomar']);
+        Route::post('/vehiculos/reservas/{id}/cargas', [VehiculoController::class, 'carga']);
+        Route::get('/vehiculos/reembolsos', [VehiculoController::class, 'reembolsos']);
+        Route::get('/vehiculos/{id}', [VehiculoController::class, 'show'])->whereNumber('id');
+        Route::get('/vehiculos/{id}/ocupacion', [VehiculoController::class, 'ocupacion']);
+        Route::post('/vehiculos/{id}/llaves/codigo', [VehiculoController::class, 'codigoLlaves']);
+        Route::post('/vehiculos/{id}/llaves/recibir', [VehiculoController::class, 'recibirLlaves']);
+        Route::post('/vehiculos/{id}/llaves/oficina', [VehiculoController::class, 'llavesOficina']);
+        Route::get('/perfil/licencia', [VehiculoController::class, 'verLicencia']);
+        Route::post('/perfil/licencia', [VehiculoController::class, 'subirLicencia']);
 
         // Bandeja de notificaciones (asesor, gestor, super_admin): solo lectura, nunca se borran
-        Route::get('/notificaciones',                 [\App\Http\Controllers\Api\V1\NotificacionController::class, 'index']);
-        Route::get('/notificaciones/no-leidas',       [\App\Http\Controllers\Api\V1\NotificacionController::class, 'noLeidas']);
-        Route::put('/notificaciones/leer-todas',      [\App\Http\Controllers\Api\V1\NotificacionController::class, 'leerTodas']);
-        Route::put('/notificaciones/{id}/leer',       [\App\Http\Controllers\Api\V1\NotificacionController::class, 'leer']);
+        Route::get('/notificaciones', [NotificacionController::class, 'index']);
+        Route::get('/notificaciones/no-leidas', [NotificacionController::class, 'noLeidas']);
+        Route::put('/notificaciones/leer-todas', [NotificacionController::class, 'leerTodas']);
+        Route::put('/notificaciones/{id}/leer', [NotificacionController::class, 'leer']);
 
         // Contratos — texto configurable para generar el PDF en la app (sin conexión)
         Route::get('/contratos/prestacion-servicios/config', [ContratosController::class, 'prestacionServiciosConfig']);
         Route::put('/contratos/prestacion-servicios/config', [ContratosController::class, 'updatePrestacionServiciosConfig']);
-        Route::get('/contratos/generados',            [ContratoGeneradoController::class, 'index']);
-        Route::post('/contratos/generados',            [ContratoGeneradoController::class, 'store']);
-        Route::get('/contratos/generados/{id}/ver',    [ContratoGeneradoController::class, 'ver']);
+        Route::get('/contratos/generados', [ContratoGeneradoController::class, 'index']);
+        Route::post('/contratos/generados', [ContratoGeneradoController::class, 'store']);
+        Route::get('/contratos/generados/{id}/ver', [ContratoGeneradoController::class, 'ver']);
 
         // Documentos
-        Route::get('/expedientes/{expedienteId}/documentos',                                   [DocumentoController::class, 'index']);
-        Route::post('/expedientes/{expedienteId}/documentos',                                  [DocumentoController::class, 'store']);
-        Route::get('/expedientes/{expedienteId}/documentos/{documentoId}/ver',                 [DocumentoController::class, 'ver']);
-        Route::delete('/expedientes/{expedienteId}/documentos/{documentoId}',                  [DocumentoController::class, 'destroy']);
-        Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/reemplazar',         [DocumentoController::class, 'reemplazar']);
-        Route::post('/expedientes/{expedienteId}/enviar-carpeta',                              [DocumentoController::class, 'enviarCarpeta']);
-        Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/validar',            [DocumentoController::class, 'validar']);
-        Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/rechazar',           [DocumentoController::class, 'rechazar']);
-        Route::post('/expedientes/{expedienteId}/documentos-solicitados',                      [DocumentoController::class, 'solicitar']);
+        Route::get('/expedientes/{expedienteId}/documentos', [DocumentoController::class, 'index']);
+        Route::post('/expedientes/{expedienteId}/documentos', [DocumentoController::class, 'store']);
+        Route::get('/expedientes/{expedienteId}/documentos/{documentoId}/ver', [DocumentoController::class, 'ver']);
+        Route::delete('/expedientes/{expedienteId}/documentos/{documentoId}', [DocumentoController::class, 'destroy']);
+        Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/reemplazar', [DocumentoController::class, 'reemplazar']);
+        Route::post('/expedientes/{expedienteId}/enviar-carpeta', [DocumentoController::class, 'enviarCarpeta']);
+        Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/validar', [DocumentoController::class, 'validar']);
+        Route::post('/expedientes/{expedienteId}/documentos/{documentoId}/rechazar', [DocumentoController::class, 'rechazar']);
+        Route::post('/expedientes/{expedienteId}/documentos-solicitados', [DocumentoController::class, 'solicitar']);
 
         // Ubicaciones GPS
-        Route::post('/ubicaciones',                    [UbicacionController::class, 'store']);
-        Route::get('/ubicaciones/mapa',                [UbicacionController::class, 'mapa']);
-        Route::post('/ubicaciones/{id}/fotos',         [UbicacionController::class, 'subirFotos']);
-        Route::patch('/ubicaciones/{id}/semaforo',     [UbicacionController::class, 'actualizarSemaforo']);
+        Route::post('/ubicaciones', [UbicacionController::class, 'store']);
+        Route::get('/ubicaciones/mapa', [UbicacionController::class, 'mapa']);
+        Route::post('/ubicaciones/{id}/fotos', [UbicacionController::class, 'subirFotos']);
+        Route::patch('/ubicaciones/{id}/semaforo', [UbicacionController::class, 'actualizarSemaforo']);
 
         // Escuelas — buscador para vincular prospectos
-        Route::get('/escuelas',                        [UbicacionController::class, 'escuelas']);
+        Route::get('/escuelas', [UbicacionController::class, 'escuelas']);
 
         // Anuncios publicitarios
-        Route::get('/anuncios/mapa',               [AnuncioController::class, 'mapa']);
-        Route::post('/anuncios',                   [AnuncioController::class, 'store']);
-        Route::patch('/anuncios/{id}/estado',      [AnuncioController::class, 'actualizarEstado']);
-        Route::post('/anuncios/{id}/fotos',        [AnuncioController::class, 'subirFotos']);
+        Route::get('/anuncios/mapa', [AnuncioController::class, 'mapa']);
+        Route::post('/anuncios', [AnuncioController::class, 'store']);
+        Route::patch('/anuncios/{id}/estado', [AnuncioController::class, 'actualizarEstado']);
+        Route::post('/anuncios/{id}/fotos', [AnuncioController::class, 'subirFotos']);
 
         // Rutas de asesores (GPS tracking)
-        Route::post('/routes/points',      [RouteController::class, 'storePoints']);
-        Route::get('/routes/asesores',    [RouteController::class, 'listAsesores']);
-        Route::get('/routes/points',       [RouteController::class, 'getPoints']);
-        Route::get('/routes/dias',        [RouteController::class, 'getDias']);
+        Route::post('/routes/points', [RouteController::class, 'storePoints']);
+        Route::get('/routes/asesores', [RouteController::class, 'listAsesores']);
+        Route::get('/routes/points', [RouteController::class, 'getPoints']);
+        Route::get('/routes/dias', [RouteController::class, 'getDias']);
 
         // Sync offline batch
-        Route::post('/sync',              [SyncController::class, 'batch']);
+        Route::post('/sync', [SyncController::class, 'batch']);
 
         // Dispositivos FCM
-        Route::post('/dispositivos',      [DeviceTokenController::class, 'store']);
+        Route::post('/dispositivos', [DeviceTokenController::class, 'store']);
 
         // Gestor: encargos que le envía la administración
-        Route::prefix('gestor')->middleware(\App\Http\Middleware\SoloGestor::class)->group(function () {
-            Route::get('/encargos',                                   [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'index']);
-            Route::get('/encargos/{id}',                              [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'show']);
-            Route::get('/encargos/{id}/documentos/{documentoId}/url', [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'urlDocumento']);
-            Route::post('/encargos/{id}/revision',                    [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'revision']);
-            Route::post('/encargos/{id}/documentos',                  [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'subir']);
-            Route::post('/encargos/{id}/cuv',                         [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'cuv']);
-            Route::post('/encargos/{id}/entregar',                    [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'entregar']);
-            Route::post('/encargos/{id}/reabrir',                     [\App\Http\Controllers\Api\V1\Gestor\EncargoController::class, 'reabrir']);
+        Route::prefix('gestor')->middleware(SoloGestor::class)->group(function () {
+            Route::get('/encargos', [EncargoController::class, 'index']);
+            Route::get('/encargos/{id}', [EncargoController::class, 'show']);
+            Route::get('/encargos/{id}/documentos/{documentoId}/url', [EncargoController::class, 'urlDocumento']);
+            Route::post('/encargos/{id}/revision', [EncargoController::class, 'revision']);
+            Route::post('/encargos/{id}/documentos', [EncargoController::class, 'subir']);
+            Route::post('/encargos/{id}/cuv', [EncargoController::class, 'cuv']);
+            Route::post('/encargos/{id}/entregar', [EncargoController::class, 'entregar']);
+            Route::post('/encargos/{id}/reabrir', [EncargoController::class, 'reabrir']);
         });
 
     });
@@ -186,8 +221,8 @@ Route::prefix('v1')->group(function () {
     // ── Rutas para CRM (autenticación por sesión web, no token) ──────────────
     Route::middleware('auth:web')->group(function () {
         Route::get('/crm/routes/asesores', [RouteController::class, 'listAsesores']);
-        Route::get('/crm/routes/points',   [RouteController::class, 'getPoints']);
-        Route::get('/crm/routes/dias',     [RouteController::class, 'getDias']);
+        Route::get('/crm/routes/points', [RouteController::class, 'getPoints']);
+        Route::get('/crm/routes/dias', [RouteController::class, 'getDias']);
     });
 });
 
@@ -203,8 +238,8 @@ Route::prefix('v1/acreditado')->group(function () {
         ->name('api.acreditado.foto-perfil');
 
     // ── Auth pública (sin token) ──────────────────────────────────────────
-    Route::post('/auth/registro',        [AcreditadoAuthController::class, 'registro']);
-    Route::post('/auth/login',           [AcreditadoAuthController::class, 'login']);
+    Route::post('/auth/registro', [AcreditadoAuthController::class, 'registro']);
+    Route::post('/auth/login', [AcreditadoAuthController::class, 'login']);
     Route::post('/auth/forgot-password', [AcreditadoAuthController::class, 'forgotPassword']);
 
     // ── Servicios disponibles (público, para mostrar en onboarding) ───────
@@ -215,34 +250,34 @@ Route::prefix('v1/acreditado')->group(function () {
         ->middleware('throttle:30,1');
 
     // ── Atribución de la instalación al QR (primer arranque, sin cuenta) ──────
-    Route::post('/atribucion', [\App\Http\Controllers\Api\V1\Acreditado\AtribucionController::class, 'store'])
+    Route::post('/atribucion', [AtribucionController::class, 'store'])
         ->middleware('throttle:10,1');
 
     // ── Rutas protegidas con Sanctum (token del acreditado) ───────────────
     Route::middleware('auth:sanctum')->group(function () {
 
         // Auth
-        Route::post('/auth/logout',             [AcreditadoAuthController::class, 'logout']);
-        Route::get('/auth/me',                  [AcreditadoAuthController::class, 'me']);
-        Route::put('/auth/perfil',              [AcreditadoAuthController::class, 'updatePerfil']);
-        Route::put('/auth/codigo-asesor',       [AcreditadoAuthController::class, 'ligarCodigoAsesor']);
+        Route::post('/auth/logout', [AcreditadoAuthController::class, 'logout']);
+        Route::get('/auth/me', [AcreditadoAuthController::class, 'me']);
+        Route::put('/auth/perfil', [AcreditadoAuthController::class, 'updatePerfil']);
+        Route::put('/auth/codigo-asesor', [AcreditadoAuthController::class, 'ligarCodigoAsesor']);
 
         // Citas del acreditado con su asesor
-        Route::get('/citas/oficinas',         [\App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'oficinas']);
-        Route::get('/citas/disponibilidad',   [\App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'disponibilidad']);
-        Route::get('/citas',                  [\App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'index']);
-        Route::post('/citas',                 [\App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'store']);
-        Route::put('/citas/{id}/cancelar',    [\App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'cancelar']);
+        Route::get('/citas/oficinas', [App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'oficinas']);
+        Route::get('/citas/disponibilidad', [App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'disponibilidad']);
+        Route::get('/citas', [App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'index']);
+        Route::post('/citas', [App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'store']);
+        Route::put('/citas/{id}/cancelar', [App\Http\Controllers\Api\V1\Acreditado\CitaController::class, 'cancelar']);
 
         // Bandeja de notificaciones del acreditado: solo lectura
-        Route::get('/notificaciones',             [\App\Http\Controllers\Api\V1\NotificacionController::class, 'index']);
-        Route::get('/notificaciones/no-leidas',   [\App\Http\Controllers\Api\V1\NotificacionController::class, 'noLeidas']);
-        Route::put('/notificaciones/leer-todas',  [\App\Http\Controllers\Api\V1\NotificacionController::class, 'leerTodas']);
-        Route::put('/notificaciones/{id}/leer',   [\App\Http\Controllers\Api\V1\NotificacionController::class, 'leer']);
-        Route::post('/auth/perfil/foto',        [AcreditadoAuthController::class, 'subirFoto']);
-        Route::put('/auth/password',            [AcreditadoAuthController::class, 'cambiarPassword']);
-        Route::post('/auth/biometric-token',    [AcreditadoAuthController::class, 'biometricToken']);
-        Route::delete('/auth/biometric-token',  [AcreditadoAuthController::class, 'revokeBiometricToken']);
+        Route::get('/notificaciones', [NotificacionController::class, 'index']);
+        Route::get('/notificaciones/no-leidas', [NotificacionController::class, 'noLeidas']);
+        Route::put('/notificaciones/leer-todas', [NotificacionController::class, 'leerTodas']);
+        Route::put('/notificaciones/{id}/leer', [NotificacionController::class, 'leer']);
+        Route::post('/auth/perfil/foto', [AcreditadoAuthController::class, 'subirFoto']);
+        Route::put('/auth/password', [AcreditadoAuthController::class, 'cambiarPassword']);
+        Route::post('/auth/biometric-token', [AcreditadoAuthController::class, 'biometricToken']);
+        Route::delete('/auth/biometric-token', [AcreditadoAuthController::class, 'revokeBiometricToken']);
         Route::post('/auth/session-from-biometric', [AcreditadoAuthController::class, 'sessionFromBiometric']);
         Route::post('/auth/solicitar-cancelacion', [AcreditadoAuthController::class, 'solicitarCancelacion']);
 
@@ -250,13 +285,13 @@ Route::prefix('v1/acreditado')->group(function () {
         Route::post('/solicitudes', [AcreditadoSolicitudController::class, 'store']);
 
         // Expediente
-        Route::get('/expediente',                    [AcreditadoExpedienteController::class, 'show']);
-        Route::get('/expediente/seguimiento',        [AcreditadoExpedienteController::class, 'seguimiento']);
+        Route::get('/expediente', [AcreditadoExpedienteController::class, 'show']);
+        Route::get('/expediente/seguimiento', [AcreditadoExpedienteController::class, 'seguimiento']);
         Route::get('/expediente/documentos-pendientes', [AcreditadoExpedienteController::class, 'documentosPendientes']);
 
         // Documentos del expediente
-        Route::get('/expediente/documentos',         [AcreditadoDocumentoController::class, 'index']);
-        Route::post('/expediente/documentos',        [AcreditadoDocumentoController::class, 'store']);
+        Route::get('/expediente/documentos', [AcreditadoDocumentoController::class, 'index']);
+        Route::post('/expediente/documentos', [AcreditadoDocumentoController::class, 'store']);
         Route::get('/expediente/documentos/{id}/ver', [AcreditadoDocumentoController::class, 'ver']);
 
         // Dispositivo (push notifications) — mismo controlador que el asesor,

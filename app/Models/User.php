@@ -2,23 +2,23 @@
 
 namespace App\Models;
 
+use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Notifications\Notifiable;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
-use Spatie\Permission\Traits\HasRoles;
-use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
+use Illuminate\Support\Facades\URL;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles, HasPanelShield, HasApiTokens;
+    use HasApiTokens, HasFactory, HasPanelShield, HasRoles, Notifiable;
 
     protected $fillable = [
         'name',
@@ -29,6 +29,9 @@ class User extends Authenticatable implements FilamentUser
         'clabe',
         'telefono',
         'foto_perfil',
+        'licencia_numero',
+        'licencia_vence',
+        'licencia_foto',
     ];
 
     protected $hidden = [
@@ -40,8 +43,9 @@ class User extends Authenticatable implements FilamentUser
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
-            'activo'            => 'boolean',
+            'password' => 'hashed',
+            'activo' => 'boolean',
+            'licencia_vence' => 'date',
         ];
     }
 
@@ -85,6 +89,12 @@ class User extends Authenticatable implements FilamentUser
     public function ubicaciones(): HasMany
     {
         return $this->hasMany(Ubicacion::class);
+    }
+
+    /** Licencia de manejo cargada y sin vencer. Solo genera avisos; no impide usar vehículos. */
+    public function licenciaVigente(): bool
+    {
+        return $this->licencia_vence !== null && $this->licencia_vence->endOfDay()->isFuture();
     }
 
     public function getFotoPerfilUrlAttribute(): ?string

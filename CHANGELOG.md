@@ -13,6 +13,19 @@ estas notas. Fuera de producción la versión se muestra como `vX.Y.Z-dev · com
 
 La app móvil tiene su propio versionado en su repositorio (`app-consultoriainmobiliaria`).
 
+## [1.17.0] - 2026-11-18
+
+### Agregado
+- Préstamo de vehículos para asesores (motos hoy, coches en el futuro). En el panel, grupo «Vehículos»:
+  - **Tipos de vehículo**: fotos obligatorias y checklist de cada tipo (Moto y Coche ya vienen configurados).
+  - **Vehículos**: alta con placa, km, gasolina, vencimientos de seguro y tarjeta, y dónde están las llaves.
+  - **Reservas**: el super admin autoriza o rechaza. Se atiende al primero que pide, pero el admin puede dar prioridad a otra visita. Al asesor desplazado se le avisa con el motivo y se le ofrece otro vehículo libre.
+  - En el detalle de cada reserva se ven las fotos de salida y entrega lado a lado (tablero, vehículo, gasolina), los km recorridos según el tablero y el GPS, y el mapa del recorrido.
+  - **Gasolina**: cargas con foto del ticket, pagadas con tarjeta o efectivo de la empresa o por reembolso al asesor, con filtro de reembolsos pendientes y botón «Marcar pagado».
+- Desde la app, el asesor pide el vehículo por horas o por todo el día y puede llevárselo a casa a resguardo. Registra la salida y la entrega con fotos y km, y confirma la entrega de llaves en la oficina o con un código de 4 dígitos.
+- Licencia de manejo en el perfil. Si no está vigente, el asesor puede pedir el vehículo de todos modos y el admin ve el aviso.
+- Avisos automáticos cada 5 minutos: recordatorio de salida y de regreso, «no se presentó» (libera el vehículo para el siguiente) y retraso en la entrega. Al admin le llegan alertas cuando los km no cuadran, el GPS no coincide con el tablero o el vehículo se entrega en reserva de gasolina.
+
 ## [1.16.3] - 2026-11-09
 
 ### Corregido
